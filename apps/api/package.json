@@ -1,0 +1,27 @@
+{
+  "name": "@openclaw/krillswitch-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run db:setup && wrangler dev",
+    "db:setup": "wrangler d1 migrations apply krillswitch --local && wrangler d1 execute krillswitch --local --file=./seed/seed.sql",
+    "db:generate": "drizzle-kit generate",
+    "test": "vitest run",
+    "cf-typegen": "wrangler types",
+    "typecheck": "wrangler types && tsc --noEmit"
+  },
+  "dependencies": {
+    "@openclaw/krillswitch-core": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.25",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.13",
+    "@cloudflare/workers-types": "^4.20260609.1",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.8",
+    "wrangler": "^4.98.0"
+  }
+}
