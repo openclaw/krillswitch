@@ -1,0 +1,201 @@
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi,
+} from "vitest";
+import {
+  ANONYMOUS_KEY_STORAGE_KEY,
+  createKrillswitch,
+  flagValuesStorageKey,
+} from "./index";
+
+const { FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
+  createKrillswitch({
+    souls: false,
+    theme: "light",
+  });
+
+const EVAL_KEY = "ks_clawhub_development_local";
+const BASE_URL = "https://krillswitch.test";
+const VALUES_STORAGE_KEY = flagValuesStorageKey(EVAL_KEY);
+
+function SoulsProbe() {
+  const souls = useFeatureFlag("souls");
+  const all = useFeatureFlags();
+  return (
+    <div>
+      <output data-testid="souls">{String(souls)}</output>
+      <output data-testid="theme">{all.theme}</output>
+    </div>
+  );
+}
+
+function renderDemo(props: { contextKey?: string } = {}) {
+  return render(
+    <FeatureFlagProvider evalKey={EVAL_KEY} baseUrl={BASE_URL} {...props}>
+      <SoulsProbe />
+    </FeatureFlagProvider>,
+  );
+}
+
+function evalResponse(flags: Record<string, unknown>): Response {
+  return new Response(
+    JSON.stringify({
+      flags: Object.fromEntries(
+        Object.entries(flags).map(([key, value]) => [
+          key,
+          { value, variationId: `var_${key}`, reason: { kind: "default" } },
+        ]),
+      ),
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
+
+const fetchMock = vi.fn<typeof fetch>();
+
+beforeEach(() => {
+  localStorage.clear();
+  fetchMock.mockReset();
+  vi.stubGlobal("fetch", fetchMock);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe("bootstrap render", () => {
+  it("renders manifest defaults immediately on a cold profile", () => {
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    renderDemo();
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+    expect(screen.getByTestId("theme").textContent).toBe("light");
+  });
+
+  it("renders last-known localStorage values on first paint", () => {
+    localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: true, theme: "dark" }),
+    );
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    renderDemo();
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+    expect(screen.getByTestId("theme").textContent).toBe("dark");
+  });
+
+  it("ignores cached values whose type no longer matches the manifest", () => {
+    localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: "yes", theme: 3 }),
+    );
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    renderDemo();
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+    expect(screen.getByTestId("theme").textContent).toBe("light");
+  });
+});
+
+describe("fetch lifecycle", () => {
+  it("updates values in place and persists them when the fetch settles", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: true, theme: "dark" }));
+    renderDemo();
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+    expect(screen.getByTestId("theme").textContent).toBe("dark");
+    expect(
+      JSON.parse(localStorage.getItem(VALUES_STORAGE_KEY) ?? "{}"),
+    ).toEqual({ souls: true, theme: "dark" });
+  });
+
+  it("keeps last-known values when the service is unreachable", async () => {
+    localStorage.setItem(VALUES_STORAGE_KEY, JSON.stringify({ souls: true }));
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+  });
+
+  it("keeps manifest defaults when cold and the service is unreachable", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+  });
+});
+
+describe("identity", () => {
+  it("generates a persisted anonymous context key and sends it", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    const anonymousKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    expect(anonymousKey).toBeTruthy();
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String(init?.body));
+    expect(body.context.key).toBe(anonymousKey);
+  });
+
+  it("reuses the same anonymous key across mounts", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    const first = renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const anonymousKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    first.unmount();
+
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY)).toBe(anonymousKey);
+  });
+
+  it("generates distinct anonymous keys for distinct profiles", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const firstProfileKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+
+    localStorage.clear();
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const secondProfileKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    expect(secondProfileKey).toBeTruthy();
+    expect(secondProfileKey).not.toBe(firstProfileKey);
+  });
+
+  it("uses the provided context key instead of the anonymous one", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    renderDemo({ contextKey: "github-123" });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String(init?.body));
+    expect(body.context.key).toBe("github-123");
+  });
+});
+
+describe("manifest typing", () => {
+  it("infers hook types from the manifest", () => {
+    expectTypeOf(useFeatureFlag)
+      .parameter(0)
+      .toEqualTypeOf<"souls" | "theme">();
+    expectTypeOf(useFeatureFlag<"souls">).returns.toEqualTypeOf<boolean>();
+    expectTypeOf(useFeatureFlag<"theme">).returns.toEqualTypeOf<string>();
+    expectTypeOf(useFeatureFlags).returns.toEqualTypeOf<{
+      souls: boolean;
+      theme: string;
+    }>();
+
+    const neverCalled = () => {
+      // @ts-expect-error undeclared flag keys must not compile
+      useFeatureFlag("soulz");
+    };
+    expect(neverCalled).toBeDefined();
+  });
+});

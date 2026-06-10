@@ -147,6 +147,25 @@ describe("POST /v1/eval", () => {
     }
   });
 
+  it("allows cross-origin browser calls (public eval endpoint)", async () => {
+    const preflight = await SELF.fetch("https://krillswitch.test/v1/eval", {
+      method: "OPTIONS",
+      headers: {
+        origin: "http://localhost:5173",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "authorization,content-type",
+      },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-origin")).toBe("*");
+    expect(
+      preflight.headers.get("access-control-allow-headers")?.toLowerCase(),
+    ).toContain("authorization");
+
+    const response = await postEval({ evalKey: DEV_EVAL_KEY });
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
   it("rejects a wrong eval key without serving flag data", async () => {
     const response = await postEval({ evalKey: "ks_wrong_key" });
     expect(response.status).toBe(401);

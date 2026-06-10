@@ -22,6 +22,9 @@ export default defineConfig(async () => {
     ],
     test: {
       setupFiles: ["./test/apply-migrations.ts"],
+      // Test files share D1 storage and mutate the same seeded rows;
+      // parallel files race each other's flag toggles.
+      fileParallelism: false,
     },
   };
 });

@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/api dev",
-    "test": "bun run --cwd packages/core test && bun run --cwd apps/api test",
-    "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd apps/api typecheck",
+    "test": "bun run --cwd packages/core test && bun run --cwd packages/react test && bun run --cwd apps/api test",
+    "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/react typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/demo typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },

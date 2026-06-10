@@ -5,6 +5,7 @@ import {
 } from "@openclaw/krillswitch-core";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { z } from "zod";
 import { getEnvironmentConfig } from "./configCache";
 
@@ -30,6 +31,13 @@ function bearerToken(authorization: string | undefined): string | undefined {
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Eval keys are public flag-set identifiers, not secrets; any browser
+// origin may evaluate.
+app.use(
+  "/v1/*",
+  cors({ origin: "*", allowHeaders: ["authorization", "content-type"] }),
+);
 
 app.post("/v1/eval", async (c) => {
   const requestStart = performance.now();
