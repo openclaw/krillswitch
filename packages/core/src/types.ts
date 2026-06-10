@@ -60,7 +60,12 @@ export interface EvalContext {
   attributes?: Record<string, AttributeValue>;
 }
 
-export type EvalReason = { kind: "off" } | { kind: "default" };
+export type EvalReason =
+  | { kind: "off" }
+  | { kind: "target" }
+  | { kind: "rule"; attribute: string }
+  | { kind: "rollout" }
+  | { kind: "default" };
 
 export interface FlagEvaluation {
   value: FlagValue;

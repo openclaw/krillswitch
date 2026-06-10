@@ -73,6 +73,41 @@ describe("POST /v1/eval", () => {
     });
   });
 
+  it("resolves the theme string flag through the targeting chain", async () => {
+    const allowlisted = await postEval({
+      evalKey: DEV_EVAL_KEY,
+      body: { context: { key: "user-pinned", attributes: { role: "admin" } } },
+    });
+    const allowlistedBody = (await allowlisted.json()) as EvalResponseBody;
+    expect(allowlistedBody.flags.theme).toEqual({
+      value: "system",
+      variationId: "var_theme_system",
+      reason: { kind: "target" },
+    });
+
+    const admin = await postEval({
+      evalKey: DEV_EVAL_KEY,
+      body: { context: { key: "user-2", attributes: { role: "admin" } } },
+    });
+    const adminBody = (await admin.json()) as EvalResponseBody;
+    expect(adminBody.flags.theme).toEqual({
+      value: "dark",
+      variationId: "var_theme_dark",
+      reason: { kind: "rule", attribute: "role" },
+    });
+
+    const noMatch = await postEval({
+      evalKey: DEV_EVAL_KEY,
+      body: { context: { key: "user-2" } },
+    });
+    const noMatchBody = (await noMatch.json()) as EvalResponseBody;
+    expect(noMatchBody.flags.theme).toEqual({
+      value: "light",
+      variationId: "var_theme_light",
+      reason: { kind: "default" },
+    });
+  });
+
   it("rejects a wrong eval key without serving flag data", async () => {
     const response = await postEval({ evalKey: "ks_wrong_key" });
     expect(response.status).toBe(401);
