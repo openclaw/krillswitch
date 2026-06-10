@@ -1,6 +1,10 @@
 import { SELF } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import type { EvalResponseBody } from "@openclaw/krillswitch-core";
+import {
+  type EvalResponseBody,
+  evaluateFlag,
+  type FlagConfig,
+} from "@openclaw/krillswitch-core";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
 import { clearConfigCache } from "../src/configCache";
@@ -106,6 +110,41 @@ describe("POST /v1/eval", () => {
       variationId: "var_theme_light",
       reason: { kind: "default" },
     });
+  });
+
+  it("buckets rollout-demo identically to a direct core evaluation", async () => {
+    // Mirrors the seeded fe_rollout_demo_dev row; drift between this fixture
+    // and seed.sql fails the toEqual below.
+    const seededConfig: FlagConfig = {
+      key: "rollout-demo",
+      kind: "string",
+      enabled: true,
+      variations: [
+        { id: "var_rollout_a", value: "a" },
+        { id: "var_rollout_b", value: "b" },
+      ],
+      offVariationId: "var_rollout_a",
+      defaultVariationId: "var_rollout_a",
+      targets: [],
+      rules: [],
+      rollout: {
+        variations: [
+          { variationId: "var_rollout_a", weight: 50 },
+          { variationId: "var_rollout_b", weight: 50 },
+        ],
+      },
+    };
+
+    for (const key of ["user-1", "user-2", "user-3", "user-4"]) {
+      const expected = evaluateFlag(seededConfig, { key });
+      const response = await postEval({
+        evalKey: DEV_EVAL_KEY,
+        body: { context: { key } },
+      });
+      const body = (await response.json()) as EvalResponseBody;
+      expect(body.flags["rollout-demo"]).toEqual(expected);
+      expect(body.flags["rollout-demo"]?.reason).toEqual({ kind: "rollout" });
+    }
   });
 
   it("rejects a wrong eval key without serving flag data", async () => {

@@ -1,3 +1,4 @@
+import { rolloutBucket } from "./hash";
 import type {
   EvalContext,
   FlagConfig,
@@ -52,10 +53,21 @@ const ruleMatch: EvaluationStep = (flag, context) => {
 };
 
 // Placeholder split: serves the first weighted variation. Replaced by a
-// stable hash of flagKey + contextKey in the percentage-rollout slice.
-const rolloutSplit: EvaluationStep = (flag) => {
-  const first = flag.rollout?.variations[0];
-  return first ? serve(flag, first.variationId, { kind: "rollout" }) : null;
+const rolloutSplit: EvaluationStep = (flag, context) => {
+  if (!flag.rollout || flag.rollout.variations.length === 0) {
+    return null;
+  }
+  const bucket = rolloutBucket(flag.key, context.key);
+  let cumulative = 0;
+  for (const candidate of flag.rollout.variations) {
+    cumulative += candidate.weight;
+    if (bucket < cumulative) {
+      return serve(flag, candidate.variationId, { kind: "rollout" });
+    }
+  }
+  // Weights are validated to sum to 100 at the write boundary; if a bucket
+  // still lands past the last threshold, fall through to the default.
+  return null;
 };
 
 const defaultVariation: EvaluationStep = (flag) =>
