@@ -1,3 +1,4 @@
+export { CONFIG_CACHE_TTL_MS } from "./config";
 export { evaluateFlag } from "./evaluator";
 export type {
   AttributeValue,

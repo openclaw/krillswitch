@@ -1,8 +1,9 @@
 import { SELF } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import type { EvalResponseBody } from "@openclaw/krillswitch-core";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
+import { clearConfigCache } from "../src/configCache";
 
 const DEV_EVAL_KEY = "ks_clawhub_development_local";
 
@@ -35,6 +36,15 @@ async function postEval(options: {
 
 beforeAll(async () => {
   await applySeed();
+});
+
+beforeEach(async () => {
+  // The module-scope config cache and D1 writes both outlive a test in this
+  // pool version: clear the cache and undo flag edits.
+  clearConfigCache();
+  await env.DB.prepare(
+    "UPDATE flag_environments SET enabled = 1 WHERE id = 'fe_souls_dev'",
+  ).run();
 });
 
 describe("POST /v1/eval", () => {
