@@ -1,0 +1,120 @@
+{
+  "date": "2026-06-10T14:51:23.365Z",
+  "target": {
+    "url": "http://localhost:8799",
+    "label": "local"
+  },
+  "tool": {
+    "name": "autocannon",
+    "version": "8.0.0"
+  },
+  "parameters": {
+    "durationS": 15,
+    "connections": 25,
+    "coldSamples": 8
+  },
+  "sustained": {
+    "requestsTotal": 31820,
+    "rps": 2121.81,
+    "latencyMs": {
+      "p50": 9,
+      "p95": 30,
+      "p99": 37,
+      "max": 74
+    },
+    "errors": 0,
+    "errorRate": 0
+  },
+  "serverTimingSplit": {
+    "note": "sampled every ~100ms during sustained load; Workers timers only advance on I/O, so hit-path processing of 0ms means no I/O occurred during evaluation",
+    "samples": 126,
+    "missesObserved": 0,
+    "expectedMissCeiling": 16,
+    "hit": {
+      "processing": {
+        "count": 126,
+        "p50": 0,
+        "p95": 1,
+        "p99": 1,
+        "max": 3
+      },
+      "evalOnly": {
+        "count": 126,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "roundTrip": {
+        "count": 126,
+        "p50": 15.22925000000032,
+        "p95": 33.402750000001106,
+        "p99": 45.40895900000032,
+        "max": 69.11820799999987
+      }
+    },
+    "miss": {
+      "processing": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "roundTrip": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      }
+    }
+  },
+  "coldPath": {
+    "hit": {
+      "processing": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "evalOnly": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "roundTrip": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      }
+    },
+    "miss": {
+      "processing": {
+        "count": 8,
+        "p50": 2,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+      },
+      "roundTrip": {
+        "count": 8,
+        "p50": 4.380000000001019,
+        "p95": 5.44708399999945,
+        "p99": 5.44708399999945,
+        "max": 5.44708399999945
+      }
+    }
+  },
+  "missCadence": {
+    "note": "unloaded sampler for 10s; misses ≈ elapsed seconds proves at most one D1 read per second per environment in this isolate",
+    "samples": 65,
+    "misses": 9,
+    "expected": "≈10 (±2)"
+  }
+}

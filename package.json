@@ -11,9 +11,11 @@
     "test": "bun run --cwd packages/core test && bun run --cwd packages/react test && bun run --cwd apps/api test",
     "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/react typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/demo typecheck",
     "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "lint:fix": "biome check --write .",
+    "bench": "node bench/run.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16"
+    "@biomejs/biome": "^2.4.16",
+    "autocannon": "8.0.0"
   }
 }

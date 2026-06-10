@@ -43,6 +43,29 @@ bunx wrangler d1 execute krillswitch --local \
 - `packages/core` — `@openclaw/krillswitch-core`: flag/context types and the
   pure `evaluateFlag` function (no I/O).
 
+## Benchmarks
+
+```sh
+bun bench                                          # against the local stack
+TARGET_URL=https://… TARGET_LABEL=workers-dev bun bench
+```
+
+Three scenarios run against `POST /v1/eval` and a dated JSON report lands in
+`bench/results/` (UTC date + target label):
+
+- **sustained** — autocannon load (default 25 connections, 15s) for
+  round-trip p50/p95/p99, RPS, and error count. Exits nonzero above a 1%
+  error rate so it can gate CI.
+- **server-timing split** — a sampler alongside the load records each
+  response's `Server-Timing` (cache hit/miss, eval/config/total processing).
+  Workers isolate timers only advance on I/O, so 0ms hit-path processing
+  means evaluation did no I/O.
+- **miss cadence** — 10s of unloaded sampling; misses ≈ elapsed seconds
+  proves at most one D1 read per second per environment.
+
+Tool version is pinned (`autocannon` in root devDependencies) so results
+stay comparable. Keep load modest against deployed targets.
+
 ## Commands
 
 ```sh
