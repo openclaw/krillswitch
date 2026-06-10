@@ -164,6 +164,11 @@ describe("POST /v1/eval", () => {
 
     const response = await postEval({ evalKey: DEV_EVAL_KEY });
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    // Without exposing ETag, browsers can't read it and conditional
+    // requests silently degrade to full 200s.
+    expect(
+      response.headers.get("access-control-expose-headers")?.toLowerCase(),
+    ).toContain("etag");
   });
 
   it("rejects a wrong eval key without serving flag data", async () => {

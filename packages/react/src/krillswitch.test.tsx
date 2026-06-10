@@ -180,6 +180,90 @@ describe("identity", () => {
   });
 });
 
+function setVisibility(state: "visible" | "hidden") {
+  Object.defineProperty(document, "visibilityState", {
+    value: state,
+    configurable: true,
+  });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+
+describe("freshness", () => {
+  it("refetches when the tab becomes visible and applies new values", async () => {
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: false }));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: true }));
+    setVisibility("visible");
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+  });
+
+  it("does not refetch when the tab becomes hidden", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: false }));
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    setVisibility("hidden");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    setVisibility("visible");
+  });
+
+  it("polls on the configured interval and applies new values", async () => {
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: false }));
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        pollIntervalMs={40}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    // A short interval converges quickly — the interval is a real option.
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("sends If-None-Match and leaves state untouched on 304", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          flags: {
+            souls: {
+              value: true,
+              variationId: "var_souls_on",
+              reason: { kind: "default" },
+            },
+          },
+        }),
+        { status: 200, headers: { etag: 'W/"abc123"' } },
+      ),
+    );
+    renderDemo();
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+    const persisted = localStorage.getItem(VALUES_STORAGE_KEY);
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 304 }));
+    setVisibility("visible");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    const [, init] = fetchMock.mock.calls[1] ?? [];
+    expect(new Headers(init?.headers).get("if-none-match")).toBe('W/"abc123"');
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+    expect(localStorage.getItem(VALUES_STORAGE_KEY)).toBe(persisted);
+  });
+});
+
 describe("manifest typing", () => {
   it("infers hook types from the manifest", () => {
     expectTypeOf(useFeatureFlag)

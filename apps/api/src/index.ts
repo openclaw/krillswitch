@@ -22,6 +22,16 @@ const evalRequestSchema = z.object({
   }),
 });
 
+/** Weak ETag over the serialized response so idle polls can 304. */
+function evalBodyEtag(serializedBody: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < serializedBody.length; i++) {
+    hash ^= serializedBody.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `W/"${(hash >>> 0).toString(16)}"`;
+}
+
 function bearerToken(authorization: string | undefined): string | undefined {
   if (!authorization?.startsWith("Bearer ")) {
     return undefined;
@@ -36,7 +46,13 @@ const app = new Hono<{ Bindings: Bindings }>();
 // origin may evaluate.
 app.use(
   "/v1/*",
-  cors({ origin: "*", allowHeaders: ["authorization", "content-type"] }),
+  cors({
+    origin: "*",
+    allowHeaders: ["authorization", "content-type", "if-none-match"],
+    // Browsers hide non-safelisted response headers on CORS requests;
+    // without this the SDK can never send If-None-Match.
+    exposeHeaders: ["ETag", "Server-Timing"],
+  }),
 );
 
 app.post("/v1/eval", async (c) => {
@@ -82,8 +98,16 @@ app.post("/v1/eval", async (c) => {
       `total;dur=${(performance.now() - requestStart).toFixed(3)}`,
     ].join(", "),
   );
+
   const body: EvalResponseBody = { flags: evaluated };
-  return c.json(body);
+  const serialized = JSON.stringify(body);
+  const etag = evalBodyEtag(serialized);
+  c.header("ETag", etag);
+  if (c.req.header("if-none-match") === etag) {
+    return c.body(null, 304);
+  }
+  c.header("content-type", "application/json");
+  return c.body(serialized, 200);
 });
 
 export default app;
