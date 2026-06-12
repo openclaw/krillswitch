@@ -4,3 +4,4 @@ worker-configuration.d.ts
 dist/
 *.log
 .DS_Store
+.dev.vars

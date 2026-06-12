@@ -2,6 +2,7 @@ import { SELF } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
+import { isGitHubAuthConfigured } from "../src/auth/auth";
 
 // localhost origin: the dev-persona guard requires a localhost request host.
 const BASE = "http://localhost";
@@ -36,6 +37,42 @@ describe("admin session guard", () => {
   it("rejects unauthenticated /admin/me with 401", async () => {
     const response = await SELF.fetch(`${BASE}/admin/me`);
     expect(response.status).toBe(401);
+  });
+});
+
+describe("auth providers", () => {
+  it("offers dev personas but not GitHub when no OAuth app is configured", async () => {
+    const response = await SELF.fetch(`${BASE}/admin/auth-providers`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      github: false,
+      devPersonas: true,
+    });
+  });
+
+  it("drops dev personas for non-localhost hosts", async () => {
+    const response = await SELF.fetch(
+      "https://krillswitch.test/admin/auth-providers",
+    );
+    const body = await response.json<{ devPersonas: boolean }>();
+    expect(body.devPersonas).toBe(false);
+  });
+
+  it("treats GitHub as configured only when both credentials are set", () => {
+    expect(isGitHubAuthConfigured({})).toBe(false);
+    expect(isGitHubAuthConfigured({ GITHUB_CLIENT_ID: "abc" })).toBe(false);
+    expect(
+      isGitHubAuthConfigured({
+        GITHUB_CLIENT_ID: "abc",
+        GITHUB_CLIENT_SECRET: "  ",
+      }),
+    ).toBe(false);
+    expect(
+      isGitHubAuthConfigured({
+        GITHUB_CLIENT_ID: "abc",
+        GITHUB_CLIENT_SECRET: "shh",
+      }),
+    ).toBe(true);
   });
 });
 

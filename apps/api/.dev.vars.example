@@ -1,0 +1,13 @@
+# Local bindings for `wrangler dev`. `bun dev` copies this file to .dev.vars
+# (gitignored) on first run; real secrets belong only in the copy.
+DEV_AUTH_ENABLED=1
+BETTER_AUTH_SECRET=krillswitch-local-dev-secret
+BETTER_AUTH_URL=http://localhost:8799
+
+# Optional: real GitHub login. Create a GitHub OAuth app with callback
+# http://localhost:8799/api/auth/callback/github and fill these in.
+# The first admin: set BOOTSTRAP_ADMIN_EMAIL to your GitHub email, or grant
+# roles from the Access page while signed in as the admin dev persona.
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+# BOOTSTRAP_ADMIN_EMAIL=

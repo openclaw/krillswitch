@@ -170,8 +170,18 @@ function post(path: string, body: unknown): Promise<unknown> {
   });
 }
 
+export type AuthProviders = { github: boolean; devPersonas: boolean };
+
 export const api = {
   me: () => request<Me>("/admin/me"),
+  authProviders: () => request<AuthProviders>("/admin/auth-providers"),
+  /** Returns the GitHub authorize URL to navigate to. */
+  signInWithGitHub: () =>
+    request<{ url: string }>("/api/auth/sign-in/social", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "github", callbackURL: "/" }),
+    }),
   devPersonas: () =>
     request<{ personas: DevPersonaOption[] }>("/admin/dev-personas"),
   devLogin: (persona: string) => post("/admin/dev-login", { persona }),

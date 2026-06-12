@@ -1,7 +1,12 @@
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
-import { type AuthBindings, createAuth, type SessionUser } from "../auth/auth";
+import {
+  type AuthBindings,
+  createAuth,
+  isGitHubAuthConfigured,
+  type SessionUser,
+} from "../auth/auth";
 import { isDevPersonaAuthEnabled } from "../auth/devAuth";
 import {
   DEV_PERSONA_PASSWORD,
@@ -56,6 +61,14 @@ const devLoginSchema = z.object({
 export const adminRoutes = new Hono<AdminContext>();
 
 // --- Routes below run BEFORE the session middleware (no session yet). ---
+
+// Which sign-in methods the sign-in screen should offer.
+adminRoutes.get("/auth-providers", (c) => {
+  return c.json({
+    github: isGitHubAuthConfigured(c.env),
+    devPersonas: isDevPersonaAuthEnabled(c.env, c.req.url),
+  });
+});
 
 adminRoutes.get("/dev-personas", (c) => {
   if (!isDevPersonaAuthEnabled(c.env, c.req.url)) {

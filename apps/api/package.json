@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run db:setup && wrangler dev",
+    "dev": "bun run ensure-dev-vars && bun run db:setup && wrangler dev",
     "db:setup": "wrangler d1 migrations apply krillswitch --local && wrangler d1 execute krillswitch --local --file=./seed/seed.sql",
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",
     "cf-typegen": "wrangler types",
     "typecheck": "wrangler types && tsc --noEmit",
-    "db:generate-auth": "better-auth generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes"
+    "db:generate-auth": "better-auth generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes",
+    "ensure-dev-vars": "bun -e \"const fs=require('node:fs');if(!fs.existsSync('.dev.vars'))fs.copyFileSync('.dev.vars.example','.dev.vars')\""
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",

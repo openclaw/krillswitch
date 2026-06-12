@@ -13,10 +13,12 @@ bun install
 bun dev
 ```
 
-`bun dev` builds the admin dashboard, applies D1 migrations, seeds a
+`bun dev` creates `.dev.vars` from its example on first run, builds the admin
+dashboard, applies D1 migrations, seeds a
 `clawhub` project with a boolean `souls` flag, and starts the worker on
 http://localhost:8799 (the dashboard is served at that root; sign in with a
-dev persona — admin, editor, viewer, or nogrant).
+dev persona — admin, editor, viewer, or nogrant. For real GitHub login, put
+OAuth app credentials in `.dev.vars`; see `.dev.vars.example`).
 
 Evaluate the seeded flag:
 

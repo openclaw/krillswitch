@@ -130,6 +130,14 @@ h1 {
   color: var(--accent);
 }
 
+.btn-github {
+  height: 34px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .persona-list {
   list-style: none;
   margin: 0;
