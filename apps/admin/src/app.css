@@ -651,6 +651,22 @@ h1 {
   }
 }
 
+.inline-create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.below-table {
+  margin-top: 10px;
+}
+
+.th-role,
+.td-role {
+  width: 140px;
+}
+
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {

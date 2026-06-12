@@ -35,7 +35,7 @@ export function App() {
   return (
     <Shell me={me.data}>
       <Routes>
-        <Route path="/" element={<ProjectsPage />} />
+        <Route path="/" element={<ProjectsPage me={me.data} />} />
         <Route
           path="/projects/:projectKey"
           element={<ProjectPage me={me.data} />}
@@ -55,7 +55,7 @@ export function App() {
           element={<FlagDetailPage me={me.data} />}
         />
         {me.data.role === "admin" && (
-          <Route path="/access" element={<AccessPage />} />
+          <Route path="/access" element={<AccessPage me={me.data} />} />
         )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

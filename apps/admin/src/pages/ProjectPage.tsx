@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, NavLink, useParams } from "react-router";
 import { api, type FlagListEntry, type Me } from "../api";
+import { KeysSection } from "../components/KeysSection";
 
 export function ProjectPage({ me }: { me: Me }) {
   const { projectKey = "", environmentKey } = useParams();
@@ -21,7 +22,15 @@ export function ProjectPage({ me }: { me: Me }) {
   const firstEnvironment = environments[0];
   if (!environmentKey) {
     if (!firstEnvironment) {
-      return <p className="muted">This project has no environments.</p>;
+      return (
+        <section>
+          <header className="page-header">
+            <h1>{project.name}</h1>
+          </header>
+          <p className="muted">This project has no environments yet.</p>
+          {me.role === "admin" && <KeysSection projectKey={projectKey} />}
+        </section>
+      );
     }
     return (
       <Navigate
@@ -65,6 +74,7 @@ export function ProjectPage({ me }: { me: Me }) {
           `/projects/${projectKey}/${environmentKey}/flags/${flagKey}`
         }
       />
+      {me.role === "admin" && <KeysSection projectKey={projectKey} />}
     </section>
   );
 }

@@ -13,6 +13,20 @@ export type DevPersonaOption = {
 
 export type Project = { id: string; key: string; name: string };
 
+export type UserWithRole = {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole | null;
+};
+
+export type EnvironmentKeyEntry = {
+  environmentId: string;
+  environmentKey: string;
+  environmentName: string;
+  evalKey: string;
+};
+
 export type Environment = { id: string; key: string; name: string };
 
 export type ProjectDetail = {
@@ -198,5 +212,39 @@ export const api = {
     request<{ deleted: string }>(
       `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
       { method: "DELETE" },
+    ),
+  users: () => request<{ users: UserWithRole[] }>("/admin/users"),
+  setUserRole: (userId: string, role: AdminRole | null) =>
+    request<{ userId: string; role: AdminRole | null }>(
+      `/admin/users/${encodeURIComponent(userId)}/role`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role }),
+      },
+    ),
+  createProject: (key: string, name: string) =>
+    request<{ created: string }>("/admin/projects", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key, name }),
+    }),
+  createEnvironment: (projectKey: string, key: string, name: string) =>
+    request<{ created: string; evalKey: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/environments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, name }),
+      },
+    ),
+  keys: (projectKey: string) =>
+    request<{ keys: EnvironmentKeyEntry[] }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/keys`,
+    ),
+  rotateKey: (projectKey: string, environmentKey: string) =>
+    request<{ evalKey: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/environments/${encodeURIComponent(environmentKey)}/keys/rotate`,
+      { method: "POST" },
     ),
 };

@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/d1";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { type AuthBindings, createAuth, type SessionUser } from "../auth/auth";
 import { isDevPersonaAuthEnabled } from "../auth/devAuth";
@@ -29,6 +29,14 @@ import {
   flagDetailUpdateSchema,
   semanticError,
 } from "./flagDetailSchema";
+import {
+  createEnvironment,
+  createProject,
+  listKeys,
+  listUsers,
+  rotateKey,
+  setUserRole,
+} from "./management";
 
 type AdminContext = {
   Bindings: AuthBindings;
@@ -74,35 +82,32 @@ adminRoutes.post("/dev-login", async (c) => {
 
   const credentials = { email: persona.email, password: DEV_PERSONA_PASSWORD };
   let headers: Headers;
-  let userId: string;
   try {
     const signIn = await auth.api.signInEmail({
       body: credentials,
       returnHeaders: true,
     });
     headers = signIn.headers;
-    userId = signIn.response.user.id;
   } catch {
-    // First login of this persona on this database: create it.
+    // First login of this persona on this database: create it. The default
+    // grant is seeded ONLY here so an admin's later revocation sticks.
     const signUp = await auth.api.signUpEmail({
       body: { ...credentials, name: persona.name },
       returnHeaders: true,
     });
     headers = signUp.headers;
-    userId = signUp.response.user.id;
-  }
-
-  if (persona.role) {
-    await drizzle(c.env.DB)
-      .insert(roleGrants)
-      .values({
-        id: `grant_dev_${persona.id}`,
-        userId,
-        role: persona.role,
-        grantedBy: "dev-persona-seed",
-        createdAt: new Date(),
-      })
-      .onConflictDoNothing();
+    if (persona.role) {
+      await drizzle(c.env.DB)
+        .insert(roleGrants)
+        .values({
+          id: `grant_dev_${persona.id}`,
+          userId: signUp.response.user.id,
+          role: persona.role,
+          grantedBy: "dev-persona-seed",
+          createdAt: new Date(),
+        })
+        .onConflictDoNothing();
+    }
   }
 
   for (const cookie of headers.getSetCookie()) {
@@ -155,6 +160,139 @@ adminRoutes.get("/projects", async (c) => {
   const rows = await drizzle(c.env.DB).select().from(projects).all();
   return c.json({ projects: rows });
 });
+
+// --- Admin-only management: grants, projects, environments, keys. ---
+
+const keySchema = z
+  .string()
+  .min(1)
+  .max(60)
+  .regex(/^[a-z0-9][a-z0-9._-]*$/);
+const createProjectSchema = z.object({
+  key: keySchema,
+  name: z.string().trim().min(1).max(120),
+});
+const setRoleSchema = z.object({
+  role: z.enum(["admin", "editor", "viewer"]).nullable(),
+});
+
+// Explicit per-handler guard: route registration order doesn't matter.
+function forbidNonAdmin(c: Context<AdminContext>) {
+  return c.get("role") === "admin" ? null : c.json({ error: "forbidden" }, 403);
+}
+
+adminRoutes.get("/users", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  return c.json({ users: await listUsers(drizzle(c.env.DB)) });
+});
+
+adminRoutes.put("/users/:userId/role", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const parsed = setRoleSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const outcome = await setUserRole(drizzle(c.env.DB), {
+    userId: c.req.param("userId"),
+    role: parsed.data.role,
+    grantedBy: c.get("user").id,
+  });
+  switch (outcome) {
+    case "not_found":
+      return c.json({ error: "not_found" }, 404);
+    case "last_admin":
+      return c.json(
+        {
+          error: "last_admin",
+          message: "the last admin cannot be demoted or revoked",
+        },
+        400,
+      );
+    case "ok":
+      return c.json({ userId: c.req.param("userId"), role: parsed.data.role });
+  }
+});
+
+adminRoutes.post("/projects", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const parsed = createProjectSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const outcome = await createProject(drizzle(c.env.DB), parsed.data);
+  if (outcome === "duplicate_key") {
+    return c.json({ error: "duplicate_key" }, 409);
+  }
+  return c.json({ created: parsed.data.key }, 201);
+});
+
+adminRoutes.post("/projects/:projectKey/environments", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const parsed = createProjectSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectKey = c.req.param("projectKey");
+  const projectId = await resolveProjectId(db, projectKey);
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const outcome = await createEnvironment(db, {
+    projectId,
+    projectKey,
+    key: parsed.data.key,
+    name: parsed.data.name,
+  });
+  if (outcome.kind === "duplicate_key") {
+    return c.json({ error: "duplicate_key" }, 409);
+  }
+  clearConfigCache();
+  return c.json({ created: parsed.data.key, evalKey: outcome.evalKey }, 201);
+});
+
+adminRoutes.get("/projects/:projectKey/keys", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ keys: await listKeys(db, projectId) });
+});
+
+adminRoutes.post(
+  "/projects/:projectKey/environments/:environmentKey/keys/rotate",
+  async (c) => {
+    const forbidden = forbidNonAdmin(c);
+    if (forbidden) return forbidden;
+    const db = drizzle(c.env.DB);
+    const projectKey = c.req.param("projectKey");
+    const projectId = await resolveProjectId(db, projectKey);
+    if (!projectId) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const outcome = await rotateKey(db, {
+      projectId,
+      projectKey,
+      environmentKey: c.req.param("environmentKey"),
+    });
+    if (outcome.kind === "not_found") {
+      return c.json({ error: "not_found" }, 404);
+    }
+    clearConfigCache();
+    return c.json({ evalKey: outcome.evalKey });
+  },
+);
 
 adminRoutes.get("/projects/:projectKey", async (c) => {
   const detail = await loadProjectDetail(
