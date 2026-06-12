@@ -10,7 +10,7 @@ export const { FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
   });
 
 export const KRILLSWITCH_URL: string =
-  import.meta.env.VITE_KRILLSWITCH_URL ?? "http://localhost:8787";
+  import.meta.env.VITE_KRILLSWITCH_URL ?? "http://localhost:8799";
 
 export const KRILLSWITCH_EVAL_KEY: string =
   import.meta.env.VITE_KRILLSWITCH_EVAL_KEY ?? "ks_clawhub_development_local";

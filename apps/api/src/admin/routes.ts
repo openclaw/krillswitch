@@ -8,8 +8,15 @@ import {
   DEV_PERSONAS,
   type DevPersonaId,
 } from "../auth/personas";
-import { resolveRole } from "../auth/roles";
+import { canEditFlags, resolveRole } from "../auth/roles";
+import { clearConfigCache } from "../configCache";
 import { type AdminRole, projects, roleGrants } from "../db/schema";
+import {
+  loadFlagList,
+  loadProjectDetail,
+  resolveEnvironment,
+  setFlagEnabled,
+} from "./adminStore";
 
 type AdminContext = {
   Bindings: AuthBindings;
@@ -136,3 +143,69 @@ adminRoutes.get("/projects", async (c) => {
   const rows = await drizzle(c.env.DB).select().from(projects).all();
   return c.json({ projects: rows });
 });
+
+adminRoutes.get("/projects/:projectKey", async (c) => {
+  const detail = await loadProjectDetail(
+    drizzle(c.env.DB),
+    c.req.param("projectKey"),
+  );
+  if (!detail) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json(detail);
+});
+
+adminRoutes.get(
+  "/projects/:projectKey/environments/:environmentKey/flags",
+  async (c) => {
+    const db = drizzle(c.env.DB);
+    const environment = await resolveEnvironment(
+      db,
+      c.req.param("projectKey"),
+      c.req.param("environmentKey"),
+    );
+    if (!environment) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    return c.json({ flags: await loadFlagList(db, environment.environmentId) });
+  },
+);
+
+const toggleFlagSchema = z.object({ enabled: z.boolean() });
+
+adminRoutes.patch(
+  "/projects/:projectKey/environments/:environmentKey/flags/:flagKey",
+  async (c) => {
+    const role = c.get("role");
+    if (role === null || !canEditFlags(role)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    const parsed = toggleFlagSchema.safeParse(
+      await c.req.json().catch(() => null),
+    );
+    if (!parsed.success) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    const db = drizzle(c.env.DB);
+    const environment = await resolveEnvironment(
+      db,
+      c.req.param("projectKey"),
+      c.req.param("environmentKey"),
+    );
+    if (!environment) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const flag = await setFlagEnabled(db, {
+      environmentId: environment.environmentId,
+      flagKey: c.req.param("flagKey"),
+      enabled: parsed.data.enabled,
+    });
+    if (!flag) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    // This isolate serves the next eval read fresh; other isolates converge
+    // within the ≤1s config-cache TTL.
+    clearConfigCache();
+    return c.json({ flag });
+  },
+);

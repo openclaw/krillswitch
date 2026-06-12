@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { api } from "../api";
 
 export function ProjectsPage() {
@@ -25,7 +26,11 @@ export function ProjectsPage() {
           <tbody>
             {projects.data.projects.map((project) => (
               <tr key={project.id}>
-                <td>{project.name}</td>
+                <td>
+                  <Link className="table-link" to={`/projects/${project.key}`}>
+                    {project.name}
+                  </Link>
+                </td>
                 <td>
                   <code>{project.key}</code>
                 </td>

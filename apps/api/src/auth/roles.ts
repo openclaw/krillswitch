@@ -2,6 +2,11 @@ import { eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { type AdminRole, roleGrants } from "../db/schema";
 
+/** Editors and admins may mutate flags; viewers are read-only. */
+export function canEditFlags(role: AdminRole): boolean {
+  return role === "editor" || role === "admin";
+}
+
 /**
  * Explicit grant wins; otherwise the bootstrap admin env var lets the first
  * real admin in before any grants exist (no row is written — the grant stays

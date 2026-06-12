@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router";
 import { ApiError, api, type Me } from "./api";
 import { AccessPage } from "./pages/AccessPage";
 import { NoAccess } from "./pages/NoAccess";
+import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { SignIn } from "./pages/SignIn";
 import { Shell } from "./Shell";
@@ -33,6 +34,14 @@ export function App() {
     <Shell me={me.data}>
       <Routes>
         <Route path="/" element={<ProjectsPage />} />
+        <Route
+          path="/projects/:projectKey"
+          element={<ProjectPage me={me.data} />}
+        />
+        <Route
+          path="/projects/:projectKey/:environmentKey"
+          element={<ProjectPage me={me.data} />}
+        />
         {me.data.role === "admin" && (
           <Route path="/access" element={<AccessPage />} />
         )}
