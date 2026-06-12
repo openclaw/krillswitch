@@ -11,6 +11,22 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { user } from "./authSchema";
+
+export type AdminRole = "admin" | "editor" | "viewer";
+
+// Service-wide role per user (PRD: no per-project scoping yet). Keyed on the
+// better-auth user id so the identity provider can change without re-keying.
+export const roleGrants = sqliteTable("role_grants", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id),
+  role: text("role").$type<AdminRole>().notNull(),
+  grantedBy: text("granted_by").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
 
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),

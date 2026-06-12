@@ -7,10 +7,17 @@ import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import { adminRoutes } from "./admin/routes";
+import { createAuth } from "./auth/auth";
+import { isDevPersonaAuthEnabled } from "./auth/devAuth";
 import { getEnvironmentConfig } from "./configCache";
 
 type Bindings = {
   DB: D1Database;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+  DEV_AUTH_ENABLED?: string;
+  BOOTSTRAP_ADMIN_EMAIL?: string;
 };
 
 const evalRequestSchema = z.object({
@@ -54,6 +61,16 @@ app.use(
     exposeHeaders: ["ETag", "Server-Timing"],
   }),
 );
+
+// better-auth owns /api/auth/* (session lookup, sign-out, future providers).
+app.on(["GET", "POST"], "/api/auth/*", (c) => {
+  const auth = createAuth(c.env, {
+    devPersonasAllowed: isDevPersonaAuthEnabled(c.env, c.req.url),
+  });
+  return auth.handler(c.req.raw);
+});
+
+app.route("/admin", adminRoutes);
 
 app.post("/v1/eval", async (c) => {
   const requestStart = performance.now();

@@ -8,15 +8,18 @@
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",
     "cf-typegen": "wrangler types",
-    "typecheck": "wrangler types && tsc --noEmit"
+    "typecheck": "wrangler types && tsc --noEmit",
+    "db:generate-auth": "better-auth generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes"
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",
+    "better-auth": "^1.6.17",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.25",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.21",
     "@cloudflare/vitest-pool-workers": "^0.16.13",
     "@cloudflare/workers-types": "^4.20260609.1",
     "drizzle-kit": "^0.31.10",

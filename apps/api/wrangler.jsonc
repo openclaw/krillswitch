@@ -3,6 +3,18 @@
   "name": "krillswitch-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-01",
+  // better-auth imports node:crypto / node:async_hooks.
+  "compatibility_flags": ["nodejs_compat"],
+  // 8787 collides with another service on the primary dev machine.
+  "dev": {
+    "port": 8799
+  },
+  "assets": {
+    "directory": "../admin/dist",
+    "not_found_handling": "single-page-application",
+    // Assets win by default; these namespaces must reach the Worker.
+    "run_worker_first": ["/v1/*", "/api/*", "/admin/*"]
+  },
   "d1_databases": [
     {
       "binding": "DB",

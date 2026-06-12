@@ -15,8 +15,13 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: "./wrangler.jsonc" },
         miniflare: {
-          // Test-only binding so the setup file can apply migrations.
-          bindings: { TEST_MIGRATIONS: migrations },
+          bindings: {
+            // Test-only binding so the setup file can apply migrations.
+            TEST_MIGRATIONS: migrations,
+            BETTER_AUTH_SECRET: "krillswitch-test-secret",
+            BETTER_AUTH_URL: "http://localhost",
+            DEV_AUTH_ENABLED: "1",
+          },
         },
       }),
     ],

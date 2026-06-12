@@ -13,13 +13,15 @@ bun install
 bun dev
 ```
 
-`bun dev` applies D1 migrations, seeds a `clawhub` project with a boolean
-`souls` flag, and starts the worker on http://localhost:8787.
+`bun dev` builds the admin dashboard, applies D1 migrations, seeds a
+`clawhub` project with a boolean `souls` flag, and starts the worker on
+http://localhost:8799 (the dashboard is served at that root; sign in with a
+dev persona — admin, editor, viewer, or nogrant).
 
 Evaluate the seeded flag:
 
 ```sh
-curl -s -X POST http://localhost:8787/v1/eval \
+curl -s -X POST http://localhost:8799/v1/eval \
   -H 'Authorization: Bearer ks_clawhub_development_local' \
   -H 'Content-Type: application/json' \
   -d '{"context":{"key":"some-user"}}'
@@ -39,7 +41,10 @@ bunx wrangler d1 execute krillswitch --local \
 
 ## Workspace
 
-- `apps/api` — the Worker: `POST /v1/eval`, D1 schema, seed fixture.
+- `apps/api` — the Worker: `POST /v1/eval`, session-guarded `/admin/*` API,
+  better-auth under `/api/auth/*`, D1 schema, seed fixture.
+- `apps/admin` — the admin dashboard SPA (React + Vite), served from Worker
+  assets.
 - `packages/core` — `@openclaw/krillswitch-core`: flag/context types and the
   pure `evaluateFlag` function (no I/O).
 
@@ -69,7 +74,7 @@ stay comparable. Keep load modest against deployed targets.
 ## Commands
 
 ```sh
-bun test           # core unit tests + worker integration tests
+bun run test       # core unit tests + worker integration tests (vitest)
 bun run typecheck  # tsc across workspaces (generates worker types first)
 bun run lint       # biome check
 bun run lint:fix   # biome check --write
