@@ -40,6 +40,18 @@ export async function loadProjectDetail(
   return { project, environments: environmentRows };
 }
 
+export async function resolveProjectId(
+  db: DrizzleD1Database,
+  projectKey: string,
+): Promise<string | null> {
+  const row = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.key, projectKey))
+    .get();
+  return row?.id ?? null;
+}
+
 export async function resolveEnvironment(
   db: DrizzleD1Database,
   projectKey: string,

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Navigate, NavLink, useParams } from "react-router";
+import { Link, Navigate, NavLink, useParams } from "react-router";
 import { api, type FlagListEntry, type Me } from "../api";
 
 export function ProjectPage({ me }: { me: Me }) {
@@ -35,22 +35,35 @@ export function ProjectPage({ me }: { me: Me }) {
     <section>
       <header className="page-header">
         <h1>{project.name}</h1>
-        <nav className="env-switcher" aria-label="Environment">
-          {environments.map((environment) => (
-            <NavLink
-              key={environment.id}
-              to={`/projects/${projectKey}/${environment.key}`}
-              className="env-tab"
+        <div className="header-actions">
+          <nav className="env-switcher" aria-label="Environment">
+            {environments.map((environment) => (
+              <NavLink
+                key={environment.id}
+                to={`/projects/${projectKey}/${environment.key}`}
+                className="env-tab"
+              >
+                {environment.name}
+              </NavLink>
+            ))}
+          </nav>
+          {(me.role === "editor" || me.role === "admin") && (
+            <Link
+              className="btn btn-primary btn-link"
+              to={`/projects/${projectKey}/${environmentKey}/flags/new`}
             >
-              {environment.name}
-            </NavLink>
-          ))}
-        </nav>
+              New flag
+            </Link>
+          )}
+        </div>
       </header>
       <FlagTable
         projectKey={projectKey}
         environmentKey={environmentKey}
         canEdit={me.role === "editor" || me.role === "admin"}
+        detailPath={(flagKey) =>
+          `/projects/${projectKey}/${environmentKey}/flags/${flagKey}`
+        }
       />
     </section>
   );
@@ -60,10 +73,12 @@ function FlagTable({
   projectKey,
   environmentKey,
   canEdit,
+  detailPath,
 }: {
   projectKey: string;
   environmentKey: string;
   canEdit: boolean;
+  detailPath: (flagKey: string) => string;
 }) {
   const queryClient = useQueryClient();
   const flags = useQuery({
@@ -115,6 +130,7 @@ function FlagTable({
               key={flag.id}
               flag={flag}
               canEdit={canEdit}
+              detailPath={detailPath(flag.key)}
               pending={
                 toggle.isPending && toggle.variables?.flagKey === flag.key
               }
@@ -132,18 +148,22 @@ function FlagTable({
 function FlagRow({
   flag,
   canEdit,
+  detailPath,
   pending,
   onToggle,
 }: {
   flag: FlagListEntry;
   canEdit: boolean;
+  detailPath: string;
   pending: boolean;
   onToggle: (enabled: boolean) => void;
 }) {
   return (
     <tr>
       <td>
-        <div className="flag-name">{flag.name}</div>
+        <Link className="table-link flag-name" to={detailPath}>
+          {flag.name}
+        </Link>
         {flag.description && (
           <div className="flag-description muted">{flag.description}</div>
         )}

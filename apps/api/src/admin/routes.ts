@@ -15,8 +15,20 @@ import {
   loadFlagList,
   loadProjectDetail,
   resolveEnvironment,
+  resolveProjectId,
   setFlagEnabled,
 } from "./adminStore";
+import {
+  createFlag,
+  deleteFlag,
+  loadFlagDetail,
+  updateFlagDetail,
+} from "./flagDetail";
+import {
+  flagCreateSchema,
+  flagDetailUpdateSchema,
+  semanticError,
+} from "./flagDetailSchema";
 
 type AdminContext = {
   Bindings: AuthBindings;
@@ -170,6 +182,153 @@ adminRoutes.get(
     return c.json({ flags: await loadFlagList(db, environment.environmentId) });
   },
 );
+
+adminRoutes.get(
+  "/projects/:projectKey/environments/:environmentKey/flags/:flagKey",
+  async (c) => {
+    const db = drizzle(c.env.DB);
+    const environment = await resolveEnvironment(
+      db,
+      c.req.param("projectKey"),
+      c.req.param("environmentKey"),
+    );
+    if (!environment) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const detail = await loadFlagDetail(db, {
+      projectId: environment.projectId,
+      environmentId: environment.environmentId,
+      flagKey: c.req.param("flagKey"),
+    });
+    if (!detail) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    return c.json(detail);
+  },
+);
+
+adminRoutes.put(
+  "/projects/:projectKey/environments/:environmentKey/flags/:flagKey",
+  async (c) => {
+    const role = c.get("role");
+    if (role === null || !canEditFlags(role)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    const parsed = flagDetailUpdateSchema.safeParse(
+      await c.req.json().catch(() => null),
+    );
+    if (!parsed.success) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    const db = drizzle(c.env.DB);
+    const environment = await resolveEnvironment(
+      db,
+      c.req.param("projectKey"),
+      c.req.param("environmentKey"),
+    );
+    if (!environment) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const flagKey = c.req.param("flagKey");
+    const flag = await loadFlagDetail(db, {
+      projectId: environment.projectId,
+      environmentId: environment.environmentId,
+      flagKey,
+    });
+    if (!flag) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const inconsistency = semanticError(flag.flag.kind, parsed.data);
+    if (inconsistency) {
+      return c.json({ error: "invalid_request", message: inconsistency }, 400);
+    }
+    const outcome = await updateFlagDetail(db, {
+      projectId: environment.projectId,
+      environmentId: environment.environmentId,
+      flagKey,
+      draft: parsed.data,
+    });
+    switch (outcome.kind) {
+      case "not_found":
+        return c.json({ error: "not_found" }, 404);
+      case "invalid":
+        return c.json(
+          { error: "invalid_request", message: outcome.message },
+          400,
+        );
+      case "variation_in_use":
+        return c.json(
+          { error: "variation_in_use", message: outcome.message },
+          400,
+        );
+      case "ok":
+        clearConfigCache();
+        return c.json(outcome.detail);
+    }
+  },
+);
+
+adminRoutes.post("/projects/:projectKey/flags", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = flagCreateSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const inconsistency = semanticError(parsed.data.kind, {
+    variations: parsed.data.variations,
+    offVariationIndex: parsed.data.offVariationIndex,
+    defaultVariationIndex: parsed.data.defaultVariationIndex,
+    targets: [],
+    rules: [],
+    rollout: null,
+  });
+  if (inconsistency) {
+    return c.json({ error: "invalid_request", message: inconsistency }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const outcome = await createFlag(db, { projectId, draft: parsed.data });
+  switch (outcome.kind) {
+    case "duplicate_key":
+      return c.json({ error: "duplicate_key" }, 409);
+    case "invalid":
+      return c.json(
+        { error: "invalid_request", message: outcome.message },
+        400,
+      );
+    case "ok":
+      clearConfigCache();
+      return c.json({ created: parsed.data.key }, 201);
+  }
+});
+
+adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const deleted = await deleteFlag(db, {
+    projectId,
+    flagKey: c.req.param("flagKey"),
+  });
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  clearConfigCache();
+  return c.json({ deleted: c.req.param("flagKey") });
+});
 
 const toggleFlagSchema = z.object({ enabled: z.boolean() });
 

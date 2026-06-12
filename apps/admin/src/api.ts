@@ -20,21 +20,87 @@ export type ProjectDetail = {
   environments: Environment[];
 };
 
+export type FlagKind = "boolean" | "string" | "number" | "json";
+
+export type FlagValue =
+  | string
+  | number
+  | boolean
+  | null
+  | FlagValue[]
+  | { [key: string]: FlagValue };
+
 export type FlagListEntry = {
   id: string;
   key: string;
   name: string;
-  kind: string;
+  kind: FlagKind;
   description: string | null;
   enabled: boolean;
 };
 
+export type FlagDetail = {
+  flag: {
+    id: string;
+    key: string;
+    name: string;
+    kind: FlagKind;
+    description: string | null;
+  };
+  variations: {
+    id: string;
+    value: FlagValue;
+    name: string | null;
+    sortOrder: number;
+  }[];
+  config: {
+    enabled: boolean;
+    offVariationId: string;
+    defaultVariationId: string;
+    targets: { variationId: string; contextKeys: string[] }[];
+    rules: {
+      variationId: string;
+      attribute: string;
+      values: (string | number | boolean)[];
+    }[];
+    rollout: { variations: { variationId: string; weight: number }[] } | null;
+  };
+};
+
+export type FlagCreateBody = {
+  key: string;
+  name: string;
+  kind: FlagKind;
+  description?: string;
+  variations: { value: FlagValue; name?: string | null }[];
+  defaultVariationIndex: number;
+  offVariationIndex: number;
+  enabled: boolean;
+};
+
+export type FlagUpdateBody = {
+  enabled: boolean;
+  variations: { id?: string; value: FlagValue; name: string | null }[];
+  offVariationIndex: number;
+  defaultVariationIndex: number;
+  targets: { variationIndex: number; contextKeys: string[] }[];
+  rules: {
+    variationIndex: number;
+    attribute: string;
+    values: (string | number | boolean)[];
+  }[];
+  rollout: { variations: { variationIndex: number; weight: number }[] } | null;
+};
+
 export class ApiError extends Error {
   readonly status: number;
+  /** Human-readable detail from the API's error body, when present. */
+  readonly serverMessage: string | null;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, serverMessage: string | null) {
     super(message);
     this.status = status;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -45,7 +111,25 @@ function flagsPath(projectKey: string, environmentKey: string): string {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, init);
   if (!response.ok) {
-    throw new ApiError(response.status, `${path} -> ${response.status}`);
+    let serverMessage: string | null = null;
+    try {
+      const body: unknown = await response.json();
+      if (
+        typeof body === "object" &&
+        body !== null &&
+        "message" in body &&
+        typeof body.message === "string"
+      ) {
+        serverMessage = body.message;
+      }
+    } catch {
+      // Non-JSON error body; status alone will have to do.
+    }
+    throw new ApiError(
+      response.status,
+      `${path} -> ${response.status}`,
+      serverMessage,
+    );
   }
   return response.json() as Promise<T>;
 }
@@ -82,5 +166,37 @@ export const api = {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ enabled }),
       },
+    ),
+  flagDetail: (projectKey: string, environmentKey: string, flagKey: string) =>
+    request<FlagDetail>(
+      `${flagsPath(projectKey, environmentKey)}/${encodeURIComponent(flagKey)}`,
+    ),
+  updateFlag: (
+    projectKey: string,
+    environmentKey: string,
+    flagKey: string,
+    body: FlagUpdateBody,
+  ) =>
+    request<FlagDetail>(
+      `${flagsPath(projectKey, environmentKey)}/${encodeURIComponent(flagKey)}`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  createFlag: (projectKey: string, body: FlagCreateBody) =>
+    request<{ created: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  deleteFlag: (projectKey: string, flagKey: string) =>
+    request<{ deleted: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
+      { method: "DELETE" },
     ),
 };
