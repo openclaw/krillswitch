@@ -11,3 +11,7 @@ BETTER_AUTH_URL=http://localhost:8799
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 # BOOTSTRAP_ADMIN_EMAIL=
+
+# Members of this GitHub org (with no explicit grant) get read-only viewer
+# access. Checked once per sign-in via the user's own token (read:org scope).
+GITHUB_VIEWER_ORG=openclaw

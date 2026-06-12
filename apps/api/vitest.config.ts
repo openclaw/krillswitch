@@ -21,6 +21,12 @@ export default defineConfig(async () => {
             BETTER_AUTH_SECRET: "krillswitch-test-secret",
             BETTER_AUTH_URL: "http://localhost",
             DEV_AUTH_ENABLED: "1",
+            // Pin auth-provider env: the pool also loads the developer's
+            // .dev.vars, and real GitHub credentials there must not flip
+            // test behavior.
+            GITHUB_CLIENT_ID: "",
+            GITHUB_CLIENT_SECRET: "",
+            GITHUB_VIEWER_ORG: "",
           },
         },
       }),

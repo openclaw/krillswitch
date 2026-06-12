@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `org_viewer` integer DEFAULT false;
