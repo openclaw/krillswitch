@@ -18,6 +18,7 @@ import {
   resolveProjectId,
   setFlagEnabled,
 } from "./adminStore";
+import { listChangeLog } from "./changeLog";
 import {
   createFlag,
   deleteFlag,
@@ -161,6 +162,16 @@ adminRoutes.get("/projects", async (c) => {
   return c.json({ projects: rows });
 });
 
+// Append-only audit trail: read-only here by design; there are no update
+// or delete routes for it anywhere.
+adminRoutes.get("/changelog", async (c) => {
+  const entries = await listChangeLog(drizzle(c.env.DB), {
+    flagKey: c.req.query("flagKey")?.trim() || undefined,
+    projectKey: c.req.query("projectKey")?.trim() || undefined,
+  });
+  return c.json({ entries });
+});
+
 // --- Admin-only management: grants, projects, environments, keys. ---
 
 const keySchema = z
@@ -194,10 +205,11 @@ adminRoutes.put("/users/:userId/role", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid_request" }, 400);
   }
+  const actor = c.get("user");
   const outcome = await setUserRole(drizzle(c.env.DB), {
     userId: c.req.param("userId"),
     role: parsed.data.role,
-    grantedBy: c.get("user").id,
+    actor: { id: actor.id, name: actor.name },
   });
   switch (outcome) {
     case "not_found":
@@ -224,7 +236,11 @@ adminRoutes.post("/projects", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid_request" }, 400);
   }
-  const outcome = await createProject(drizzle(c.env.DB), parsed.data);
+  const actor = c.get("user");
+  const outcome = await createProject(drizzle(c.env.DB), {
+    ...parsed.data,
+    actor: { id: actor.id, name: actor.name },
+  });
   if (outcome === "duplicate_key") {
     return c.json({ error: "duplicate_key" }, 409);
   }
@@ -246,11 +262,13 @@ adminRoutes.post("/projects/:projectKey/environments", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
+  const actor = c.get("user");
   const outcome = await createEnvironment(db, {
     projectId,
     projectKey,
     key: parsed.data.key,
     name: parsed.data.name,
+    actor: { id: actor.id, name: actor.name },
   });
   if (outcome.kind === "duplicate_key") {
     return c.json({ error: "duplicate_key" }, 409);
@@ -281,10 +299,12 @@ adminRoutes.post(
     if (!projectId) {
       return c.json({ error: "not_found" }, 404);
     }
+    const actor = c.get("user");
     const outcome = await rotateKey(db, {
       projectId,
       projectKey,
       environmentKey: c.req.param("environmentKey"),
+      actor: { id: actor.id, name: actor.name },
     });
     if (outcome.kind === "not_found") {
       return c.json({ error: "not_found" }, 404);
@@ -380,11 +400,15 @@ adminRoutes.put(
     if (inconsistency) {
       return c.json({ error: "invalid_request", message: inconsistency }, 400);
     }
+    const actor = c.get("user");
     const outcome = await updateFlagDetail(db, {
       projectId: environment.projectId,
       environmentId: environment.environmentId,
       flagKey,
       draft: parsed.data,
+      actor: { id: actor.id, name: actor.name },
+      projectKey: c.req.param("projectKey"),
+      environmentKey: c.req.param("environmentKey"),
     });
     switch (outcome.kind) {
       case "not_found":
@@ -433,7 +457,13 @@ adminRoutes.post("/projects/:projectKey/flags", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
-  const outcome = await createFlag(db, { projectId, draft: parsed.data });
+  const actor = c.get("user");
+  const outcome = await createFlag(db, {
+    projectId,
+    draft: parsed.data,
+    actor: { id: actor.id, name: actor.name },
+    projectKey: c.req.param("projectKey"),
+  });
   switch (outcome.kind) {
     case "duplicate_key":
       return c.json({ error: "duplicate_key" }, 409);
@@ -457,9 +487,12 @@ adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
+  const actor = c.get("user");
   const deleted = await deleteFlag(db, {
     projectId,
     flagKey: c.req.param("flagKey"),
+    actor: { id: actor.id, name: actor.name },
+    projectKey: c.req.param("projectKey"),
   });
   if (!deleted) {
     return c.json({ error: "not_found" }, 404);
@@ -492,10 +525,14 @@ adminRoutes.patch(
     if (!environment) {
       return c.json({ error: "not_found" }, 404);
     }
+    const actor = c.get("user");
     const flag = await setFlagEnabled(db, {
       environmentId: environment.environmentId,
       flagKey: c.req.param("flagKey"),
       enabled: parsed.data.enabled,
+      actor: { id: actor.id, name: actor.name },
+      projectKey: c.req.param("projectKey"),
+      environmentKey: c.req.param("environmentKey"),
     });
     if (!flag) {
       return c.json({ error: "not_found" }, 404);

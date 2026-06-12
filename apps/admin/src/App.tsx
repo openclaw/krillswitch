@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router";
 import { ApiError, api, type Me } from "./api";
 import { AccessPage } from "./pages/AccessPage";
+import { ChangeLogPage } from "./pages/ChangeLogPage";
 import { FlagDetailPage } from "./pages/flagDetail/FlagDetailPage";
 import { NewFlagPage } from "./pages/flagDetail/NewFlagPage";
 import { NoAccess } from "./pages/NoAccess";
@@ -36,6 +37,7 @@ export function App() {
     <Shell me={me.data}>
       <Routes>
         <Route path="/" element={<ProjectsPage me={me.data} />} />
+        <Route path="/changelog" element={<ChangeLogPage />} />
         <Route
           path="/projects/:projectKey"
           element={<ProjectPage me={me.data} />}

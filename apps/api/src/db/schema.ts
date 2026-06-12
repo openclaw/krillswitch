@@ -1,11 +1,13 @@
 import type {
   FlagKind,
   FlagValue,
+  JsonValue,
   Rollout,
   TargetingRule,
   UserTarget,
 } from "@openclaw/krillswitch-core";
 import {
+  index,
   integer,
   sqliteTable,
   text,
@@ -27,6 +29,39 @@ export const roleGrants = sqliteTable("role_grants", {
   grantedBy: text("granted_by").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+export type ChangeAction =
+  | "flag.toggle"
+  | "flag.update"
+  | "flag.create"
+  | "flag.delete"
+  | "role.set"
+  | "project.create"
+  | "environment.create"
+  | "key.rotate";
+
+// Append-only audit trail; rows are written in the same D1 batch as the
+// mutation they describe and are never updated or deleted (retention is an
+// open PRD question — keep forever for now).
+export const changeLog = sqliteTable(
+  "change_log",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    action: text("action").$type<ChangeAction>().notNull(),
+    projectKey: text("project_key"),
+    flagKey: text("flag_key"),
+    target: text("target").notNull(),
+    before: text("before", { mode: "json" }).$type<JsonValue>(),
+    after: text("after", { mode: "json" }).$type<JsonValue>(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("change_log_created").on(table.createdAt),
+    index("change_log_flag").on(table.flagKey),
+  ],
+);
 
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),

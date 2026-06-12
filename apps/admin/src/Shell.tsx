@@ -29,6 +29,9 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           <NavLink to="/" end className="rail-link">
             Projects
           </NavLink>
+          <NavLink to="/changelog" className="rail-link">
+            Change log
+          </NavLink>
           {me.role === "admin" && (
             <>
               <div className="rail-group">Administration</div>

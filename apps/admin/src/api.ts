@@ -20,6 +20,20 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+export type ChangeLogEntry = {
+  id: string;
+  actorUserId: string;
+  actorName: string;
+  action: string;
+  projectKey: string | null;
+  flagKey: string | null;
+  target: string;
+  before: unknown;
+  after: unknown;
+  /** ISO timestamp (Date serialized over JSON). */
+  createdAt: string;
+};
+
 export type EnvironmentKeyEntry = {
   environmentId: string;
   environmentKey: string;
@@ -213,6 +227,15 @@ export const api = {
       `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
       { method: "DELETE" },
     ),
+  changeLog: (filter: { flagKey?: string; projectKey?: string }) => {
+    const params = new URLSearchParams();
+    if (filter.flagKey) params.set("flagKey", filter.flagKey);
+    if (filter.projectKey) params.set("projectKey", filter.projectKey);
+    const query = params.toString();
+    return request<{ entries: ChangeLogEntry[] }>(
+      `/admin/changelog${query ? `?${query}` : ""}`,
+    );
+  },
   users: () => request<{ users: UserWithRole[] }>("/admin/users"),
   setUserRole: (userId: string, role: AdminRole | null) =>
     request<{ userId: string; role: AdminRole | null }>(

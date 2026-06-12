@@ -15,6 +15,13 @@
       "when": 1781255995512,
       "tag": "0001_worthless_maelstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781259179143,
+      "tag": "0002_flat_quasar",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { environments, flagEnvironments, flags, projects } from "../db/schema";
+import { type Actor, changeLogInsert } from "./changeLog";
 
 export type ProjectDetail = {
   project: { id: string; key: string; name: string };
@@ -90,11 +91,19 @@ export async function loadFlagList(
 
 export async function setFlagEnabled(
   db: DrizzleD1Database,
-  options: { environmentId: string; flagKey: string; enabled: boolean },
+  options: {
+    environmentId: string;
+    flagKey: string;
+    enabled: boolean;
+    actor: Actor;
+    projectKey: string;
+    environmentKey: string;
+  },
 ): Promise<FlagListEntry | null> {
   const row = await db
     .select({
       flagEnvironmentId: flagEnvironments.id,
+      enabled: flagEnvironments.enabled,
       id: flags.id,
       key: flags.key,
       name: flags.name,
@@ -113,10 +122,21 @@ export async function setFlagEnabled(
   if (!row) {
     return null;
   }
-  await db
-    .update(flagEnvironments)
-    .set({ enabled: options.enabled })
-    .where(eq(flagEnvironments.id, row.flagEnvironmentId));
-  const { flagEnvironmentId: _omitted, ...flag } = row;
+  await db.batch([
+    db
+      .update(flagEnvironments)
+      .set({ enabled: options.enabled })
+      .where(eq(flagEnvironments.id, row.flagEnvironmentId)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "flag.toggle",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.environmentKey}/${options.flagKey}`,
+      before: { enabled: row.enabled },
+      after: { enabled: options.enabled },
+    }),
+  ]);
+  const { flagEnvironmentId: _omitted, enabled: _was, ...flag } = row;
   return { ...flag, enabled: options.enabled };
 }

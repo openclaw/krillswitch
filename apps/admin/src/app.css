@@ -667,6 +667,38 @@ h1 {
   width: 140px;
 }
 
+/* --- change log --- */
+
+.td-when {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.td-change {
+  max-width: 480px;
+}
+
+.td-change code {
+  display: inline-block;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.change-before {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--danger), transparent 50%);
+}
+
+.change-after {
+  color: var(--ink);
+}
+
+.change-sep {
+  margin: 0 6px;
+  font-size: 12px;
+}
+
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {

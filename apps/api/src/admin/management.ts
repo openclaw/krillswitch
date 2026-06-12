@@ -11,6 +11,7 @@ import {
   roleGrants,
   variations,
 } from "../db/schema";
+import { type Actor, changeLogInsert } from "./changeLog";
 
 export type UserWithRole = {
   id: string;
@@ -39,10 +40,10 @@ export type SetRoleOutcome = "ok" | "not_found" | "last_admin";
 
 export async function setUserRole(
   db: DrizzleD1Database,
-  options: { userId: string; role: AdminRole | null; grantedBy: string },
+  options: { userId: string; role: AdminRole | null; actor: Actor },
 ): Promise<SetRoleOutcome> {
   const target = await db
-    .select({ id: user.id })
+    .select({ id: user.id, name: user.name, email: user.email })
     .from(user)
     .where(eq(user.id, options.userId))
     .get();
@@ -67,26 +68,43 @@ export async function setUserRole(
     }
   }
 
+  const logEntry = changeLogInsert(db, {
+    actor: options.actor,
+    action: "role.set",
+    target: target.email,
+    before: { role: existing?.role ?? null },
+    after: { role: options.role },
+  });
+
   if (options.role === null) {
     if (existing) {
-      await db.delete(roleGrants).where(eq(roleGrants.id, existing.id));
+      await db.batch([
+        db.delete(roleGrants).where(eq(roleGrants.id, existing.id)),
+        logEntry,
+      ]);
     }
     return "ok";
   }
   if (existing) {
-    await db
-      .update(roleGrants)
-      .set({ role: options.role, grantedBy: options.grantedBy })
-      .where(eq(roleGrants.id, existing.id));
+    await db.batch([
+      db
+        .update(roleGrants)
+        .set({ role: options.role, grantedBy: options.actor.id })
+        .where(eq(roleGrants.id, existing.id)),
+      logEntry,
+    ]);
     return "ok";
   }
-  await db.insert(roleGrants).values({
-    id: `grant_${crypto.randomUUID()}`,
-    userId: options.userId,
-    role: options.role,
-    grantedBy: options.grantedBy,
-    createdAt: new Date(),
-  });
+  await db.batch([
+    db.insert(roleGrants).values({
+      id: `grant_${crypto.randomUUID()}`,
+      userId: options.userId,
+      role: options.role,
+      grantedBy: options.actor.id,
+      createdAt: new Date(),
+    }),
+    logEntry,
+  ]);
   return "ok";
 }
 
@@ -101,7 +119,7 @@ function generateEvalKey(projectKey: string, environmentKey: string): string {
 
 export async function createProject(
   db: DrizzleD1Database,
-  options: { key: string; name: string },
+  options: { key: string; name: string; actor: Actor },
 ): Promise<"ok" | "duplicate_key"> {
   const existing = await db
     .select({ id: projects.id })
@@ -111,11 +129,20 @@ export async function createProject(
   if (existing) {
     return "duplicate_key";
   }
-  await db.insert(projects).values({
-    id: `proj_${crypto.randomUUID()}`,
-    key: options.key,
-    name: options.name,
-  });
+  await db.batch([
+    db.insert(projects).values({
+      id: `proj_${crypto.randomUUID()}`,
+      key: options.key,
+      name: options.name,
+    }),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "project.create",
+      projectKey: options.key,
+      target: options.key,
+      after: { key: options.key, name: options.name },
+    }),
+  ]);
   return "ok";
 }
 
@@ -126,6 +153,7 @@ export async function createEnvironment(
     projectKey: string;
     key: string;
     name: string;
+    actor: Actor;
   },
 ): Promise<{ kind: "ok"; evalKey: string } | { kind: "duplicate_key" }> {
   const existing = await db
@@ -189,6 +217,13 @@ export async function createEnvironment(
       key: evalKey,
     }),
     ...backfill,
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "environment.create",
+      projectKey: options.projectKey,
+      target: `${options.projectKey}/${options.key}`,
+      after: { key: options.key, name: options.name },
+    }),
   ]);
   return { kind: "ok", evalKey };
 }
@@ -229,11 +264,13 @@ export async function rotateKey(
     projectId: string;
     projectKey: string;
     environmentKey: string;
+    actor: Actor;
   },
 ): Promise<{ kind: "ok"; evalKey: string } | { kind: "not_found" }> {
   const environment = await db
-    .select({ id: environments.id })
+    .select({ id: environments.id, oldKey: evalKeys.key })
     .from(environments)
+    .innerJoin(evalKeys, eq(evalKeys.environmentId, environments.id))
     .where(
       and(
         eq(environments.projectId, options.projectId),
@@ -245,9 +282,19 @@ export async function rotateKey(
     return { kind: "not_found" };
   }
   const evalKey = generateEvalKey(options.projectKey, options.environmentKey);
-  await db
-    .update(evalKeys)
-    .set({ key: evalKey })
-    .where(eq(evalKeys.environmentId, environment.id));
+  await db.batch([
+    db
+      .update(evalKeys)
+      .set({ key: evalKey })
+      .where(eq(evalKeys.environmentId, environment.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "key.rotate",
+      projectKey: options.projectKey,
+      target: `${options.projectKey}/${options.environmentKey}`,
+      before: { evalKey: environment.oldKey },
+      after: { evalKey },
+    }),
+  ]);
   return { kind: "ok", evalKey };
 }

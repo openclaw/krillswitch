@@ -1,6 +1,7 @@
 import type {
   FlagKind,
   FlagValue,
+  JsonValue,
   Rollout,
   TargetingRule,
   UserTarget,
@@ -13,7 +14,17 @@ import {
   flags,
   variations,
 } from "../db/schema";
+import {
+  type Actor,
+  changedFields,
+  changeLogInsert,
+  snapshot,
+} from "./changeLog";
 import type { FlagCreate, FlagDetailUpdate } from "./flagDetailSchema";
+
+function isRecord(value: JsonValue): value is Record<string, JsonValue> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export type FlagDetail = {
   flag: {
@@ -125,11 +136,18 @@ export async function updateFlagDetail(
     environmentId: string;
     flagKey: string;
     draft: FlagDetailUpdate;
+    actor: Actor;
+    projectKey: string;
+    environmentKey: string;
   },
 ): Promise<UpdateOutcome> {
   const { draft } = options;
   const flag = await loadFlagRow(db, options.projectId, options.flagKey);
   if (!flag) {
+    return { kind: "not_found" };
+  }
+  const beforeDetail = await loadFlagDetail(db, options);
+  if (!beforeDetail) {
     return { kind: "not_found" };
   }
   const existing = await db
@@ -227,37 +245,69 @@ export async function updateFlagDetail(
     return id;
   };
 
+  const newConfig = {
+    enabled: draft.enabled,
+    offVariationId: indexToId(draft.offVariationIndex),
+    defaultVariationId: indexToId(draft.defaultVariationIndex),
+    targets: draft.targets.map((target) => ({
+      variationId: indexToId(target.variationIndex),
+      contextKeys: target.contextKeys,
+    })),
+    rules: draft.rules.map((rule) => ({
+      variationId: indexToId(rule.variationIndex),
+      attribute: rule.attribute,
+      values: rule.values,
+    })),
+    rollout: draft.rollout
+      ? {
+          variations: draft.rollout.variations.map((rolloutVariation) => ({
+            variationId: indexToId(rolloutVariation.variationIndex),
+            weight: rolloutVariation.weight,
+          })),
+        }
+      : null,
+  };
+
   statements.push(
     db
       .update(flagEnvironments)
-      .set({
-        enabled: draft.enabled,
-        offVariationId: indexToId(draft.offVariationIndex),
-        defaultVariationId: indexToId(draft.defaultVariationIndex),
-        targets: draft.targets.map((target) => ({
-          variationId: indexToId(target.variationIndex),
-          contextKeys: target.contextKeys,
-        })),
-        rules: draft.rules.map((rule) => ({
-          variationId: indexToId(rule.variationIndex),
-          attribute: rule.attribute,
-          values: rule.values,
-        })),
-        rollout: draft.rollout
-          ? {
-              variations: draft.rollout.variations.map((rolloutVariation) => ({
-                variationId: indexToId(rolloutVariation.variationIndex),
-                weight: rolloutVariation.weight,
-              })),
-            }
-          : null,
-      })
+      .set(newConfig)
       .where(
         and(
           eq(flagEnvironments.flagId, flag.id),
           eq(flagEnvironments.environmentId, options.environmentId),
         ),
       ),
+  );
+
+  const beforeSnapshot = snapshot({
+    ...beforeDetail.config,
+    variations: beforeDetail.variations.map((variation) => ({
+      value: variation.value,
+      name: variation.name,
+    })),
+  });
+  const afterSnapshot = snapshot({
+    ...newConfig,
+    variations: draft.variations.map((variation) => ({
+      value: variation.value,
+      name: variation.name ?? null,
+    })),
+  });
+  const diff = changedFields(
+    isRecord(beforeSnapshot) ? beforeSnapshot : {},
+    isRecord(afterSnapshot) ? afterSnapshot : {},
+  );
+  statements.push(
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "flag.update",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.environmentKey}/${options.flagKey}`,
+      before: diff.before,
+      after: diff.after,
+    }),
   );
 
   const [first, ...rest] = statements;
@@ -279,7 +329,12 @@ export type CreateOutcome =
 
 export async function createFlag(
   db: DrizzleD1Database,
-  options: { projectId: string; draft: FlagCreate },
+  options: {
+    projectId: string;
+    draft: FlagCreate;
+    actor: Actor;
+    projectKey: string;
+  },
 ): Promise<CreateOutcome> {
   const { draft } = options;
   const existing = await loadFlagRow(db, options.projectId, draft.key);
@@ -336,6 +391,20 @@ export async function createFlag(
         rollout: null,
       }),
     ),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "flag.create",
+      projectKey: options.projectKey,
+      flagKey: draft.key,
+      target: `${options.projectKey}/${draft.key}`,
+      after: snapshot({
+        key: draft.key,
+        name: draft.name,
+        kind: draft.kind,
+        enabled: draft.enabled,
+        variations: draft.variations,
+      }),
+    }),
   ] as const;
   await db.batch([statements[0], ...statements.slice(1)]);
   return { kind: "ok" };
@@ -343,7 +412,12 @@ export async function createFlag(
 
 export async function deleteFlag(
   db: DrizzleD1Database,
-  options: { projectId: string; flagKey: string },
+  options: {
+    projectId: string;
+    flagKey: string;
+    actor: Actor;
+    projectKey: string;
+  },
 ): Promise<boolean> {
   const flag = await loadFlagRow(db, options.projectId, options.flagKey);
   if (!flag) {
@@ -353,6 +427,18 @@ export async function deleteFlag(
     db.delete(flagEnvironments).where(eq(flagEnvironments.flagId, flag.id)),
     db.delete(variations).where(eq(variations.flagId, flag.id)),
     db.delete(flags).where(eq(flags.id, flag.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "flag.delete",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.flagKey}`,
+      before: snapshot({
+        key: flag.key,
+        name: flag.name,
+        kind: flag.kind,
+      }),
+    }),
   ]);
   return true;
 }
