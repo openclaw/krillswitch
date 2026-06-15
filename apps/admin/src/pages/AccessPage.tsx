@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type AdminRole, ApiError, api, type Me } from "../api";
+import { AccessTokensSection } from "../components/AccessTokensSection";
 
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: "none", label: "no access" },
@@ -98,6 +99,7 @@ export function AccessPage({ me }: { me: Me }) {
           </tbody>
         </table>
       )}
+      <AccessTokensSection />
     </section>
   );
 }

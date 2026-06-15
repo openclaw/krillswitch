@@ -13,6 +13,17 @@ export type DevPersonaOption = {
 
 export type Project = { id: string; key: string; name: string };
 
+export type TokenRole = "editor" | "viewer";
+
+export type AccessTokenEntry = {
+  id: string;
+  name: string;
+  role: TokenRole;
+  createdAt: number;
+  lastUsedAt: number | null;
+  revokedAt: number | null;
+};
+
 export type UserWithRole = {
   id: string;
   name: string;
@@ -278,6 +289,18 @@ export const api = {
   rotateKey: (projectKey: string, environmentKey: string) =>
     request<{ evalKey: string }>(
       `/admin/projects/${encodeURIComponent(projectKey)}/environments/${encodeURIComponent(environmentKey)}/keys/rotate`,
+      { method: "POST" },
+    ),
+  tokens: () => request<{ tokens: AccessTokenEntry[] }>("/admin/tokens"),
+  mintToken: (name: string, role: TokenRole) =>
+    request<{ id: string; token: string }>("/admin/tokens", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, role }),
+    }),
+  revokeToken: (id: string) =>
+    request<{ revoked: string }>(
+      `/admin/tokens/${encodeURIComponent(id)}/revoke`,
       { method: "POST" },
     ),
 };

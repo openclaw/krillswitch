@@ -666,6 +666,29 @@ h1 {
   flex-wrap: wrap;
 }
 
+.token-reveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in oklch, var(--ok), transparent 55%);
+  border-radius: 5px;
+  background: color-mix(in oklch, var(--ok), transparent 92%);
+}
+
+.token-plaintext {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  flex: 1 1 320px;
+}
+
+tr.is-revoked td {
+  opacity: 0.55;
+}
+
 .below-table {
   margin-top: 10px;
 }

@@ -5,7 +5,6 @@ import {
   type AuthBindings,
   createAuth,
   isGitHubAuthConfigured,
-  type SessionUser,
 } from "../auth/auth";
 import { isDevPersonaAuthEnabled } from "../auth/devAuth";
 import {
@@ -43,14 +42,38 @@ import {
   rotateKey,
   setUserRole,
 } from "./management";
+import {
+  authenticateToken,
+  listTokens,
+  mintToken,
+  revokeToken,
+} from "./tokens";
+
+// One identity shape for both session users and access tokens. Handlers read
+// `actor` for change-log attribution and /me; only the session path also has a
+// full SessionUser, which nothing past the middleware needs.
+type Actor = {
+  kind: "session" | "token";
+  id: string;
+  name: string;
+  email: string | null;
+};
 
 type AdminContext = {
   Bindings: AuthBindings;
   Variables: {
-    user: SessionUser;
+    actor: Actor;
     role: AdminRole | null;
   };
 };
+
+function bearerToken(authorization: string | undefined): string | undefined {
+  if (!authorization?.startsWith("Bearer ")) {
+    return undefined;
+  }
+  const token = authorization.slice("Bearer ".length).trim();
+  return token.length > 0 ? token : undefined;
+}
 
 const devLoginSchema = z.object({
   persona: z.enum(
@@ -130,9 +153,31 @@ adminRoutes.post("/dev-login", async (c) => {
   return c.json({ persona: persona.id });
 });
 
-// --- Session middleware: everything below requires a signed-in user. ---
+// --- Auth middleware: an access token OR a session establishes the actor. ---
 
 adminRoutes.use("*", async (c, next) => {
+  const db = drizzle(c.env.DB);
+
+  // Access-token path: bearer carrying the token prefix, parallel to sessions
+  // on the same routes. The token's role flows straight through, so admin-only
+  // routes still 403 (tokens are never admin).
+  const bearer = bearerToken(c.req.header("authorization"));
+  if (bearer) {
+    const tokenActor = await authenticateToken(db, bearer);
+    if (!tokenActor) {
+      return c.json({ error: "unauthenticated" }, 401);
+    }
+    c.set("actor", {
+      kind: "token",
+      id: `token:${tokenActor.id}`,
+      name: tokenActor.name,
+      email: null,
+    });
+    c.set("role", tokenActor.role);
+    await next();
+    return;
+  }
+
   const auth = createAuth(c.env, {
     devPersonasAllowed: isDevPersonaAuthEnabled(c.env, c.req.url),
   });
@@ -140,23 +185,25 @@ adminRoutes.use("*", async (c, next) => {
   if (!session) {
     return c.json({ error: "unauthenticated" }, 401);
   }
-  c.set("user", session.user);
+  c.set("actor", {
+    kind: "session",
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
   c.set(
     "role",
-    await resolveRole(
-      drizzle(c.env.DB),
-      session.user,
-      c.env.BOOTSTRAP_ADMIN_EMAIL,
-    ),
+    await resolveRole(db, session.user, c.env.BOOTSTRAP_ADMIN_EMAIL),
   );
   await next();
 });
 
-// Any signed-in user may ask who they are — the no-access screen needs it.
+// Any authenticated caller may ask who they are — the no-access screen and the
+// CLI both need it.
 adminRoutes.get("/me", (c) => {
-  const user = c.get("user");
+  const actor = c.get("actor");
   return c.json({
-    user: { id: user.id, name: user.name, email: user.email },
+    user: { id: actor.id, name: actor.name, email: actor.email },
     role: c.get("role"),
   });
 });
@@ -199,11 +246,50 @@ const createProjectSchema = z.object({
 const setRoleSchema = z.object({
   role: z.enum(["admin", "editor", "viewer"]).nullable(),
 });
+const mintTokenSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  // Tokens are editor/viewer only — admin is intentionally not accepted.
+  role: z.enum(["editor", "viewer"]),
+});
 
 // Explicit per-handler guard: route registration order doesn't matter.
 function forbidNonAdmin(c: Context<AdminContext>) {
   return c.get("role") === "admin" ? null : c.json({ error: "forbidden" }, 403);
 }
+
+adminRoutes.get("/tokens", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  return c.json({ tokens: await listTokens(drizzle(c.env.DB)) });
+});
+
+adminRoutes.post("/tokens", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const parsed = mintTokenSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const minted = await mintToken(drizzle(c.env.DB), {
+    name: parsed.data.name,
+    role: parsed.data.role,
+    createdBy: c.get("actor").id,
+  });
+  // Plaintext returned exactly once; only the hash is stored.
+  return c.json({ id: minted.id, token: minted.token }, 201);
+});
+
+adminRoutes.post("/tokens/:id/revoke", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const revoked = await revokeToken(drizzle(c.env.DB), c.req.param("id"));
+  if (!revoked) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ revoked: c.req.param("id") });
+});
 
 adminRoutes.get("/users", async (c) => {
   const forbidden = forbidNonAdmin(c);
@@ -218,7 +304,7 @@ adminRoutes.put("/users/:userId/role", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid_request" }, 400);
   }
-  const actor = c.get("user");
+  const actor = c.get("actor");
   const outcome = await setUserRole(drizzle(c.env.DB), {
     userId: c.req.param("userId"),
     role: parsed.data.role,
@@ -249,7 +335,7 @@ adminRoutes.post("/projects", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "invalid_request" }, 400);
   }
-  const actor = c.get("user");
+  const actor = c.get("actor");
   const outcome = await createProject(drizzle(c.env.DB), {
     ...parsed.data,
     actor: { id: actor.id, name: actor.name },
@@ -275,7 +361,7 @@ adminRoutes.post("/projects/:projectKey/environments", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
-  const actor = c.get("user");
+  const actor = c.get("actor");
   const outcome = await createEnvironment(db, {
     projectId,
     projectKey,
@@ -312,7 +398,7 @@ adminRoutes.post(
     if (!projectId) {
       return c.json({ error: "not_found" }, 404);
     }
-    const actor = c.get("user");
+    const actor = c.get("actor");
     const outcome = await rotateKey(db, {
       projectId,
       projectKey,
@@ -413,7 +499,7 @@ adminRoutes.put(
     if (inconsistency) {
       return c.json({ error: "invalid_request", message: inconsistency }, 400);
     }
-    const actor = c.get("user");
+    const actor = c.get("actor");
     const outcome = await updateFlagDetail(db, {
       projectId: environment.projectId,
       environmentId: environment.environmentId,
@@ -470,7 +556,7 @@ adminRoutes.post("/projects/:projectKey/flags", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
-  const actor = c.get("user");
+  const actor = c.get("actor");
   const outcome = await createFlag(db, {
     projectId,
     draft: parsed.data,
@@ -500,7 +586,7 @@ adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
   if (!projectId) {
     return c.json({ error: "not_found" }, 404);
   }
-  const actor = c.get("user");
+  const actor = c.get("actor");
   const deleted = await deleteFlag(db, {
     projectId,
     flagKey: c.req.param("flagKey"),
@@ -538,7 +624,7 @@ adminRoutes.patch(
     if (!environment) {
       return c.json({ error: "not_found" }, 404);
     }
-    const actor = c.get("user");
+    const actor = c.get("actor");
     const flag = await setFlagEnabled(db, {
       environmentId: environment.environmentId,
       flagKey: c.req.param("flagKey"),

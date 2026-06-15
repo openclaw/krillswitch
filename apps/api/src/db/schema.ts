@@ -30,6 +30,26 @@ export const roleGrants = sqliteTable("role_grants", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+// CLI/agent access tokens. Role is editor or viewer only — never admin, so a
+// leaked token can't manage grants/projects/keys. Only the SHA-256 hash is
+// stored; the plaintext is shown once at mint.
+export type TokenRole = Extract<AdminRole, "editor" | "viewer">;
+
+export const accessTokens = sqliteTable(
+  "access_tokens",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    role: text("role").$type<TokenRole>().notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdBy: text("created_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [index("access_tokens_hash").on(table.tokenHash)],
+);
+
 export type ChangeAction =
   | "flag.toggle"
   | "flag.update"
