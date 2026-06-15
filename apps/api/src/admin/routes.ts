@@ -1,3 +1,4 @@
+import { evaluateFlag, type FlagEvaluation } from "@openclaw/krillswitch-core";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -14,6 +15,7 @@ import {
 } from "../auth/personas";
 import { canEditFlags, resolveRole } from "../auth/roles";
 import { clearConfigCache } from "../configCache";
+import { loadFlagConfigs } from "../db/flagStore";
 import { type AdminRole, projects, roleGrants } from "../db/schema";
 import {
   loadFlagList,
@@ -423,6 +425,45 @@ adminRoutes.get("/projects/:projectKey", async (c) => {
   }
   return c.json(detail);
 });
+
+const evalContextSchema = z.object({
+  context: z.object({
+    key: z.string().min(1),
+    attributes: z
+      .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+      .optional(),
+  }),
+});
+
+// Operator eval: "what would this context resolve to here", authed with the
+// caller's admin token/session — not the public eval key. Reuses the same
+// pure evaluator as POST /v1/eval.
+adminRoutes.post(
+  "/projects/:projectKey/environments/:environmentKey/eval",
+  async (c) => {
+    const parsed = evalContextSchema.safeParse(
+      await c.req.json().catch(() => null),
+    );
+    if (!parsed.success) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    const db = drizzle(c.env.DB);
+    const environment = await resolveEnvironment(
+      db,
+      c.req.param("projectKey"),
+      c.req.param("environmentKey"),
+    );
+    if (!environment) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const configs = await loadFlagConfigs(db, environment.environmentId);
+    const flags: Record<string, FlagEvaluation> = {};
+    for (const flagConfig of configs) {
+      flags[flagConfig.key] = evaluateFlag(flagConfig, parsed.data.context);
+    }
+    return c.json({ flags });
+  },
+);
 
 adminRoutes.get(
   "/projects/:projectKey/environments/:environmentKey/flags",

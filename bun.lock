@@ -59,6 +59,21 @@
         "vite": "^8.0.16",
       },
     },
+    "packages/cli": {
+      "name": "@openclaw/krillswitch-cli",
+      "version": "0.0.1",
+      "bin": {
+        "krillswitch": "./src/index.ts",
+      },
+      "dependencies": {
+        "@openclaw/krillswitch-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^25.9.3",
+        "typescript": "~5.9.3",
+        "vitest": "^4.1.8",
+      },
+    },
     "packages/core": {
       "name": "@openclaw/krillswitch-core",
       "version": "0.0.1",
@@ -392,6 +407,8 @@
     "@openclaw/krillswitch-admin": ["@openclaw/krillswitch-admin@workspace:apps/admin"],
 
     "@openclaw/krillswitch-api": ["@openclaw/krillswitch-api@workspace:apps/api"],
+
+    "@openclaw/krillswitch-cli": ["@openclaw/krillswitch-cli@workspace:packages/cli"],
 
     "@openclaw/krillswitch-core": ["@openclaw/krillswitch-core@workspace:packages/core"],
 

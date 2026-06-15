@@ -1,0 +1,24 @@
+{
+  "name": "@openclaw/krillswitch-cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "krillswitch": "./src/index.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openclaw/krillswitch-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.8"
+  }
+}

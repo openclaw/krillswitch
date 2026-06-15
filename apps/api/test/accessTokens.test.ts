@@ -213,6 +213,42 @@ describe("token lifecycle and bearer auth", () => {
   });
 });
 
+describe("token-authed eval", () => {
+  it("evaluates a context against an environment for a viewer token", async () => {
+    const admin = await devLogin("admin");
+    const { token } = await (
+      await mintToken(admin, { name: "eval-reader", role: "viewer" })
+    ).json<{ token: string }>();
+
+    const response = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/eval`,
+      {
+        method: "POST",
+        headers: { ...bearer(token), "content-type": "application/json" },
+        body: JSON.stringify({ context: { key: "admin-eval-user" } }),
+      },
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json<{
+      flags: Record<string, { value: unknown }>;
+    }>();
+    expect(body.flags.souls?.value).toBe(true);
+  });
+
+  it("404s eval on an unknown environment", async () => {
+    const admin = await devLogin("admin");
+    const response = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/ghost/eval`,
+      {
+        method: "POST",
+        headers: { cookie: admin, "content-type": "application/json" },
+        body: JSON.stringify({ context: { key: "x" } }),
+      },
+    );
+    expect(response.status).toBe(404);
+  });
+});
+
 // Eval keys (ks_) must not be mistaken for access tokens (ksat_).
 describe("token auth ignores eval keys", () => {
   it("does not authenticate an admin request with an eval key", async () => {
