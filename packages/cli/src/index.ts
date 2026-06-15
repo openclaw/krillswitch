@@ -2,7 +2,13 @@
 import { CliUsageError, parseArgs } from "./args";
 import { CliError, KrillswitchClient } from "./client";
 import { evalContext } from "./commands/evalCommand";
-import { flagsGet, flagsList } from "./commands/flags";
+import {
+  flagsCreate,
+  flagsGet,
+  flagsList,
+  flagsTargetingSet,
+  flagsToggle,
+} from "./commands/flags";
 import { logTail } from "./commands/log";
 import { projectsList } from "./commands/projects";
 import { resolveConfig } from "./config";
@@ -14,10 +20,14 @@ Base:  KRILLSWITCH_URL env or --base-url (default http://localhost:8799)
 
 Commands:
   projects list
-  flags list      --project <key> --env <key>
-  flags get <key> --project <key> --env <key>
-  eval            --project <key> --env <key> --key <contextKey> [--attr k=v ...]
-  log tail        [--flag <key>] [--project <key>] [--limit <n>]
+  flags list         --project <key> --env <key>
+  flags get <key>    --project <key> --env <key>
+  flags toggle <key> --project <key> --env <key> --on|--off
+  flags create <key> --project <key> --kind <boolean|string|number|json>
+                     [--name <name>] [--variation <v> ...] [--enabled]
+  flags targeting set <key> --project <key> --env <key> --targeting '<json>'
+  eval               --project <key> --env <key> --key <contextKey> [--attr k=v ...]
+  log tail           [--flag <key>] [--project <key>] [--limit <n>]
 
 Global flags:
   --json   machine-readable output
@@ -46,6 +56,29 @@ async function run(argv: string[]): Promise<number> {
     const flagKey = args.positionals[2];
     if (!flagKey) throw new CliUsageError("flags get needs a flag key");
     await flagsGet(client, args, flagKey);
+    return 0;
+  }
+  if (group === "flags" && sub === "toggle") {
+    const flagKey = args.positionals[2];
+    if (!flagKey) throw new CliUsageError("flags toggle needs a flag key");
+    await flagsToggle(client, args, flagKey);
+    return 0;
+  }
+  if (group === "flags" && sub === "create") {
+    const flagKey = args.positionals[2];
+    if (!flagKey) throw new CliUsageError("flags create needs a flag key");
+    await flagsCreate(client, args, flagKey);
+    return 0;
+  }
+  if (
+    group === "flags" &&
+    sub === "targeting" &&
+    args.positionals[2] === "set"
+  ) {
+    const flagKey = args.positionals[3];
+    if (!flagKey)
+      throw new CliUsageError("flags targeting set needs a flag key");
+    await flagsTargetingSet(client, args, flagKey);
     return 0;
   }
   if (group === "eval") {
