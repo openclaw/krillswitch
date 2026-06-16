@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { type AccessTokenEntry, ApiError, api, type TokenRole } from "../api";
+import { TableFrame } from "./TableFrame";
+
+type CopyState = "idle" | "copied" | "failed";
 
 function formatWhen(timestamp: number | null): string {
-  return timestamp ? new Date(timestamp).toLocaleDateString() : "—";
+  return timestamp ? new Date(timestamp).toLocaleDateString() : "never";
 }
 
 export function AccessTokensSection() {
@@ -14,11 +17,15 @@ export function AccessTokensSection() {
   const [role, setRole] = useState<TokenRole>("editor");
   // The plaintext is returned once at mint; hold it until the admin dismisses.
   const [freshToken, setFreshToken] = useState<string | null>(null);
+  const [showFreshToken, setShowFreshToken] = useState(false);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
 
   const mint = useMutation({
     mutationFn: () => api.mintToken(name.trim(), role),
     onSuccess: ({ token }) => {
       setFreshToken(token);
+      setShowFreshToken(false);
+      setCopyState("idle");
       setName("");
       queryClient.invalidateQueries({ queryKey: ["tokens"] });
     },
@@ -35,27 +42,83 @@ export function AccessTokensSection() {
       : mint.isError
         ? "Minting the token failed."
         : null;
+  const visibleFreshToken =
+    showFreshToken && freshToken ? freshToken : "********";
+
+  async function copyFreshToken(): Promise<void> {
+    if (!freshToken) return;
+    try {
+      await navigator.clipboard.writeText(freshToken);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+  }
+
+  function dismissFreshToken(): void {
+    setFreshToken(null);
+    setShowFreshToken(false);
+    setCopyState("idle");
+  }
 
   return (
     <section className="detail-section">
       <h2>Access tokens</h2>
       <p className="muted section-hint">
-        Role-scoped tokens for the CLI and agents. Editor or viewer only — never
+        Role-scoped tokens for the CLI and agents. Editor or viewer only, never
         admin. Shown once at mint; store it somewhere safe.
       </p>
 
       {freshToken && (
-        <div className="token-reveal" role="status">
-          <span className="muted">New token (copy it now):</span>
-          <code className="token-plaintext">{freshToken}</code>
-          <button
-            type="button"
-            className="btn btn-quiet"
-            onClick={() => setFreshToken(null)}
+        <section
+          className="token-reveal"
+          aria-labelledby="new-access-token-title"
+        >
+          <div className="token-reveal-header">
+            <div>
+              <h3 id="new-access-token-title" className="token-reveal-title">
+                New access token
+              </h3>
+              <p className="muted token-reveal-copy">
+                Copy it now. This token cannot be shown again after dismissal.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-quiet"
+              onClick={dismissFreshToken}
+            >
+              Done
+            </button>
+          </div>
+          <div className="token-value-row">
+            <code className="token-value">{visibleFreshToken}</code>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={copyFreshToken}
+            >
+              Copy token
+            </button>
+            <button
+              type="button"
+              className="btn btn-quiet"
+              onClick={() => setShowFreshToken((current) => !current)}
+            >
+              {showFreshToken ? "Hide" : "Reveal"}
+            </button>
+          </div>
+          <p
+            className={`token-copy-state token-copy-state-${copyState}`}
+            aria-live="polite"
           >
-            Done
-          </button>
-        </div>
+            {copyState === "copied"
+              ? "Copied to clipboard."
+              : copyState === "failed"
+                ? "Copy failed. Reveal and copy manually."
+                : " "}
+          </p>
+        </section>
       )}
 
       <div className="inline-create">
@@ -98,45 +161,47 @@ export function AccessTokensSection() {
         <p className="muted">No tokens yet.</p>
       )}
       {tokens.isSuccess && tokens.data.tokens.length > 0 && (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Created</th>
-              <th>Last used</th>
-              <th className="th-remove" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {tokens.data.tokens.map((token: AccessTokenEntry) => (
-              <tr
-                key={token.id}
-                className={token.revokedAt ? "is-revoked" : ""}
-              >
-                <td>{token.name}</td>
-                <td className="muted">{token.role}</td>
-                <td className="muted">{formatWhen(token.createdAt)}</td>
-                <td className="muted">{formatWhen(token.lastUsedAt)}</td>
-                <td className="td-remove">
-                  {token.revokedAt ? (
-                    <span className="muted">revoked</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-quiet"
-                      aria-label={`Revoke ${token.name}`}
-                      disabled={revoke.isPending}
-                      onClick={() => revoke.mutate(token.id)}
-                    >
-                      Revoke
-                    </button>
-                  )}
-                </td>
+        <TableFrame className="table-frame-tokens">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th>Last used</th>
+                <th className="th-remove" aria-label="Actions" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tokens.data.tokens.map((token: AccessTokenEntry) => (
+                <tr
+                  key={token.id}
+                  className={token.revokedAt ? "is-revoked" : ""}
+                >
+                  <td>{token.name}</td>
+                  <td className="muted">{token.role}</td>
+                  <td className="muted">{formatWhen(token.createdAt)}</td>
+                  <td className="muted">{formatWhen(token.lastUsedAt)}</td>
+                  <td className="td-remove">
+                    {token.revokedAt ? (
+                      <span className="muted">revoked</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-quiet"
+                        aria-label={`Revoke ${token.name}`}
+                        disabled={revoke.isPending}
+                        onClick={() => revoke.mutate(token.id)}
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
       )}
     </section>
   );

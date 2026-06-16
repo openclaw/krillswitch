@@ -264,7 +264,7 @@ export function RolloutEditor({
             className={total === 100 ? "muted" : "weight-error"}
             role={total === 100 ? undefined : "alert"}
           >
-            Total: {total}%{total !== 100 && " — weights must sum to 100"}
+            Total: {total}%{total !== 100 && ". Weights must sum to 100"}
           </p>
         </>
       )}

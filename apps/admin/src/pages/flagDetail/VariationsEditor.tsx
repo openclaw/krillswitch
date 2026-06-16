@@ -1,4 +1,5 @@
 import type { FlagKind } from "../../api";
+import { TableFrame } from "../../components/TableFrame";
 import type { VariationDraft } from "./draft";
 
 export function VariationsEditor({
@@ -51,80 +52,82 @@ export function VariationsEditor({
   return (
     <section className="detail-section">
       <h2>Variations</h2>
-      <table className="data-table variations-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Value ({kind})</th>
-            <th className="th-radio">Default</th>
-            <th className="th-radio">Off</th>
-            {!disabled && <th className="th-remove" aria-label="Remove" />}
-          </tr>
-        </thead>
-        <tbody>
-          {variations.map((variation, index) => (
-            <tr key={variation.id ?? `new-${index}`}>
-              <td>
-                <input
-                  className="input"
-                  aria-label={`Variation ${index + 1} name`}
-                  value={variation.name}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    patchVariation(index, { name: event.target.value })
-                  }
-                />
-              </td>
-              <td>
-                <VariationValueInput
-                  kind={kind}
-                  index={index}
-                  raw={variation.raw}
-                  disabled={disabled}
-                  onChange={(raw) => patchVariation(index, { raw })}
-                />
-              </td>
-              <td className="td-radio">
-                <input
-                  type="radio"
-                  name="default-variation"
-                  aria-label={`Serve variation ${index + 1} by default`}
-                  checked={defaultIndex === index}
-                  disabled={disabled}
-                  onChange={() =>
-                    onChange({ variations, offIndex, defaultIndex: index })
-                  }
-                />
-              </td>
-              <td className="td-radio">
-                <input
-                  type="radio"
-                  name="off-variation"
-                  aria-label={`Serve variation ${index + 1} when off`}
-                  checked={offIndex === index}
-                  disabled={disabled}
-                  onChange={() =>
-                    onChange({ variations, offIndex: index, defaultIndex })
-                  }
-                />
-              </td>
-              {!disabled && (
-                <td className="td-remove">
-                  <button
-                    type="button"
-                    className="btn btn-quiet"
-                    aria-label={`Remove variation ${index + 1}`}
-                    disabled={variations.length <= 1}
-                    onClick={() => removeVariation(index)}
-                  >
-                    Remove
-                  </button>
-                </td>
-              )}
+      <TableFrame className="table-frame-variations">
+        <table className="data-table variations-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Value ({kind})</th>
+              <th className="th-radio">Default</th>
+              <th className="th-radio">Off</th>
+              {!disabled && <th className="th-remove" aria-label="Remove" />}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {variations.map((variation, index) => (
+              <tr key={variation.id ?? `new-${index}`}>
+                <td>
+                  <input
+                    className="input"
+                    aria-label={`Variation ${index + 1} name`}
+                    value={variation.name}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      patchVariation(index, { name: event.target.value })
+                    }
+                  />
+                </td>
+                <td>
+                  <VariationValueInput
+                    kind={kind}
+                    index={index}
+                    raw={variation.raw}
+                    disabled={disabled}
+                    onChange={(raw) => patchVariation(index, { raw })}
+                  />
+                </td>
+                <td className="td-radio">
+                  <input
+                    type="radio"
+                    name="default-variation"
+                    aria-label={`Serve variation ${index + 1} by default`}
+                    checked={defaultIndex === index}
+                    disabled={disabled}
+                    onChange={() =>
+                      onChange({ variations, offIndex, defaultIndex: index })
+                    }
+                  />
+                </td>
+                <td className="td-radio">
+                  <input
+                    type="radio"
+                    name="off-variation"
+                    aria-label={`Serve variation ${index + 1} when off`}
+                    checked={offIndex === index}
+                    disabled={disabled}
+                    onChange={() =>
+                      onChange({ variations, offIndex: index, defaultIndex })
+                    }
+                  />
+                </td>
+                {!disabled && (
+                  <td className="td-remove">
+                    <button
+                      type="button"
+                      className="btn btn-quiet"
+                      aria-label={`Remove variation ${index + 1}`}
+                      disabled={variations.length <= 1}
+                      onClick={() => removeVariation(index)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
       {!disabled && (
         <button type="button" className="btn btn-quiet" onClick={addVariation}>
           Add variation

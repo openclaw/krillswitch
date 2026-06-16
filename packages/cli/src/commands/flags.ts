@@ -1,13 +1,20 @@
 import type { FlagKind, JsonValue } from "@openclaw/krillswitch-core";
-import {
-  CliUsageError,
-  flag,
-  flagAll,
-  type ParsedArgs,
-  requireFlag,
-} from "../args";
 import type { KrillswitchClient } from "../client";
-import { type Column, cell, printJson, printTable, wantsJson } from "../output";
+import { CliUsageError } from "../errors";
+import type {
+  FlagsCreateOptions,
+  FlagsTargetingOptions,
+  FlagsToggleOptions,
+  ProjectEnvOptions,
+} from "../options";
+import {
+  type Column,
+  cell,
+  printJson,
+  printKeyValues,
+  printTable,
+  wantsJson,
+} from "../output";
 
 type FlagListEntry = {
   key: string;
@@ -87,76 +94,123 @@ const LIST_COLUMNS: Column<FlagListEntry>[] = [
   { header: "STATE", value: (f) => (f.enabled ? "on" : "off") },
 ];
 
-function flagsBase(args: ParsedArgs): string {
-  const project = requireFlag(args, "project");
-  const env = requireFlag(args, "env");
+function flagsBase(options: ProjectEnvOptions): string {
+  const { project, env } = options;
   return `/admin/projects/${encodeURIComponent(project)}/environments/${encodeURIComponent(env)}/flags`;
 }
 
 export async function flagsList(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: ProjectEnvOptions,
 ): Promise<void> {
   const { flags } = await client.request<{ flags: FlagListEntry[] }>(
-    flagsBase(args),
+    flagsBase(options),
   );
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson({ flags });
     return;
   }
-  printTable(flags, LIST_COLUMNS);
+  printTable(flags, LIST_COLUMNS, { title: "Flags" });
 }
 
 export async function flagsGet(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: ProjectEnvOptions,
   flagKey: string,
 ): Promise<void> {
   const detail = await client.request<FlagDetail>(
-    `${flagsBase(args)}/${encodeURIComponent(flagKey)}`,
+    `${flagsBase(options)}/${encodeURIComponent(flagKey)}`,
   );
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson(detail);
     return;
   }
-  process.stdout.write(`${detail.flag.name}  (${detail.flag.key})\n`);
-  process.stdout.write(`  kind: ${detail.flag.kind}\n`);
-  process.stdout.write(`  enabled: ${detail.config.enabled ? "on" : "off"}\n`);
-  printTable(detail.variations, [
-    { header: "VARIATION", value: (v) => v.name ?? v.id },
-    { header: "VALUE", value: (v) => cell(v.value) },
+  printKeyValues(detail.flag.name, [
+    ["key", detail.flag.key],
+    ["kind", detail.flag.kind],
+    ["state", detail.config.enabled ? "on" : "off"],
+  ]);
+  process.stdout.write("\n");
+  printFlagVariations(detail);
+}
+
+function printFlagVariations(detail: FlagDetail): void {
+  const rows = detail.variations.map((variation, index) => ({
+    number: index + 1,
+    variation,
+  }));
+  const hasNames = rows.some((row) => row.variation.name !== null);
+  const columns: Column<(typeof rows)[number]>[] = [
     {
       header: "ROLE",
-      value: (v) =>
-        [
-          v.id === detail.config.defaultVariationId ? "default" : "",
-          v.id === detail.config.offVariationId ? "off" : "",
-        ]
-          .filter(Boolean)
-          .join(",") || "—",
+      value: (row) => variationRoleLabel(row, detail),
     },
-  ]);
+    ...(hasNames
+      ? [
+          {
+            header: "NAME",
+            value: (row: (typeof rows)[number]) =>
+              row.variation.name ?? cell(null),
+          },
+        ]
+      : []),
+    {
+      header: "VALUE",
+      value: (row) => cell(row.variation.value),
+    },
+  ];
+  printTable(rows, columns, { title: "Variations" });
+}
+
+function variationRoleLabel(
+  row: { number: number; variation: Variation },
+  detail: FlagDetail,
+): string {
+  const role = variationRole(row.variation, detail);
+  return role ?? `option ${row.number}`;
+}
+
+function variationRole(
+  variation: Variation,
+  detail: FlagDetail,
+): string | null {
+  const roles = [
+    variation.id === detail.config.defaultVariationId ? "default" : "",
+    variation.id === detail.config.offVariationId ? "off" : "",
+  ].filter(Boolean);
+  return roles.length > 0 ? roles.join(", ") : null;
 }
 
 export async function flagsToggle(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: FlagsToggleOptions,
   flagKey: string,
 ): Promise<void> {
-  const on = args.booleans.has("on");
-  const off = args.booleans.has("off");
+  const { on, off } = options;
   if (on === off) {
-    throw new CliUsageError("flags toggle needs exactly one of --on / --off");
+    throw new CliUsageError(
+      [
+        "flags toggle needs exactly one of --on / --off",
+        "Usage: krillswitch flags toggle <key> -p <project> -e <env> --on|--off",
+      ].join("\n"),
+    );
   }
   const result = await client.request<{ flag: FlagListEntry }>(
-    `${flagsBase(args)}/${encodeURIComponent(flagKey)}`,
+    `${flagsBase(options)}/${encodeURIComponent(flagKey)}`,
     { method: "PATCH", body: { enabled: on } },
   );
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson(result);
     return;
   }
-  process.stdout.write(`${flagKey}: ${result.flag.enabled ? "on" : "off"}\n`);
+  printTable(
+    [{ key: flagKey, state: result.flag.enabled ? "on" : "off" }],
+    [
+      { header: "KEY", value: (row) => row.key },
+      { header: "STATE", value: (row) => row.state },
+    ],
+    { title: "Flag updated" },
+  );
 }
 
 type CreateBody = {
@@ -171,18 +225,17 @@ type CreateBody = {
 
 export async function flagsCreate(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: FlagsCreateOptions,
   flagKey: string,
 ): Promise<void> {
-  const project = requireFlag(args, "project");
-  const kind = parseKind(requireFlag(args, "kind"));
-  const name = flag(args, "name") ?? flagKey;
+  const { project } = options;
+  const kind = parseKind(options.kind);
+  const name = options.name ?? flagKey;
 
-  const rawVariations = flagAll(args, "variation");
   // Boolean flags default to on/off when no variations are given.
   const variations =
-    rawVariations.length > 0
-      ? rawVariations.map((raw) => ({
+    options.variations.length > 0
+      ? options.variations.map((raw) => ({
           value: parseValueForKind(kind, raw),
           name: null,
         }))
@@ -193,7 +246,12 @@ export async function flagsCreate(
           ]
         : [];
   if (variations.length === 0) {
-    throw new CliUsageError(`--variation is required for ${kind} flags`);
+    throw new CliUsageError(
+      [
+        `${kind} flags need at least one --variation`,
+        `Example: krillswitch flags create ${flagKey} -p ${project} --kind ${kind} --variation ${exampleVariation(kind)}`,
+      ].join("\n"),
+    );
   }
 
   const body: CreateBody = {
@@ -201,21 +259,34 @@ export async function flagsCreate(
     name,
     kind,
     variations,
-    defaultVariationIndex: Number(flag(args, "default-index") ?? "0"),
+    defaultVariationIndex: Number(options.defaultIndex ?? "0"),
     offVariationIndex: Number(
-      flag(args, "off-index") ?? String(variations.length - 1),
+      options.offIndex ?? String(variations.length - 1),
     ),
-    enabled: args.booleans.has("enabled"),
+    enabled: options.enabled,
   };
   const result = await client.request<{ created: string }>(
     `/admin/projects/${encodeURIComponent(project)}/flags`,
     { method: "POST", body },
   );
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson(result);
     return;
   }
-  process.stdout.write(`created ${result.created}\n`);
+  printKeyValues("Flag created", [["key", result.created]]);
+}
+
+function exampleVariation(kind: FlagKind): string {
+  switch (kind) {
+    case "number":
+      return "100";
+    case "json":
+      return '\'{"tier":"beta"}\'';
+    case "boolean":
+      return "true";
+    case "string":
+      return "minimal";
+  }
 }
 
 type TargetingSpec = {
@@ -242,15 +313,9 @@ type UpdateBody = {
   rollout: { variations: { variationIndex: number; weight: number }[] } | null;
 };
 
-function readSpec(args: ParsedArgs): TargetingSpec {
-  const inline = flag(args, "targeting");
-  if (inline === undefined) {
-    throw new CliUsageError(
-      "flags targeting set needs --targeting '<json>' (allowlist/rules/split)",
-    );
-  }
+function readSpec(options: FlagsTargetingOptions): TargetingSpec {
   try {
-    return JSON.parse(inline) as TargetingSpec;
+    return JSON.parse(options.targeting) as TargetingSpec;
   } catch {
     throw new CliUsageError("--targeting must be valid JSON");
   }
@@ -258,14 +323,14 @@ function readSpec(args: ParsedArgs): TargetingSpec {
 
 // Replaces the environment's targeting wholesale from the spec, preserving the
 // flag's variations and its default/off selection. Omitted spec keys clear
-// that dimension — read `flags get --json` first to preserve existing rules.
+// that dimension. Read `flags get --json` first to preserve existing rules.
 export async function flagsTargetingSet(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: FlagsTargetingOptions,
   flagKey: string,
 ): Promise<void> {
-  const spec = readSpec(args);
-  const base = `${flagsBase(args)}/${encodeURIComponent(flagKey)}`;
+  const spec = readSpec(options);
+  const base = `${flagsBase(options)}/${encodeURIComponent(flagKey)}`;
   const detail = await client.request<FlagDetail>(base);
 
   const indexOfId = (id: string) =>
@@ -292,9 +357,9 @@ export async function flagsTargetingSet(
     method: "PUT",
     body,
   });
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson(result);
     return;
   }
-  process.stdout.write(`targeting updated for ${flagKey}\n`);
+  printKeyValues("Targeting updated", [["key", flagKey]]);
 }

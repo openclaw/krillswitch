@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ApiError, api } from "../api";
+import { TableFrame } from "./TableFrame";
 
 /** Admin-only project panel: eval keys per environment + new environments. */
 export function KeysSection({ projectKey }: { projectKey: string }) {
@@ -38,57 +39,59 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
           Rotating the key failed.
         </p>
       )}
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Environment</th>
-            <th>Key</th>
-            <th className="th-remove" aria-label="Actions" />
-          </tr>
-        </thead>
-        <tbody>
-          {keys.data.keys.map((entry) => (
-            <tr key={entry.environmentId}>
-              <td>{entry.environmentName}</td>
-              <td>
-                <code>{entry.evalKey}</code>
-              </td>
-              <td className="td-remove">
-                {confirmingRotate === entry.environmentKey ? (
-                  <span className="confirm-delete">
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      disabled={rotate.isPending}
-                      onClick={() => {
-                        rotate.mutate(entry.environmentKey);
-                        setConfirmingRotate(null);
-                      }}
-                    >
-                      Confirm rotate
-                    </button>
+      <TableFrame className="table-frame-keys">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Environment</th>
+              <th>Key</th>
+              <th className="th-remove" aria-label="Actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {keys.data.keys.map((entry) => (
+              <tr key={entry.environmentId}>
+                <td>{entry.environmentName}</td>
+                <td>
+                  <code>{entry.evalKey}</code>
+                </td>
+                <td className="td-remove">
+                  {confirmingRotate === entry.environmentKey ? (
+                    <span className="confirm-delete">
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        disabled={rotate.isPending}
+                        onClick={() => {
+                          rotate.mutate(entry.environmentKey);
+                          setConfirmingRotate(null);
+                        }}
+                      >
+                        Confirm rotate
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-quiet"
+                        onClick={() => setConfirmingRotate(null)}
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
                     <button
                       type="button"
                       className="btn btn-quiet"
-                      onClick={() => setConfirmingRotate(null)}
+                      onClick={() => setConfirmingRotate(entry.environmentKey)}
                     >
-                      Cancel
+                      Rotate
                     </button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-quiet"
-                    onClick={() => setConfirmingRotate(entry.environmentKey)}
-                  >
-                    Rotate
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
       <NewEnvironmentForm projectKey={projectKey} />
     </section>
   );

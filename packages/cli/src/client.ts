@@ -19,7 +19,7 @@ export class KrillswitchClient {
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     if (!this.config.token) {
       throw new CliError(
-        "no access token — set KRILLSWITCH_TOKEN, pass --token, or add it to ~/.krillswitch.json",
+        "no access token: set KRILLSWITCH_TOKEN, pass --token, or add it to ~/.krillswitch.json",
       );
     }
     let response: Response;
@@ -38,11 +38,11 @@ export class KrillswitchClient {
       );
     }
     if (response.status === 401) {
-      throw new CliError("unauthorized — token missing, invalid, or revoked");
+      throw new CliError("unauthorized: token missing, invalid, or revoked");
     }
     if (response.status === 403) {
       throw new CliError(
-        "forbidden — this token's role cannot perform that action",
+        "forbidden: this token's role cannot perform that action",
       );
     }
     if (!response.ok) {

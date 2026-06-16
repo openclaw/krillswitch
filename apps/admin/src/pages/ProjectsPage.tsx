@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { ApiError, api, type Me } from "../api";
+import { TableFrame } from "../components/TableFrame";
 
 export function ProjectsPage({ me }: { me: Me }) {
   const projects = useQuery({ queryKey: ["projects"], queryFn: api.projects });
@@ -17,28 +18,33 @@ export function ProjectsPage({ me }: { me: Me }) {
         <p className="muted">No projects yet.</p>
       )}
       {projects.isSuccess && projects.data.projects.length > 0 && (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Key</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.data.projects.map((project) => (
-              <tr key={project.id}>
-                <td>
-                  <Link className="table-link" to={`/projects/${project.key}`}>
-                    {project.name}
-                  </Link>
-                </td>
-                <td>
-                  <code>{project.key}</code>
-                </td>
+        <TableFrame className="table-frame-compact">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Key</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {projects.data.projects.map((project) => (
+                <tr key={project.id}>
+                  <td>
+                    <Link
+                      className="table-link"
+                      to={`/projects/${project.key}`}
+                    >
+                      {project.name}
+                    </Link>
+                  </td>
+                  <td>
+                    <code>{project.key}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
       )}
       {me.role === "admin" && <NewProjectForm />}
     </section>

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, type ChangeLogEntry } from "../api";
+import { TableFrame } from "../components/TableFrame";
 
 export function ChangeLogPage() {
   const [flagFilter, setFlagFilter] = useState("");
@@ -42,22 +43,24 @@ export function ChangeLogPage() {
         <p className="muted">No changes match.</p>
       )}
       {entries.isSuccess && entries.data.entries.length > 0 && (
-        <table className="data-table changelog-table">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Actor</th>
-              <th>Action</th>
-              <th>Target</th>
-              <th>Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.data.entries.map((entry) => (
-              <ChangeRow key={entry.id} entry={entry} />
-            ))}
-          </tbody>
-        </table>
+        <TableFrame className="table-frame-changelog">
+          <table className="data-table changelog-table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.data.entries.map((entry) => (
+                <ChangeRow key={entry.id} entry={entry} />
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
       )}
     </section>
   );

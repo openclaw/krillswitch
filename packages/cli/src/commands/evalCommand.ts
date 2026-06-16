@@ -2,8 +2,8 @@ import type {
   AttributeValue,
   FlagEvaluation,
 } from "@openclaw/krillswitch-core";
-import { flagAll, type ParsedArgs, requireFlag } from "../args";
 import type { KrillswitchClient } from "../client";
+import type { EvalOptions } from "../options";
 import { type Column, cell, printJson, printTable, wantsJson } from "../output";
 
 /** "true"/"false"/numeric coerce to typed values; everything else stays text. */
@@ -15,9 +15,9 @@ function coerceAttribute(raw: string): AttributeValue {
   return raw;
 }
 
-function attributesFrom(args: ParsedArgs): Record<string, AttributeValue> {
+function attributesFrom(options: EvalOptions): Record<string, AttributeValue> {
   const attributes: Record<string, AttributeValue> = {};
-  for (const entry of flagAll(args, "attr")) {
+  for (const entry of options.attrs) {
     const [name, ...rest] = entry.split("=");
     if (name && rest.length > 0) {
       attributes[name] = coerceAttribute(rest.join("="));
@@ -36,12 +36,10 @@ const COLUMNS: Column<EvalRow>[] = [
 
 export async function evalContext(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: EvalOptions,
 ): Promise<void> {
-  const project = requireFlag(args, "project");
-  const env = requireFlag(args, "env");
-  const key = requireFlag(args, "key");
-  const attributes = attributesFrom(args);
+  const { project, env, key } = options;
+  const attributes = attributesFrom(options);
 
   const { flags } = await client.request<{
     flags: Record<string, FlagEvaluation>;
@@ -58,7 +56,7 @@ export async function evalContext(
     },
   );
 
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson({ flags });
     return;
   }
@@ -66,5 +64,5 @@ export async function evalContext(
     key: flagKey,
     evaluation,
   }));
-  printTable(rows, COLUMNS);
+  printTable(rows, COLUMNS, { title: "Evaluation" });
 }

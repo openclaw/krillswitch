@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, NavLink, useParams } from "react-router";
 import { api, type FlagListEntry, type Me } from "../api";
 import { KeysSection } from "../components/KeysSection";
+import { TableFrame } from "../components/TableFrame";
 
 export function ProjectPage({ me }: { me: Me }) {
   const { projectKey = "", environmentKey } = useParams();
@@ -125,32 +126,34 @@ function FlagTable({
       {toggle.isError && (
         <p role="alert">Toggling the flag failed. Refresh and retry.</p>
       )}
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Key</th>
-            <th>Kind</th>
-            <th className="th-state">State</th>
-          </tr>
-        </thead>
-        <tbody>
-          {flags.data.flags.map((flag) => (
-            <FlagRow
-              key={flag.id}
-              flag={flag}
-              canEdit={canEdit}
-              detailPath={detailPath(flag.key)}
-              pending={
-                toggle.isPending && toggle.variables?.flagKey === flag.key
-              }
-              onToggle={(enabled) =>
-                toggle.mutate({ flagKey: flag.key, enabled })
-              }
-            />
-          ))}
-        </tbody>
-      </table>
+      <TableFrame className="table-frame-flags">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Key</th>
+              <th>Kind</th>
+              <th className="th-state">State</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flags.data.flags.map((flag) => (
+              <FlagRow
+                key={flag.id}
+                flag={flag}
+                canEdit={canEdit}
+                detailPath={detailPath(flag.key)}
+                pending={
+                  toggle.isPending && toggle.variables?.flagKey === flag.key
+                }
+                onToggle={(enabled) =>
+                  toggle.mutate({ flagKey: flag.key, enabled })
+                }
+              />
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
     </>
   );
 }

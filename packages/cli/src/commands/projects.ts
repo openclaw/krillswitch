@@ -1,5 +1,5 @@
-import type { ParsedArgs } from "../args";
 import type { KrillswitchClient } from "../client";
+import type { CommonOptions } from "../options";
 import { type Column, printJson, printTable, wantsJson } from "../output";
 
 type Project = { id: string; key: string; name: string };
@@ -11,14 +11,14 @@ const COLUMNS: Column<Project>[] = [
 
 export async function projectsList(
   client: KrillswitchClient,
-  args: ParsedArgs,
+  options: CommonOptions,
 ): Promise<void> {
   const { projects } = await client.request<{ projects: Project[] }>(
     "/admin/projects",
   );
-  if (wantsJson(args)) {
+  if (wantsJson(options)) {
     printJson({ projects });
     return;
   }
-  printTable(projects, COLUMNS);
+  printTable(projects, COLUMNS, { title: "Projects" });
 }
