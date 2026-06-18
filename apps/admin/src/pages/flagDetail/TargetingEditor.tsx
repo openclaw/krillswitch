@@ -64,15 +64,33 @@ export function AllowlistEditor({
   }
 
   return (
-    <section className="detail-section">
+    <section
+      className={`detail-section targeting-subsection ${
+        targets.length > 0 ? "is-active" : ""
+      }`}
+    >
       <h2>User allowlist</h2>
       <p className="muted section-hint">
         Pins specific user keys to a variation. Highest targeting precedence.
       </p>
       {targets.length === 0 && (
-        <p className="empty-hint">
-          No allowlist entries. Add one to pin specific users to a variation.
-        </p>
+        <div className="targeting-empty-row">
+          <span>No pinned users.</span>
+          {!disabled && (
+            <button
+              type="button"
+              className="btn btn-quiet"
+              onClick={() =>
+                onChange([
+                  ...targets,
+                  { rowId: newRowId(), variationIndex: 0, keysRaw: "" },
+                ])
+              }
+            >
+              Add allowlist entry
+            </button>
+          )}
+        </div>
       )}
       {targets.map((target, index) => (
         <div className="targeting-row" key={target.rowId}>
@@ -106,7 +124,7 @@ export function AllowlistEditor({
           )}
         </div>
       ))}
-      {!disabled && (
+      {!disabled && targets.length > 0 && (
         <button
           type="button"
           className="btn btn-quiet"
@@ -144,15 +162,38 @@ export function RulesEditor({
   }
 
   return (
-    <section className="detail-section">
+    <section
+      className={`detail-section targeting-subsection ${
+        rules.length > 0 ? "is-active" : ""
+      }`}
+    >
       <h2>Attribute rules</h2>
       <p className="muted section-hint">
         Matched top to bottom after the allowlist; first match serves.
       </p>
       {rules.length === 0 && (
-        <p className="empty-hint">
-          No rules. Add one to serve a variation by user attribute.
-        </p>
+        <div className="targeting-empty-row">
+          <span>No attribute rules.</span>
+          {!disabled && (
+            <button
+              type="button"
+              className="btn btn-quiet"
+              onClick={() =>
+                onChange([
+                  ...rules,
+                  {
+                    rowId: newRowId(),
+                    variationIndex: 0,
+                    attribute: "",
+                    valuesRaw: "",
+                  },
+                ])
+              }
+            >
+              Add rule
+            </button>
+          )}
+        </div>
       )}
       {rules.map((rule, index) => (
         <div className="targeting-row" key={rule.rowId}>
@@ -200,7 +241,7 @@ export function RulesEditor({
           )}
         </div>
       ))}
-      {!disabled && (
+      {!disabled && rules.length > 0 && (
         <button
           type="button"
           className="btn btn-quiet"
@@ -239,7 +280,11 @@ export function RolloutEditor({
   const total = weights.reduce((sum, weight) => sum + weight, 0);
 
   return (
-    <section className="detail-section">
+    <section
+      className={`detail-section targeting-subsection ${
+        enabled ? "is-active" : ""
+      }`}
+    >
       <h2>Percentage rollout</h2>
       <label className="rollout-enable">
         <input

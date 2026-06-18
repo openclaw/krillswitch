@@ -6,7 +6,7 @@ import { ChevronDownIcon } from "../../components/brand";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { BlockSkeleton } from "../../components/Skeleton";
 import { Switch } from "../../components/Switch";
-import { type Draft, fromDraft, toDraft, variationLabel } from "./draft";
+import { type Draft, fromDraft, toDraft } from "./draft";
 import { AllowlistEditor, RolloutEditor, RulesEditor } from "./TargetingEditor";
 import { VariationsEditor } from "./VariationsEditor";
 
@@ -61,14 +61,11 @@ function FlagDetailEditor({
   const readOnly = me.role === "viewer";
 
   const [draft, setDraft] = useState<Draft>(() => toDraft(detail));
-  // Snapshot of the last-saved draft (captured from the same object that seeds
-  // `draft`, so its row ids line up). Drives the dirty check.
-  const [savedSnapshot, setSavedSnapshot] = useState(() =>
-    JSON.stringify(draft),
-  );
+  // Captured from the same object that seeds `draft`, so its row ids line up.
+  const [savedDraft, setSavedDraft] = useState<Draft>(() => draft);
   const [draftError, setDraftError] = useState<string | null>(null);
 
-  const isDirty = JSON.stringify(draft) !== savedSnapshot;
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(savedDraft);
 
   // Targeting is collapsed by default unless the flag already has some.
   const [targetingOpen, setTargetingOpen] = useState(
@@ -97,7 +94,7 @@ function FlagDetailEditor({
       // server-assigned ids, so a second save edits instead of duplicating.
       const next = toDraft(updated);
       setDraft(next);
-      setSavedSnapshot(JSON.stringify(next));
+      setSavedDraft(next);
       queryClient.setQueryData(
         ["flag", projectKey, environmentKey, flagKey],
         updated,
@@ -128,6 +125,12 @@ function FlagDetailEditor({
     save.mutate(converted.body);
   }
 
+  function onDiscard() {
+    setDraft(savedDraft);
+    setDraftError(null);
+    save.reset();
+  }
+
   const serverError =
     save.error instanceof ApiError
       ? (save.error.serverMessage ?? "Saving failed.")
@@ -136,7 +139,7 @@ function FlagDetailEditor({
         : null;
 
   return (
-    <section>
+    <section className={`flag-editor ${isDirty ? "is-dirty" : ""}`}>
       <header className="page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -187,7 +190,40 @@ function FlagDetailEditor({
         <p role="alert">Deleting failed. Refresh and retry.</p>
       )}
 
-      <StatePanel draft={draft} environmentKey={environmentKey} />
+      {!readOnly && isDirty && (
+        <>
+          {(draftError ?? serverError) && (
+            <p role="alert" className="save-error">
+              {draftError ?? serverError}
+            </p>
+          )}
+          <section className="save-bar" aria-label="Unsaved changes">
+            <strong className="save-bar-status">Unsaved changes</strong>
+            <div className="save-actions">
+              <button
+                type="button"
+                className="btn btn-quiet"
+                aria-label="Discard changes"
+                onClick={onDiscard}
+              >
+                <span className="save-label-full">Discard changes</span>
+                <span className="save-label-short">Discard</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={save.isPending}
+                onClick={onSave}
+              >
+                Save changes
+              </button>
+            </div>
+          </section>
+        </>
+      )}
+      {!readOnly && !isDirty && save.isSuccess && (
+        <p className="muted save-ok">Saved. Live within a second.</p>
+      )}
 
       <VariationsEditor
         kind={detail.flag.kind}
@@ -222,8 +258,9 @@ function FlagDetailEditor({
         {targetingOpen && (
           <div className="disclosure-body">
             <p className="section-hint">
-              Checked in order — allowlist, then rules, then rollout. Anyone not
-              matched gets the default.
+              Checked in order: allowlist, then rules, then rollout. If nothing
+              matches, the flag serves the variation selected under “When no
+              rule matches.”
             </p>
             <AllowlistEditor
               targets={draft.targets}
@@ -249,77 +286,6 @@ function FlagDetailEditor({
           </div>
         )}
       </section>
-
-      {!readOnly && isDirty && (
-        <>
-          {(draftError ?? serverError) && (
-            <p role="alert" className="save-error">
-              {draftError ?? serverError}
-            </p>
-          )}
-          <div className="form-actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={save.isPending}
-              onClick={onSave}
-            >
-              Save changes
-            </button>
-          </div>
-        </>
-      )}
-      {!readOnly && !isDirty && save.isSuccess && (
-        <p className="muted save-ok">Saved. Live within a second.</p>
-      )}
     </section>
-  );
-}
-
-function labelAt(draft: Draft, index: number): string {
-  const variation = draft.variations[index];
-  return variation ? variationLabel(variation, index) : "—";
-}
-
-/** Plain-language summary of what the flag serves right now in this env. */
-function StatePanel({
-  draft,
-  environmentKey,
-}: {
-  draft: Draft;
-  environmentKey: string;
-}) {
-  const hasTargeting =
-    draft.targets.length + draft.rules.length > 0 || draft.rolloutEnabled;
-  return (
-    <div className={`flag-state ${draft.enabled ? "is-on" : "is-off"}`}>
-      <span className="flag-state-dot" aria-hidden="true" />
-      <p className="flag-state-text">
-        {!draft.enabled ? (
-          <>
-            Off in <strong>{environmentKey}</strong> — every request gets{" "}
-            <span className="badge-soft">{labelAt(draft, draft.offIndex)}</span>
-            .
-          </>
-        ) : hasTargeting ? (
-          <>
-            Matched users get their target; everyone else in{" "}
-            <strong>{environmentKey}</strong> gets{" "}
-            <span className="badge-soft">
-              {labelAt(draft, draft.defaultIndex)}
-            </span>
-            .
-          </>
-        ) : (
-          <>
-            Everyone in <strong>{environmentKey}</strong> gets{" "}
-            <span className="badge-soft">
-              {labelAt(draft, draft.defaultIndex)}
-            </span>
-            .
-          </>
-        )}
-      </p>
-    </div>
   );
 }

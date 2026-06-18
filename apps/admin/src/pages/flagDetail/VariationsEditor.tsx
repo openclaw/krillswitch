@@ -59,14 +59,16 @@ export function VariationsEditor({
   return (
     <section className="detail-section">
       <h2>Variations</h2>
+      <p className="section-hint">
+        Choose the variation returned for each fallback case.
+      </p>
       <TableFrame className="table-frame-variations">
         <table className="data-table variations-table">
           <thead>
             <tr>
               <th>Name</th>
               <th>Value ({kind})</th>
-              <th className="th-radio">Default</th>
-              <th className="th-radio">Off</th>
+              <th className="th-serve">Returned when</th>
               {!disabled && <th className="th-remove" aria-label="Remove" />}
             </tr>
           </thead>
@@ -93,29 +95,37 @@ export function VariationsEditor({
                     onChange={(raw) => patchVariation(index, { raw })}
                   />
                 </td>
-                <td className="td-radio">
-                  <input
-                    type="radio"
-                    name="default-variation"
-                    aria-label={`Serve variation ${index + 1} by default`}
-                    checked={defaultIndex === index}
-                    disabled={disabled}
-                    onChange={() =>
-                      onChange({ variations, offIndex, defaultIndex: index })
-                    }
-                  />
-                </td>
-                <td className="td-radio">
-                  <input
-                    type="radio"
-                    name="off-variation"
-                    aria-label={`Serve variation ${index + 1} when off`}
-                    checked={offIndex === index}
-                    disabled={disabled}
-                    onChange={() =>
-                      onChange({ variations, offIndex: index, defaultIndex })
-                    }
-                  />
+                <td className="td-serve">
+                  <label className="serve-choice">
+                    <input
+                      type="radio"
+                      name="default-variation"
+                      aria-label={`Return variation ${index + 1} when the flag is on and targeting misses`}
+                      checked={defaultIndex === index}
+                      disabled={disabled}
+                      onChange={() =>
+                        onChange({ variations, offIndex, defaultIndex: index })
+                      }
+                    />
+                    <span>
+                      <strong>No target matches</strong>
+                    </span>
+                  </label>
+                  <label className="serve-choice">
+                    <input
+                      type="radio"
+                      name="off-variation"
+                      aria-label={`Return variation ${index + 1} for all requests while the flag is off`}
+                      checked={offIndex === index}
+                      disabled={disabled}
+                      onChange={() =>
+                        onChange({ variations, offIndex: index, defaultIndex })
+                      }
+                    />
+                    <span>
+                      <strong>Flag is turned off</strong>
+                    </span>
+                  </label>
                 </td>
                 {!disabled && (
                   <td className="td-remove">
@@ -135,6 +145,75 @@ export function VariationsEditor({
           </tbody>
         </table>
       </TableFrame>
+      <div className="variation-cards">
+        {variations.map((variation, index) => (
+          <div className="variation-card" key={variation.id ?? `new-${index}`}>
+            <div className="field">
+              <span className="field-label">Name</span>
+              <input
+                className="input"
+                aria-label={`Variation ${index + 1} name`}
+                value={variation.name}
+                disabled={disabled}
+                onChange={(event) =>
+                  patchVariation(index, { name: event.target.value })
+                }
+              />
+            </div>
+            <div className="field">
+              <span className="field-label">Value ({kind})</span>
+              <VariationValueInput
+                kind={kind}
+                index={index}
+                raw={variation.raw}
+                disabled={disabled}
+                onChange={(raw) => patchVariation(index, { raw })}
+              />
+            </div>
+            <div className="variation-serve-options">
+              <label className="variation-radio-option">
+                <input
+                  type="radio"
+                  name="default-variation-mobile"
+                  checked={defaultIndex === index}
+                  disabled={disabled}
+                  onChange={() =>
+                    onChange({ variations, offIndex, defaultIndex: index })
+                  }
+                />
+                <span>
+                  <strong>No target matches</strong>
+                </span>
+              </label>
+              <label className="variation-radio-option">
+                <input
+                  type="radio"
+                  name="off-variation-mobile"
+                  checked={offIndex === index}
+                  disabled={disabled}
+                  onChange={() =>
+                    onChange({ variations, offIndex: index, defaultIndex })
+                  }
+                />
+                <span>
+                  <strong>Flag is turned off</strong>
+                </span>
+              </label>
+            </div>
+            {!disabled && (
+              <button
+                type="button"
+                className="btn btn-quiet variation-card-remove"
+                aria-label={`Remove variation ${index + 1}`}
+                disabled={variations.length <= 1}
+                onClick={() => removeVariation(index)}
+              >
+                Remove variation
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
       {!disabled && (
         <button type="button" className="btn btn-quiet" onClick={addVariation}>
           Add variation
