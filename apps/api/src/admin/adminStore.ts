@@ -89,6 +89,21 @@ export async function loadFlagList(
   return rows.sort((a, b) => a.key.localeCompare(b.key));
 }
 
+// Project-level flag keys (env-independent) for filter UIs like the change
+// log combobox. Reads the flags table directly so flags without a row in any
+// particular environment still appear.
+export async function loadProjectFlagKeys(
+  db: DrizzleD1Database,
+  projectId: string,
+): Promise<{ key: string; name: string }[]> {
+  const rows = await db
+    .select({ key: flags.key, name: flags.name })
+    .from(flags)
+    .where(eq(flags.projectId, projectId))
+    .all();
+  return rows.sort((a, b) => a.key.localeCompare(b.key));
+}
+
 export async function setFlagEnabled(
   db: DrizzleD1Database,
   options: {

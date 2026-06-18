@@ -1,0 +1,42 @@
+/* Tailwind entry. Preflight is intentionally NOT imported: app.css owns the
+   global resets, and preflight's `* { margin: 0 }` would clobber existing
+   spacing. We import only the theme tokens and the utility layer, then map
+   the Tailwind / shadcn color utilities onto the existing OKLCH tokens in
+   app.css so utilities flip with [data-theme] automatically. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Dark variant follows our [data-theme="dark"] attribute, not a `.dark` class. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Bridge shadcn/Tailwind semantic colors to the tokens defined in app.css.
+   `inline` makes utilities reference the source var (e.g. var(--surface)),
+   so they re-theme with [data-theme] without a separate dark block. */
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary: var(--surface-muted);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--accent-soft);
+  --color-accent-foreground: var(--accent-text);
+  --color-destructive: var(--danger);
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: var(--accent-ring);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+}

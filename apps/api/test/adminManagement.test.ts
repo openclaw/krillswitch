@@ -62,8 +62,31 @@ describe("role grant management", () => {
     expect(response.status).toBe(200);
     const body = await response.json<{
       users: { email: string; role: string | null }[];
+      total: number;
     }>();
     expect(body.users.length).toBeGreaterThanOrEqual(3);
+    expect(body.total).toBeGreaterThanOrEqual(3);
+  });
+
+  it("reads a single member, and 404s an unknown one", async () => {
+    const admin = await devLogin("admin");
+    const list = await (
+      await SELF.fetch(`${BASE}/admin/users`, { headers: { cookie: admin } })
+    ).json<{ users: { id: string; email: string }[] }>();
+    const target = list.users[0];
+    const one = await SELF.fetch(
+      `${BASE}/admin/users/${encodeURIComponent(target?.id ?? "")}`,
+      { headers: { cookie: admin } },
+    );
+    expect(one.status).toBe(200);
+    expect((await one.json<{ user: { id: string } }>()).user.id).toBe(
+      target?.id,
+    );
+
+    const missing = await SELF.fetch(`${BASE}/admin/users/nope`, {
+      headers: { cookie: admin },
+    });
+    expect(missing.status).toBe(404);
   });
 
   it("grants editor to the nogrant persona, revokes it, and the revocation survives re-login", async () => {
@@ -238,6 +261,55 @@ describe("project, environment, and key management", () => {
     expect(withNew.status).toBe(200);
   });
 
+  it("deletes an environment: its key stops working and it leaves the list", async () => {
+    const admin = await devLogin("admin");
+    await SELF.fetch(
+      `${BASE}/admin/projects`,
+      jsonInit(admin, "POST", { key: "kraken", name: "Kraken" }),
+    );
+    const created = await SELF.fetch(
+      `${BASE}/admin/projects/kraken/environments`,
+      jsonInit(admin, "POST", { key: "qa", name: "QA" }),
+    );
+    expect(created.status).toBe(201);
+    const { evalKey } = await created.json<{ evalKey: string }>();
+
+    const deleted = await SELF.fetch(
+      `${BASE}/admin/projects/kraken/environments/qa`,
+      jsonInit(admin, "DELETE"),
+    );
+    expect(deleted.status).toBe(200);
+
+    const keys = await (
+      await SELF.fetch(`${BASE}/admin/projects/kraken/keys`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ keys: { environmentKey: string }[] }>();
+    expect(
+      keys.keys.find((entry) => entry.environmentKey === "qa"),
+    ).toBeUndefined();
+
+    clearConfigCache();
+    const evaluated = await SELF.fetch(`${BASE}/v1/eval`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${evalKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ context: { key: "deleted-env-user" } }),
+    });
+    expect(evaluated.status).toBe(401);
+  });
+
+  it("404s when deleting a missing environment", async () => {
+    const admin = await devLogin("admin");
+    const response = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/ghost`,
+      jsonInit(admin, "DELETE"),
+    );
+    expect(response.status).toBe(404);
+  });
+
   it("locks every management route to admins", async () => {
     const editor = await devLogin("editor");
     const checks = [
@@ -255,6 +327,10 @@ describe("project, environment, and key management", () => {
       SELF.fetch(
         `${BASE}/admin/projects/clawhub/environments/development/keys/rotate`,
         jsonInit(editor, "POST"),
+      ),
+      SELF.fetch(
+        `${BASE}/admin/projects/clawhub/environments/development`,
+        jsonInit(editor, "DELETE"),
       ),
     ];
     for (const response of await Promise.all(checks)) {

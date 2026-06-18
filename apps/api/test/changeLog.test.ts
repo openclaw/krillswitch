@@ -211,9 +211,83 @@ describe("change log writes", () => {
     expect(remove.status).toBe(404);
   });
 
+  it("filters audit history by actor for a member profile", async () => {
+    const admin = await devLogin("admin");
+    const me = await (
+      await SELF.fetch(`${BASE}/admin/me`, { headers: { cookie: admin } })
+    ).json<{ user: { id: string } }>();
+
+    const mine = await (
+      await SELF.fetch(`${BASE}/admin/users/${me.user.id}/changelog`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ entries: LogEntry[]; total: number }>();
+    expect(mine.total).toBeGreaterThan(0);
+
+    // A member with no recorded actions has an empty history.
+    const empty = await (
+      await SELF.fetch(`${BASE}/admin/users/nobody/changelog`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ entries: LogEntry[]; total: number }>();
+    expect(empty.total).toBe(0);
+  });
+
+  it("scopes a member's audit history to admins", async () => {
+    const viewer = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/users/anyone/changelog`, {
+      headers: { cookie: viewer },
+    });
+    expect(response.status).toBe(403);
+  });
+
   it("is readable by viewers", async () => {
     const viewer = await devLogin("viewer");
     const entries = await fetchLog(viewer);
     expect(entries.length).toBeGreaterThan(0);
+  });
+
+  it("returns a single entry by id with its full target and before/after", async () => {
+    const admin = await devLogin("admin");
+    const entries = await fetchLog(admin);
+    const first = entries[0];
+    const response = await SELF.fetch(`${BASE}/admin/changelog/${first?.id}`, {
+      headers: { cookie: admin },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json<{ entry: LogEntry }>();
+    expect(body.entry.id).toBe(first?.id);
+    expect(body.entry.target).toBe(first?.target);
+    expect(body.entry.action).toBe(first?.action);
+  });
+
+  it("404s for an unknown entry id", async () => {
+    const admin = await devLogin("admin");
+    const response = await SELF.fetch(
+      `${BASE}/admin/changelog/chg_does_not_exist`,
+      { headers: { cookie: admin } },
+    );
+    expect(response.status).toBe(404);
+  });
+
+  it("paginates with limit/offset and reports a stable total", async () => {
+    const admin = await devLogin("admin");
+    const page1 = await (
+      await SELF.fetch(`${BASE}/admin/changelog?limit=2&offset=0`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ entries: LogEntry[]; total: number }>();
+    expect(page1.entries.length).toBe(2);
+    expect(page1.total).toBeGreaterThan(2);
+
+    const page2 = await (
+      await SELF.fetch(`${BASE}/admin/changelog?limit=2&offset=2`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ entries: LogEntry[]; total: number }>();
+    expect(page2.total).toBe(page1.total);
+    // Next page is a different slice — no overlap with the first.
+    const firstIds = new Set(page1.entries.map((entry) => entry.id));
+    expect(page2.entries.some((entry) => firstIds.has(entry.id))).toBe(false);
   });
 });

@@ -58,6 +58,7 @@ export type ChangeAction =
   | "role.set"
   | "project.create"
   | "environment.create"
+  | "environment.delete"
   | "key.rotate";
 
 // Append-only audit trail; rows are written in the same D1 batch as the
@@ -87,6 +88,7 @@ export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description"),
 });
 
 export const environments = sqliteTable(

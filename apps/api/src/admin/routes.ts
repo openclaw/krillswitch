@@ -1,4 +1,5 @@
 import { evaluateFlag, type FlagEvaluation } from "@openclaw/krillswitch-core";
+import { count, max } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -16,15 +17,23 @@ import {
 import { canEditFlags, resolveRole } from "../auth/roles";
 import { clearConfigCache } from "../configCache";
 import { loadFlagConfigs } from "../db/flagStore";
-import { type AdminRole, projects, roleGrants } from "../db/schema";
+import {
+  type AdminRole,
+  changeLog,
+  environments,
+  flags,
+  projects,
+  roleGrants,
+} from "../db/schema";
 import {
   loadFlagList,
   loadProjectDetail,
+  loadProjectFlagKeys,
   resolveEnvironment,
   resolveProjectId,
   setFlagEnabled,
 } from "./adminStore";
-import { listChangeLog } from "./changeLog";
+import { countChangeLog, getChangeLogEntry, listChangeLog } from "./changeLog";
 import {
   createFlag,
   deleteFlag,
@@ -37,15 +46,19 @@ import {
   semanticError,
 } from "./flagDetailSchema";
 import {
+  countUsers,
   createEnvironment,
   createProject,
+  deleteEnvironment,
   listKeys,
   listUsers,
+  loadUser,
   rotateKey,
   setUserRole,
 } from "./management";
 import {
   authenticateToken,
+  countTokens,
   listTokens,
   mintToken,
   revokeToken,
@@ -220,18 +233,76 @@ adminRoutes.use("*", async (c, next) => {
 });
 
 adminRoutes.get("/projects", async (c) => {
-  const rows = await drizzle(c.env.DB).select().from(projects).all();
-  return c.json({ projects: rows });
+  const db = drizzle(c.env.DB);
+  const { limit, offset } = parsePage(c);
+  const [rows, totalRow, flagCounts, envCounts, lastChanges] =
+    await Promise.all([
+      db
+        .select()
+        .from(projects)
+        .orderBy(projects.name)
+        .limit(limit)
+        .offset(offset)
+        .all(),
+      db.select({ n: count() }).from(projects).get(),
+      db
+        .select({ projectId: flags.projectId, n: count() })
+        .from(flags)
+        .groupBy(flags.projectId)
+        .all(),
+      db
+        .select({ projectId: environments.projectId, n: count() })
+        .from(environments)
+        .groupBy(environments.projectId)
+        .all(),
+      db
+        .select({
+          projectKey: changeLog.projectKey,
+          last: max(changeLog.createdAt),
+        })
+        .from(changeLog)
+        .groupBy(changeLog.projectKey)
+        .all(),
+    ]);
+
+  const flagByProject = new Map(flagCounts.map((r) => [r.projectId, r.n]));
+  const envByProject = new Map(envCounts.map((r) => [r.projectId, r.n]));
+  const lastByKey = new Map(lastChanges.map((r) => [r.projectKey, r.last]));
+
+  const summaries = rows.map((project) => ({
+    id: project.id,
+    key: project.key,
+    name: project.name,
+    description: project.description,
+    flagCount: flagByProject.get(project.id) ?? 0,
+    environmentCount: envByProject.get(project.id) ?? 0,
+    lastChangeAt: lastByKey.get(project.key)?.getTime() ?? null,
+  }));
+
+  return c.json({ projects: summaries, total: totalRow?.n ?? 0 });
 });
 
 // Append-only audit trail: read-only here by design; there are no update
 // or delete routes for it anywhere.
 adminRoutes.get("/changelog", async (c) => {
-  const entries = await listChangeLog(drizzle(c.env.DB), {
+  const db = drizzle(c.env.DB);
+  const { limit, offset } = parsePage(c);
+  const filter = {
     flagKey: c.req.query("flagKey")?.trim() || undefined,
     projectKey: c.req.query("projectKey")?.trim() || undefined,
-  });
-  return c.json({ entries });
+  };
+  const [entries, total] = await Promise.all([
+    listChangeLog(db, { ...filter, limit, offset }),
+    countChangeLog(db, filter),
+  ]);
+  return c.json({ entries, total });
+});
+
+adminRoutes.get("/changelog/:id", async (c) => {
+  const db = drizzle(c.env.DB);
+  const entry = await getChangeLogEntry(db, c.req.param("id"));
+  if (!entry) return c.json({ error: "not found" }, 404);
+  return c.json({ entry });
 });
 
 // --- Admin-only management: grants, projects, environments, keys. ---
@@ -259,10 +330,30 @@ function forbidNonAdmin(c: Context<AdminContext>) {
   return c.get("role") === "admin" ? null : c.json({ error: "forbidden" }, 403);
 }
 
+// Shared list pagination: ?limit (1..100, default 50) and ?offset (>=0).
+function parsePage(
+  c: Context<AdminContext>,
+  defaultLimit = 50,
+): { limit: number; offset: number } {
+  const rawLimit = Number.parseInt(c.req.query("limit") ?? "", 10);
+  const rawOffset = Number.parseInt(c.req.query("offset") ?? "", 10);
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(100, Math.max(1, rawLimit))
+    : defaultLimit;
+  const offset = Number.isFinite(rawOffset) ? Math.max(0, rawOffset) : 0;
+  return { limit, offset };
+}
+
 adminRoutes.get("/tokens", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
-  return c.json({ tokens: await listTokens(drizzle(c.env.DB)) });
+  const db = drizzle(c.env.DB);
+  const { limit, offset } = parsePage(c);
+  const [tokens, total] = await Promise.all([
+    listTokens(db, { limit, offset }),
+    countTokens(db),
+  ]);
+  return c.json({ tokens, total });
 });
 
 adminRoutes.post("/tokens", async (c) => {
@@ -296,7 +387,51 @@ adminRoutes.post("/tokens/:id/revoke", async (c) => {
 adminRoutes.get("/users", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
-  return c.json({ users: await listUsers(drizzle(c.env.DB)) });
+  const db = drizzle(c.env.DB);
+  const { limit, offset } = parsePage(c);
+  const [users, total] = await Promise.all([
+    listUsers(db, { limit, offset }),
+    countUsers(db),
+  ]);
+  return c.json({ users, total });
+});
+
+adminRoutes.get("/users/:userId", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const member = await loadUser(drizzle(c.env.DB), c.req.param("userId"));
+  if (!member) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ user: member });
+});
+
+// Tokens this member minted (shown on their profile).
+adminRoutes.get("/users/:userId/tokens", async (c) => {
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const db = drizzle(c.env.DB);
+  const { limit, offset } = parsePage(c);
+  const createdBy = c.req.param("userId");
+  const [tokens, total] = await Promise.all([
+    listTokens(db, { limit, offset }, { createdBy }),
+    countTokens(db, { createdBy }),
+  ]);
+  return c.json({ tokens, total });
+});
+
+// This member's audit-trail entries (where they were the actor).
+adminRoutes.get("/users/:userId/changelog", async (c) => {
+  const db = drizzle(c.env.DB);
+  const forbidden = forbidNonAdmin(c);
+  if (forbidden) return forbidden;
+  const { limit, offset } = parsePage(c);
+  const filter = { actorUserId: c.req.param("userId") };
+  const [entries, total] = await Promise.all([
+    listChangeLog(db, { ...filter, limit, offset }),
+    countChangeLog(db, filter),
+  ]);
+  return c.json({ entries, total });
 });
 
 adminRoutes.put("/users/:userId/role", async (c) => {
@@ -378,6 +513,33 @@ adminRoutes.post("/projects/:projectKey/environments", async (c) => {
   return c.json({ created: parsed.data.key, evalKey: outcome.evalKey }, 201);
 });
 
+adminRoutes.delete(
+  "/projects/:projectKey/environments/:environmentKey",
+  async (c) => {
+    const forbidden = forbidNonAdmin(c);
+    if (forbidden) return forbidden;
+    const db = drizzle(c.env.DB);
+    const projectKey = c.req.param("projectKey");
+    const projectId = await resolveProjectId(db, projectKey);
+    if (!projectId) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    const environmentKey = c.req.param("environmentKey");
+    const actor = c.get("actor");
+    const deleted = await deleteEnvironment(db, {
+      projectId,
+      projectKey,
+      environmentKey,
+      actor: { id: actor.id, name: actor.name },
+    });
+    if (!deleted) {
+      return c.json({ error: "not_found" }, 404);
+    }
+    clearConfigCache();
+    return c.json({ deleted: environmentKey });
+  },
+);
+
 adminRoutes.get("/projects/:projectKey/keys", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
@@ -424,6 +586,17 @@ adminRoutes.get("/projects/:projectKey", async (c) => {
     return c.json({ error: "not_found" }, 404);
   }
   return c.json(detail);
+});
+
+// Project-level flag keys for filter UIs (e.g. the change log combobox).
+// Viewer-readable, like the change log it filters.
+adminRoutes.get("/projects/:projectKey/flags", async (c) => {
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ flags: await loadProjectFlagKeys(db, projectId) });
 });
 
 const evalContextSchema = z.object({

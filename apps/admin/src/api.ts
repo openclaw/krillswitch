@@ -13,6 +13,20 @@ export type DevPersonaOption = {
 
 export type Project = { id: string; key: string; name: string };
 
+export type ProjectSummary = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  flagCount: number;
+  environmentCount: number;
+  /** Epoch ms of the latest change-log entry for this project, or null. */
+  lastChangeAt: number | null;
+};
+
+/** Project-level flag identity for filter UIs (no per-environment config). */
+export type ProjectFlagKey = { key: string; name: string };
+
 export type TokenRole = "editor" | "viewer";
 
 export type AccessTokenEntry = {
@@ -181,6 +195,17 @@ function post(path: string, body: unknown): Promise<unknown> {
   });
 }
 
+/** Limit/offset paging for list endpoints. */
+export type PageParams = { limit?: number; offset?: number };
+
+function pageSuffix(page?: PageParams, base = ""): string {
+  const params = new URLSearchParams(base);
+  if (page?.limit !== undefined) params.set("limit", String(page.limit));
+  if (page?.offset !== undefined) params.set("offset", String(page.offset));
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export type AuthProviders = { github: boolean; devPersonas: boolean };
 
 export const api = {
@@ -197,9 +222,16 @@ export const api = {
     request<{ personas: DevPersonaOption[] }>("/admin/dev-personas"),
   devLogin: (persona: string) => post("/admin/dev-login", { persona }),
   signOut: () => post("/api/auth/sign-out", {}),
-  projects: () => request<{ projects: Project[] }>("/admin/projects"),
+  projects: (page?: PageParams) =>
+    request<{ projects: ProjectSummary[]; total: number }>(
+      `/admin/projects${pageSuffix(page)}`,
+    ),
   projectDetail: (projectKey: string) =>
     request<ProjectDetail>(`/admin/projects/${encodeURIComponent(projectKey)}`),
+  projectFlagKeys: (projectKey: string) =>
+    request<{ flags: ProjectFlagKey[] }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags`,
+    ),
   flags: (projectKey: string, environmentKey: string) =>
     request<{ flags: FlagListEntry[] }>(flagsPath(projectKey, environmentKey)),
   setFlagEnabled: (
@@ -248,16 +280,37 @@ export const api = {
       `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
       { method: "DELETE" },
     ),
-  changeLog: (filter: { flagKey?: string; projectKey?: string }) => {
+  changeLog: (
+    filter: { flagKey?: string; projectKey?: string },
+    page?: PageParams,
+  ) => {
     const params = new URLSearchParams();
     if (filter.flagKey) params.set("flagKey", filter.flagKey);
     if (filter.projectKey) params.set("projectKey", filter.projectKey);
-    const query = params.toString();
-    return request<{ entries: ChangeLogEntry[] }>(
-      `/admin/changelog${query ? `?${query}` : ""}`,
+    return request<{ entries: ChangeLogEntry[]; total: number }>(
+      `/admin/changelog${pageSuffix(page, params.toString())}`,
     );
   },
-  users: () => request<{ users: UserWithRole[] }>("/admin/users"),
+  changeLogEntry: (id: string) =>
+    request<{ entry: ChangeLogEntry }>(
+      `/admin/changelog/${encodeURIComponent(id)}`,
+    ),
+  users: (page?: PageParams) =>
+    request<{ users: UserWithRole[]; total: number }>(
+      `/admin/users${pageSuffix(page)}`,
+    ),
+  user: (userId: string) =>
+    request<{ user: UserWithRole }>(
+      `/admin/users/${encodeURIComponent(userId)}`,
+    ),
+  userTokens: (userId: string, page?: PageParams) =>
+    request<{ tokens: AccessTokenEntry[]; total: number }>(
+      `/admin/users/${encodeURIComponent(userId)}/tokens${pageSuffix(page)}`,
+    ),
+  userChangeLog: (userId: string, page?: PageParams) =>
+    request<{ entries: ChangeLogEntry[]; total: number }>(
+      `/admin/users/${encodeURIComponent(userId)}/changelog${pageSuffix(page)}`,
+    ),
   setUserRole: (userId: string, role: AdminRole | null) =>
     request<{ userId: string; role: AdminRole | null }>(
       `/admin/users/${encodeURIComponent(userId)}/role`,
@@ -282,6 +335,11 @@ export const api = {
         body: JSON.stringify({ key, name }),
       },
     ),
+  deleteEnvironment: (projectKey: string, environmentKey: string) =>
+    request<{ deleted: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/environments/${encodeURIComponent(environmentKey)}`,
+      { method: "DELETE" },
+    ),
   keys: (projectKey: string) =>
     request<{ keys: EnvironmentKeyEntry[] }>(
       `/admin/projects/${encodeURIComponent(projectKey)}/keys`,
@@ -291,7 +349,10 @@ export const api = {
       `/admin/projects/${encodeURIComponent(projectKey)}/environments/${encodeURIComponent(environmentKey)}/keys/rotate`,
       { method: "POST" },
     ),
-  tokens: () => request<{ tokens: AccessTokenEntry[] }>("/admin/tokens"),
+  tokens: (page?: PageParams) =>
+    request<{ tokens: AccessTokenEntry[]; total: number }>(
+      `/admin/tokens${pageSuffix(page)}`,
+    ),
   mintToken: (name: string, role: TokenRole) =>
     request<{ id: string; token: string }>("/admin/tokens", {
       method: "POST",

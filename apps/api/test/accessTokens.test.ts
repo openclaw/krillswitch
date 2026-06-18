@@ -258,3 +258,38 @@ describe("token auth ignores eval keys", () => {
     expect(response.status).toBe(401);
   });
 });
+
+// A member's profile lists the tokens they minted (scoped by created_by).
+describe("tokens by creator", () => {
+  it("lists only the tokens a given member minted", async () => {
+    const admin = await devLogin("admin");
+    const me = await (
+      await SELF.fetch(`${BASE}/admin/me`, { headers: { cookie: admin } })
+    ).json<{ user: { id: string } }>();
+    const minted = await (
+      await mintToken(admin, { name: "profile-token", role: "editor" })
+    ).json<{ id: string }>();
+
+    const mine = await (
+      await SELF.fetch(`${BASE}/admin/users/${me.user.id}/tokens`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ tokens: { id: string }[]; total: number }>();
+    expect(mine.tokens.some((token) => token.id === minted.id)).toBe(true);
+
+    const theirs = await (
+      await SELF.fetch(`${BASE}/admin/users/nobody/tokens`, {
+        headers: { cookie: admin },
+      })
+    ).json<{ tokens: { id: string }[]; total: number }>();
+    expect(theirs.total).toBe(0);
+  });
+
+  it("is admin-only", async () => {
+    const editor = await devLogin("editor");
+    const response = await SELF.fetch(`${BASE}/admin/users/anyone/tokens`, {
+      headers: { cookie: editor },
+    });
+    expect(response.status).toBe(403);
+  });
+});

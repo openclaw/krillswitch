@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { accessTokens, type TokenRole } from "../db/schema";
 
@@ -56,10 +56,15 @@ export type TokenListEntry = {
   revokedAt: number | null;
 };
 
+/** Optional `createdBy` scopes the list to one minter (a member's profile). */
+export type TokenFilter = { createdBy?: string };
+
 export async function listTokens(
   db: DrizzleD1Database,
+  page: { limit: number; offset: number },
+  filter: TokenFilter = {},
 ): Promise<TokenListEntry[]> {
-  const rows = await db
+  let query = db
     .select({
       id: accessTokens.id,
       name: accessTokens.name,
@@ -69,7 +74,14 @@ export async function listTokens(
       revokedAt: accessTokens.revokedAt,
     })
     .from(accessTokens)
+    .$dynamic();
+  if (filter.createdBy) {
+    query = query.where(eq(accessTokens.createdBy, filter.createdBy));
+  }
+  const rows = await query
     .orderBy(desc(accessTokens.createdAt))
+    .limit(page.limit)
+    .offset(page.offset)
     .all();
   // Never expose the hash; timestamps serialize as epoch ms over JSON.
   return rows.map((row) => ({
@@ -78,6 +90,18 @@ export async function listTokens(
     lastUsedAt: row.lastUsedAt?.getTime() ?? null,
     revokedAt: row.revokedAt?.getTime() ?? null,
   }));
+}
+
+export async function countTokens(
+  db: DrizzleD1Database,
+  filter: TokenFilter = {},
+): Promise<number> {
+  let query = db.select({ n: count() }).from(accessTokens).$dynamic();
+  if (filter.createdBy) {
+    query = query.where(eq(accessTokens.createdBy, filter.createdBy));
+  }
+  const row = await query.get();
+  return row?.n ?? 0;
 }
 
 export async function revokeToken(

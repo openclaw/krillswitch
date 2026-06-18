@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/admin build && bun run --cwd apps/api dev",
+    "seed:demo": "bun run --cwd apps/api seed:demo",
     "test": "bun run --cwd packages/core test && bun run --cwd packages/react test && bun run --cwd packages/cli test && bun run --cwd apps/api test",
     "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/react typecheck && bun run --cwd packages/cli typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/demo typecheck && bun run --cwd apps/admin typecheck",
     "lint": "biome check .",

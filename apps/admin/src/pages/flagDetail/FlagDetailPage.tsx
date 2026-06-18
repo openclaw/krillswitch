@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ApiError, api, type FlagDetail, type Me } from "../../api";
-import { type Draft, fromDraft, toDraft } from "./draft";
+import { ChevronDownIcon } from "../../components/brand";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { BlockSkeleton } from "../../components/Skeleton";
+import { Switch } from "../../components/Switch";
+import { type Draft, fromDraft, toDraft, variationLabel } from "./draft";
 import { AllowlistEditor, RolloutEditor, RulesEditor } from "./TargetingEditor";
 import { VariationsEditor } from "./VariationsEditor";
 
@@ -15,7 +19,14 @@ export function FlagDetailPage({ me }: { me: Me }) {
   });
 
   if (detail.isPending) {
-    return <p className="muted">Loading flag…</p>;
+    return (
+      <section>
+        <header className="page-header">
+          <h1>Flag</h1>
+        </header>
+        <BlockSkeleton lines={5} />
+      </section>
+    );
   }
   if (detail.isError) {
     return <p role="alert">Failed to load this flag.</p>;
@@ -50,8 +61,33 @@ function FlagDetailEditor({
   const readOnly = me.role === "viewer";
 
   const [draft, setDraft] = useState<Draft>(() => toDraft(detail));
+  // Snapshot of the last-saved draft (captured from the same object that seeds
+  // `draft`, so its row ids line up). Drives the dirty check.
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    JSON.stringify(draft),
+  );
   const [draftError, setDraftError] = useState<string | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const isDirty = JSON.stringify(draft) !== savedSnapshot;
+
+  // Targeting is collapsed by default unless the flag already has some.
+  const [targetingOpen, setTargetingOpen] = useState(
+    () => draft.targets.length + draft.rules.length > 0 || draft.rolloutEnabled,
+  );
+  const targetingParts: string[] = [];
+  if (draft.targets.length > 0) {
+    targetingParts.push(`${draft.targets.length} allowlisted`);
+  }
+  if (draft.rules.length > 0) {
+    targetingParts.push(
+      `${draft.rules.length} rule${draft.rules.length > 1 ? "s" : ""}`,
+    );
+  }
+  if (draft.rolloutEnabled) {
+    targetingParts.push("rollout");
+  }
+  const targetingSummary =
+    targetingParts.length > 0 ? targetingParts.join(" · ") : "none set";
 
   const save = useMutation({
     mutationFn: (body: Parameters<typeof api.updateFlag>[3]) =>
@@ -59,7 +95,9 @@ function FlagDetailEditor({
     onSuccess: (updated) => {
       // Re-seed the draft from the response: new variations now carry their
       // server-assigned ids, so a second save edits instead of duplicating.
-      setDraft(toDraft(updated));
+      const next = toDraft(updated);
+      setDraft(next);
+      setSavedSnapshot(JSON.stringify(next));
       queryClient.setQueryData(
         ["flag", projectKey, environmentKey, flagKey],
         updated,
@@ -110,58 +148,46 @@ function FlagDetailEditor({
           <h1>{detail.flag.name}</h1>
           <p className="flag-meta">
             <code>{detail.flag.key}</code>
-            <span className="muted"> · {detail.flag.kind}</span>
+            <span className="flag-meta-sep">·</span>
+            <span className="badge-kind">{detail.flag.kind}</span>
           </p>
           {detail.flag.description && (
             <p className="muted flag-description">{detail.flag.description}</p>
           )}
         </div>
         <div className="header-actions">
-          <label className="enabled-control">
-            <input
-              type="checkbox"
+          <div className="enable-switch">
+            <Switch
               checked={draft.enabled}
               disabled={readOnly}
-              onChange={(event) =>
-                setDraft({ ...draft, enabled: event.target.checked })
+              ariaLabel={`Flag enabled in ${environmentKey}`}
+              onChange={(next) => setDraft({ ...draft, enabled: next })}
+              onLabel={`Enabled in ${environmentKey}`}
+              offLabel={`Disabled in ${environmentKey}`}
+            />
+          </div>
+          {me.role === "admin" && (
+            <ConfirmDialog
+              title={`Delete “${detail.flag.name}”?`}
+              description="This removes the flag and its targeting from every environment. Clients evaluating it fall back to their own default. This can't be undone."
+              confirmLabel="Delete flag"
+              pending={remove.isPending}
+              onConfirm={() => remove.mutate()}
+              trigger={
+                <button type="button" className="btn btn-quiet">
+                  Delete flag
+                </button>
               }
             />
-            Enabled in {environmentKey}
-          </label>
-          {me.role === "admin" &&
-            (confirmingDelete ? (
-              <span className="confirm-delete">
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  disabled={remove.isPending}
-                  onClick={() => remove.mutate()}
-                >
-                  Confirm delete
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-quiet"
-                  onClick={() => setConfirmingDelete(false)}
-                >
-                  Cancel
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-quiet"
-                onClick={() => setConfirmingDelete(true)}
-              >
-                Delete flag
-              </button>
-            ))}
+          )}
         </div>
       </header>
 
       {remove.isError && (
         <p role="alert">Deleting failed. Refresh and retry.</p>
       )}
+
+      <StatePanel draft={draft} environmentKey={environmentKey} />
 
       <VariationsEditor
         kind={detail.flag.kind}
@@ -180,50 +206,120 @@ function FlagDetailEditor({
         }
       />
 
-      <AllowlistEditor
-        targets={draft.targets}
-        variations={draft.variations}
-        disabled={readOnly}
-        onChange={(targets) => setDraft({ ...draft, targets })}
-      />
+      <section className="detail-section">
+        <button
+          type="button"
+          className="disclosure"
+          aria-expanded={targetingOpen}
+          onClick={() => setTargetingOpen((open) => !open)}
+        >
+          <ChevronDownIcon
+            className={`disclosure-chevron ${targetingOpen ? "is-open" : ""}`}
+          />
+          <span className="disclosure-title">Targeting</span>
+          <span className="disclosure-meta">{targetingSummary}</span>
+        </button>
+        {targetingOpen && (
+          <div className="disclosure-body">
+            <p className="section-hint">
+              Checked in order — allowlist, then rules, then rollout. Anyone not
+              matched gets the default.
+            </p>
+            <AllowlistEditor
+              targets={draft.targets}
+              variations={draft.variations}
+              disabled={readOnly}
+              onChange={(targets) => setDraft({ ...draft, targets })}
+            />
+            <RulesEditor
+              rules={draft.rules}
+              variations={draft.variations}
+              disabled={readOnly}
+              onChange={(rules) => setDraft({ ...draft, rules })}
+            />
+            <RolloutEditor
+              enabled={draft.rolloutEnabled}
+              weights={draft.weights}
+              variations={draft.variations}
+              disabled={readOnly}
+              onChange={({ enabled, weights }) =>
+                setDraft({ ...draft, rolloutEnabled: enabled, weights })
+              }
+            />
+          </div>
+        )}
+      </section>
 
-      <RulesEditor
-        rules={draft.rules}
-        variations={draft.variations}
-        disabled={readOnly}
-        onChange={(rules) => setDraft({ ...draft, rules })}
-      />
-
-      <RolloutEditor
-        enabled={draft.rolloutEnabled}
-        weights={draft.weights}
-        variations={draft.variations}
-        disabled={readOnly}
-        onChange={({ enabled, weights }) =>
-          setDraft({ ...draft, rolloutEnabled: enabled, weights })
-        }
-      />
-
-      {!readOnly && (
-        <footer className="save-bar">
+      {!readOnly && isDirty && (
+        <>
           {(draftError ?? serverError) && (
             <p role="alert" className="save-error">
               {draftError ?? serverError}
             </p>
           )}
-          {save.isSuccess && !draftError && (
-            <p className="muted">Saved. Live within a second.</p>
-          )}
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={save.isPending}
-            onClick={onSave}
-          >
-            Save changes
-          </button>
-        </footer>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={save.isPending}
+              onClick={onSave}
+            >
+              Save changes
+            </button>
+          </div>
+        </>
+      )}
+      {!readOnly && !isDirty && save.isSuccess && (
+        <p className="muted save-ok">Saved. Live within a second.</p>
       )}
     </section>
+  );
+}
+
+function labelAt(draft: Draft, index: number): string {
+  const variation = draft.variations[index];
+  return variation ? variationLabel(variation, index) : "—";
+}
+
+/** Plain-language summary of what the flag serves right now in this env. */
+function StatePanel({
+  draft,
+  environmentKey,
+}: {
+  draft: Draft;
+  environmentKey: string;
+}) {
+  const hasTargeting =
+    draft.targets.length + draft.rules.length > 0 || draft.rolloutEnabled;
+  return (
+    <div className={`flag-state ${draft.enabled ? "is-on" : "is-off"}`}>
+      <span className="flag-state-dot" aria-hidden="true" />
+      <p className="flag-state-text">
+        {!draft.enabled ? (
+          <>
+            Off in <strong>{environmentKey}</strong> — every request gets{" "}
+            <span className="badge-soft">{labelAt(draft, draft.offIndex)}</span>
+            .
+          </>
+        ) : hasTargeting ? (
+          <>
+            Matched users get their target; everyone else in{" "}
+            <strong>{environmentKey}</strong> gets{" "}
+            <span className="badge-soft">
+              {labelAt(draft, draft.defaultIndex)}
+            </span>
+            .
+          </>
+        ) : (
+          <>
+            Everyone in <strong>{environmentKey}</strong> gets{" "}
+            <span className="badge-soft">
+              {labelAt(draft, draft.defaultIndex)}
+            </span>
+            .
+          </>
+        )}
+      </p>
+    </div>
   );
 }

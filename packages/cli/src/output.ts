@@ -3,7 +3,7 @@ import type { OutputOptions } from "./options";
 
 export type Column<T> = { header: string; value: (row: T) => string };
 type TableOptions = { title?: string; output?: Writable };
-type TextBlockOptions = { output?: Writable; marker?: "◇" | "✕" };
+type TextBlockOptions = { output?: Writable; marker?: "🦐" | "✕" };
 type KeyValueRow = { field: string; value: string };
 const DEFAULT_TABLE_WIDTH = 100;
 const MAX_TABLE_WIDTH = 120;
@@ -67,7 +67,8 @@ export function printTextBlock(
   options: TextBlockOptions = {},
 ): void {
   const output = options.output ?? process.stdout;
-  const marker = options.marker ?? "◇";
+  // A little krill heads up every success/info block; errors keep the ✕.
+  const marker = options.marker ?? "🦐";
   const width = textBlockWidth(lines, output);
   const tone = marker === "✕" ? "red" : "cyan";
   output.write(

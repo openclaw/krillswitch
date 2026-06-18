@@ -6,7 +6,8 @@
       "!**/migrations/meta",
       "!**/.wrangler",
       "!**/worker-configuration.d.ts",
-      "!**/dist"
+      "!**/dist",
+      "!**/admin/src/index.css"
     ]
   },
   "formatter": {

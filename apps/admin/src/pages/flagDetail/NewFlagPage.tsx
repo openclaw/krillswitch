@@ -1,6 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ApiError, api, type FlagKind } from "../../api";
 import { type Draft, fromDraft } from "./draft";
 import { VariationsEditor } from "./VariationsEditor";
@@ -108,6 +115,7 @@ export function NewFlagPage() {
       </header>
 
       <section className="detail-section">
+        <h2>Basics</h2>
         <div className="form-grid">
           <label htmlFor="new-flag-key">Key</label>
           <input
@@ -125,25 +133,26 @@ export function NewFlagPage() {
             onChange={(event) => setName(event.target.value)}
           />
           <label htmlFor="new-flag-kind">Kind</label>
-          <select
-            id="new-flag-kind"
-            className="input"
+          <Select
             value={kind}
-            onChange={(event) => {
-              const next = KINDS.find(
-                (candidate) => candidate === event.target.value,
-              );
+            onValueChange={(value) => {
+              const next = KINDS.find((candidate) => candidate === value);
               if (next) {
                 changeKind(next);
               }
             }}
           >
-            {KINDS.map((candidate) => (
-              <option key={candidate} value={candidate}>
-                {candidate}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="new-flag-kind">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {KINDS.map((candidate) => (
+                <SelectItem key={candidate} value={candidate}>
+                  {candidate}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <label htmlFor="new-flag-description">Description</label>
           <input
             id="new-flag-description"
@@ -182,12 +191,12 @@ export function NewFlagPage() {
         }
       />
 
-      <footer className="save-bar">
-        {(draftError ?? serverError) && (
-          <p role="alert" className="save-error">
-            {draftError ?? serverError}
-          </p>
-        )}
+      {(draftError ?? serverError) && (
+        <p role="alert" className="save-error">
+          {draftError ?? serverError}
+        </p>
+      )}
+      <div className="form-actions">
         <button
           type="button"
           className="btn btn-primary"
@@ -196,7 +205,13 @@ export function NewFlagPage() {
         >
           Create flag
         </button>
-      </footer>
+        <Link
+          className="btn btn-quiet btn-link"
+          to={`/projects/${projectKey}/${environmentKey}`}
+        >
+          Cancel
+        </Link>
+      </div>
     </section>
   );
 }

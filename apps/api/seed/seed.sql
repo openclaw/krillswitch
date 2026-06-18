@@ -2,7 +2,8 @@
 -- eval keys, and a boolean `souls` flag (on in development, off in production).
 -- INSERT OR IGNORE keeps local edits (e.g. toggled enabled state) across reruns.
 -- One statement per line: tests execute this file line by line.
-INSERT OR IGNORE INTO projects (id, key, name) VALUES ('proj_clawhub', 'clawhub', 'ClawHub');
+INSERT OR IGNORE INTO projects (id, key, name, description) VALUES ('proj_clawhub', 'clawhub', 'ClawHub', 'Feature rollout and targeting for the ClawHub app.');
+UPDATE projects SET description = 'Feature rollout and targeting for the ClawHub app.' WHERE id = 'proj_clawhub';
 INSERT OR IGNORE INTO environments (id, project_id, key, name) VALUES ('env_clawhub_dev', 'proj_clawhub', 'development', 'Development');
 INSERT OR IGNORE INTO environments (id, project_id, key, name) VALUES ('env_clawhub_prod', 'proj_clawhub', 'production', 'Production');
 INSERT OR IGNORE INTO eval_keys (id, environment_id, key) VALUES ('ek_clawhub_dev', 'env_clawhub_dev', 'ks_clawhub_development_local');

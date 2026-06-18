@@ -28,7 +28,8 @@ glance, controls that look like what they do, nothing animated for show.
 ## Anti-references
 
 - Marketing-site styling anywhere in the app shell (heroes, gradients,
-  oversized empty states).
+  full-bleed illustrated empty states). Restrained first-run empty states —
+  small accent icon, a line of copy, one CTA — are expected, not banned.
 - LaunchDarkly's crowded chrome: this tool has one job per screen.
 - Dashboard-template decoration: stat cards with icons, colored side-stripes.
 
@@ -41,6 +42,9 @@ glance, controls that look like what they do, nothing animated for show.
   content: never clipped, always copyable.
 - The UI only mirrors server-side authorization; disabled means the API
   would refuse, and viewers see-but-cannot-touch.
+- Empty states teach and point at the next real action (create the first
+  project, the first flag), never a blank panel; read-only roles get the
+  explanation without the action.
 
 ## Accessibility & Inclusion
 

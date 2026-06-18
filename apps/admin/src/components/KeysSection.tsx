@@ -1,11 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { ApiError, api } from "../api";
+import { Link, useNavigate, useParams } from "react-router";
+import { api } from "../api";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { TableFrame } from "./TableFrame";
 
 /** Admin-only project panel: eval keys per environment + new environments. */
 export function KeysSection({ projectKey }: { projectKey: string }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  // The environment currently being viewed, if any — used to leave the page
+  // when that environment is the one deleted.
+  const { environmentKey: currentEnvironmentKey } = useParams();
   const keys = useQuery({
     queryKey: ["keys", projectKey],
     queryFn: () => api.keys(projectKey),
@@ -18,7 +23,27 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
       queryClient.invalidateQueries({ queryKey: ["keys", projectKey] }),
   });
 
-  const [confirmingRotate, setConfirmingRotate] = useState<string | null>(null);
+  const remove = useMutation({
+    mutationFn: (environmentKey: string) =>
+      api.deleteEnvironment(projectKey, environmentKey),
+    onSuccess: async (_, environmentKey) => {
+      queryClient.invalidateQueries({ queryKey: ["keys", projectKey] });
+      queryClient.invalidateQueries({
+        queryKey: ["flags", projectKey, environmentKey],
+      });
+      const refreshedProject = queryClient.invalidateQueries({
+        queryKey: ["project", projectKey],
+      });
+      if (environmentKey === currentEnvironmentKey) {
+        // Wait for the refreshed environment list before leaving, so the
+        // project page doesn't bounce back to the just-deleted environment.
+        await refreshedProject;
+        navigate(`/projects/${encodeURIComponent(projectKey)}`, {
+          replace: true,
+        });
+      }
+    },
+  });
 
   if (keys.isPending) {
     return <p className="muted">Loading keys…</p>;
@@ -28,7 +53,7 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
   }
 
   return (
-    <section className="detail-section">
+    <section className="detail-section section-divider">
       <h2>Eval keys</h2>
       <p className="muted section-hint">
         Public flag-set identifiers, one per environment. Rotation invalidates
@@ -39,13 +64,18 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
           Rotating the key failed.
         </p>
       )}
+      {remove.isError && (
+        <p role="alert" className="save-error">
+          Deleting the environment failed.
+        </p>
+      )}
       <TableFrame className="table-frame-keys">
         <table className="data-table">
           <thead>
             <tr>
               <th>Environment</th>
               <th>Key</th>
-              <th className="th-remove" aria-label="Actions" />
+              <th className="th-key-actions" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -55,123 +85,51 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
                 <td>
                   <code>{entry.evalKey}</code>
                 </td>
-                <td className="td-remove">
-                  {confirmingRotate === entry.environmentKey ? (
-                    <span className="confirm-delete">
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        disabled={rotate.isPending}
-                        onClick={() => {
-                          rotate.mutate(entry.environmentKey);
-                          setConfirmingRotate(null);
-                        }}
-                      >
-                        Confirm rotate
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-quiet"
-                        onClick={() => setConfirmingRotate(null)}
-                      >
-                        Cancel
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-quiet"
-                      onClick={() => setConfirmingRotate(entry.environmentKey)}
-                    >
-                      Rotate
-                    </button>
-                  )}
+                <td className="td-key-actions">
+                  <div className="key-actions">
+                    <ConfirmDialog
+                      title={`Rotate the ${entry.environmentName} key?`}
+                      description="The current eval key stops working immediately. Any client still using it will fail until you ship the new key."
+                      confirmLabel="Rotate key"
+                      pending={rotate.isPending}
+                      onConfirm={() => rotate.mutate(entry.environmentKey)}
+                      trigger={
+                        <button type="button" className="btn btn-quiet">
+                          Rotate
+                        </button>
+                      }
+                    />
+                    <ConfirmDialog
+                      title={`Delete the ${entry.environmentName} environment?`}
+                      description="Its eval key and every flag's state and targeting in this environment are removed. Flags themselves and other environments are untouched. This can't be undone."
+                      confirmLabel="Delete environment"
+                      pending={remove.isPending}
+                      onConfirm={() => remove.mutate(entry.environmentKey)}
+                      trigger={
+                        <button
+                          type="button"
+                          className="btn btn-quiet"
+                          aria-label={`Delete ${entry.environmentName}`}
+                        >
+                          Delete
+                        </button>
+                      }
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </TableFrame>
-      <NewEnvironmentForm projectKey={projectKey} />
+      <div className="below-table">
+        <Link
+          className="btn btn-quiet btn-link"
+          to={`/projects/${encodeURIComponent(projectKey)}/environments/new`}
+        >
+          New environment
+        </Link>
+      </div>
     </section>
-  );
-}
-
-function NewEnvironmentForm({ projectKey }: { projectKey: string }) {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [key, setKey] = useState("");
-  const [name, setName] = useState("");
-
-  const create = useMutation({
-    mutationFn: () =>
-      api.createEnvironment(projectKey, key.trim(), name.trim()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["keys", projectKey] });
-      queryClient.invalidateQueries({ queryKey: ["project", projectKey] });
-      setOpen(false);
-      setKey("");
-      setName("");
-    },
-  });
-
-  const errorMessage =
-    create.error instanceof ApiError
-      ? create.error.status === 409
-        ? "An environment with this key already exists."
-        : "Creating the environment failed."
-      : create.isError
-        ? "Creating the environment failed."
-        : null;
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        className="btn btn-quiet"
-        onClick={() => setOpen(true)}
-      >
-        New environment
-      </button>
-    );
-  }
-
-  return (
-    <div className="inline-create">
-      <input
-        className="input input-mono"
-        aria-label="New environment key"
-        placeholder="key (e.g. staging)"
-        value={key}
-        onChange={(event) => setKey(event.target.value)}
-      />
-      <input
-        className="input"
-        aria-label="New environment name"
-        placeholder="Name"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-      />
-      <button
-        type="button"
-        className="btn btn-primary"
-        disabled={create.isPending || key.trim() === "" || name.trim() === ""}
-        onClick={() => create.mutate()}
-      >
-        Create environment
-      </button>
-      <button
-        type="button"
-        className="btn btn-quiet"
-        onClick={() => setOpen(false)}
-      >
-        Cancel
-      </button>
-      {errorMessage && (
-        <p role="alert" className="save-error">
-          {errorMessage}
-        </p>
-      )}
-    </div>
   );
 }

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-labelledby="title">
+  <title id="title">krillswitch mark, no text</title>
+  
+  <g id="krillswitch-mark" fill="none" shape-rendering="geometricPrecision">
+    <rect x="118" y="386" width="788" height="262" rx="131" ry="131" fill="#F21722"/>
+    <path d="M260 398 C202 388 150 357 104 317 C154 346 205 354 276 363 C290 364 296 390 260 398 Z" fill="#F21722"/>
+    <path d="M247 431 C190 427 132 408 82 372 C138 393 190 394 261 398 C280 399 283 427 247 431 Z" fill="#F21722"/>
+    <path d="M232 465 C176 469 125 456 84 427 C137 441 184 435 242 432 C261 430 265 459 232 465 Z" fill="#F21722"/>
+    <circle cx="263" cy="452" r="18" fill="#FFFFFF"/>
+    <path d="M305 389 C394 407 431 489 372 584" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M315 392 C480 416 594 505 710 646" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M431 426 C464 474 468 527 440 577" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
+    <path d="M509 465 C540 512 546 562 515 611" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round"/>
+    <path d="M585 526 C608 561 618 596 596 635" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    <path d="M622 561 L715 656 L558 611" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M205 544 C180 562 172 593 176 619" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    <path d="M255 558 C233 580 228 609 233 634" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    <path d="M309 570 C291 596 291 621 301 643" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    <path d="M390 590 C372 612 358 628 333 636" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+    <path d="M464 611 C446 632 429 643 404 644" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+    <circle cx="772" cy="517" r="103" fill="#FFFFFF"/>
+  </g>
+</svg>

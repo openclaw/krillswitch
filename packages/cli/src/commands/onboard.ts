@@ -24,6 +24,28 @@ type RawModeInput = Readable & {
 
 const DEFAULT_BASE_URL = "http://localhost:8799";
 
+// The krill-toggle mark rendered from the logo art (body + legs on the left,
+// the switch track with the round knob as the gap on the right).
+const KRILL_ART = [
+  "",
+  "   ▄▄",
+  "     ▀██▄▄▄▄▄▄▄",
+  "  ▄▄    ▀▀██████      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
+  "   ▀▀▀███████████▄▄      ▀▀███████████████████████████████▄▄",
+  " ▄▄▄▄▄███████████████▄   ▄▄   ▀▀█████████████████▀▀     ▀▀███▄",
+  "   ▀█████████  ████████  ██▄ ▄▄▄ ▀▀████████████▀           ▀██▄",
+  "   █████████████████████  ██  ███   ▀▀████████▀              ██▄",
+  "   █████████████████████  ██  ████  ▄  ▀██████               ███",
+  "   ██████▀█████████████  ▄██  ████  ██▄  ▀████               ███",
+  "   ▀███▀ ▄██▀ ███▀████▀  ██▀ ▄████  ███▄   ▀██▄             ▄██▀",
+  "    ▀██ ███▀ ███▀ ████  ▀██▄▄█████ ▄████  ▄  ▀█▄           ▄██▀",
+  "     ▀▀ ███ ████ ████▀ ▄█████▀███ ▄█▀▀▀▀  ██▄  ▀█▄▄▄   ▄▄▄███▀",
+  "        ▀██ ████ ▀█  ▄███▀▀ ▄▄████████▄  ▄  ▀    █████████▀▀",
+  "",
+  "   krillswitch · feature flags, straight from your terminal",
+  "",
+];
+
 const emptyCredentialStore: CredentialStore = {
   async getToken() {
     return undefined;
@@ -39,6 +61,9 @@ export async function onboard(
   credentialStore: CredentialStore = systemCredentialStore,
   io: OnboardIo = { stdin: process.stdin, stdout: process.stdout },
 ): Promise<void> {
+  if (!wantsJson(options)) {
+    io.stdout.write(`${KRILL_ART.join("\n")}\n`);
+  }
   const existing = await resolveConfig(
     { baseUrl: undefined, token: undefined },
     env,

@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { FlagKind } from "../../api";
 import { TableFrame } from "../../components/TableFrame";
 import type { VariationDraft } from "./draft";
@@ -153,16 +160,15 @@ function VariationValueInput({
   const label = `Variation ${index + 1} value`;
   if (kind === "boolean") {
     return (
-      <select
-        className="input"
-        aria-label={label}
-        value={raw}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="true">true</option>
-        <option value="false">false</option>
-      </select>
+      <Select value={raw} disabled={disabled} onValueChange={onChange}>
+        <SelectTrigger aria-label={label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="true">true</SelectItem>
+          <SelectItem value="false">false</SelectItem>
+        </SelectContent>
+      </Select>
     );
   }
   if (kind === "json") {

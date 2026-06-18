@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { user } from "../db/authSchema";
 import {
@@ -22,8 +22,9 @@ export type UserWithRole = {
 
 export async function listUsers(
   db: DrizzleD1Database,
+  page: { limit: number; offset: number },
 ): Promise<UserWithRole[]> {
-  const rows = await db
+  return db
     .select({
       id: user.id,
       name: user.name,
@@ -32,8 +33,33 @@ export async function listUsers(
     })
     .from(user)
     .leftJoin(roleGrants, eq(roleGrants.userId, user.id))
+    .orderBy(asc(user.name))
+    .limit(page.limit)
+    .offset(page.offset)
     .all();
-  return rows.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function countUsers(db: DrizzleD1Database): Promise<number> {
+  const row = await db.select({ n: count() }).from(user).get();
+  return row?.n ?? 0;
+}
+
+export async function loadUser(
+  db: DrizzleD1Database,
+  userId: string,
+): Promise<UserWithRole | null> {
+  const row = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: roleGrants.role,
+    })
+    .from(user)
+    .leftJoin(roleGrants, eq(roleGrants.userId, user.id))
+    .where(eq(user.id, userId))
+    .get();
+  return row ?? null;
 }
 
 export type SetRoleOutcome = "ok" | "not_found" | "last_admin";
@@ -226,6 +252,52 @@ export async function createEnvironment(
     }),
   ]);
   return { kind: "ok", evalKey };
+}
+
+// Removes an environment and everything scoped to it: its eval key and the
+// per-flag config (flag_environments) for this environment only. Flags
+// themselves and other environments are untouched.
+export async function deleteEnvironment(
+  db: DrizzleD1Database,
+  options: {
+    projectId: string;
+    projectKey: string;
+    environmentKey: string;
+    actor: Actor;
+  },
+): Promise<boolean> {
+  const environment = await db
+    .select({
+      id: environments.id,
+      key: environments.key,
+      name: environments.name,
+    })
+    .from(environments)
+    .where(
+      and(
+        eq(environments.projectId, options.projectId),
+        eq(environments.key, options.environmentKey),
+      ),
+    )
+    .get();
+  if (!environment) {
+    return false;
+  }
+  await db.batch([
+    db
+      .delete(flagEnvironments)
+      .where(eq(flagEnvironments.environmentId, environment.id)),
+    db.delete(evalKeys).where(eq(evalKeys.environmentId, environment.id)),
+    db.delete(environments).where(eq(environments.id, environment.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "environment.delete",
+      projectKey: options.projectKey,
+      target: `${options.projectKey}/${environment.key}`,
+      before: { key: environment.key, name: environment.name },
+    }),
+  ]);
+  return true;
 }
 
 export type EnvironmentKey = {

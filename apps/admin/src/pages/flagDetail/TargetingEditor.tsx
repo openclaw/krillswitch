@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { RuleDraft, TargetDraft, VariationDraft } from "./draft";
 import { newRowId, variationLabel } from "./draft";
 
@@ -15,19 +22,25 @@ function VariationSelect({
   onChange: (index: number) => void;
 }) {
   return (
-    <select
-      className="input"
-      aria-label={label}
-      value={value}
+    <Select
+      value={String(value)}
       disabled={disabled}
-      onChange={(event) => onChange(Number(event.target.value))}
+      onValueChange={(next) => onChange(Number(next))}
     >
-      {variations.map((variation, index) => (
-        <option key={variation.id ?? `new-${index}`} value={index}>
-          {variationLabel(variation, index)}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger aria-label={label} className="w-[170px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {variations.map((variation, index) => (
+          <SelectItem
+            key={variation.id ?? `new-${index}`}
+            value={String(index)}
+          >
+            {variationLabel(variation, index)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -56,7 +69,11 @@ export function AllowlistEditor({
       <p className="muted section-hint">
         Pins specific user keys to a variation. Highest targeting precedence.
       </p>
-      {targets.length === 0 && <p className="muted">No allowlist entries.</p>}
+      {targets.length === 0 && (
+        <p className="empty-hint">
+          No allowlist entries. Add one to pin specific users to a variation.
+        </p>
+      )}
       {targets.map((target, index) => (
         <div className="targeting-row" key={target.rowId}>
           <input
@@ -132,7 +149,11 @@ export function RulesEditor({
       <p className="muted section-hint">
         Matched top to bottom after the allowlist; first match serves.
       </p>
-      {rules.length === 0 && <p className="muted">No rules.</p>}
+      {rules.length === 0 && (
+        <p className="empty-hint">
+          No rules. Add one to serve a variation by user attribute.
+        </p>
+      )}
       {rules.map((rule, index) => (
         <div className="targeting-row" key={rule.rowId}>
           <span className="targeting-arrow muted">if</span>
@@ -233,6 +254,33 @@ export function RolloutEditor({
       </label>
       {enabled && (
         <>
+          {total > 0 && (
+            <div
+              className="rollout-bar"
+              role="img"
+              aria-label={`Traffic split: ${variations
+                .map(
+                  (variation, index) =>
+                    `${variationLabel(variation, index)} ${Math.round(
+                      ((weights[index] ?? 0) / total) * 100,
+                    )}%`,
+                )
+                .join(", ")}`}
+            >
+              {variations.map((variation, index) => {
+                const weight = weights[index] ?? 0;
+                if (weight <= 0) return null;
+                return (
+                  <span
+                    key={variation.id ?? `new-${index}`}
+                    className="rollout-bar-seg"
+                    style={{ flexGrow: weight }}
+                    title={`${variationLabel(variation, index)}: ${weight}%`}
+                  />
+                );
+              })}
+            </div>
+          )}
           <div className="rollout-weights">
             {variations.map((variation, index) => (
               <label

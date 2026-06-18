@@ -642,7 +642,7 @@ describe("entrypoint", () => {
         expect(stdout).toContain("├─────────┼─────────┤");
         expect(stdout).toContain("│ default │ minimal │");
         expect(stdout).toContain("│ off     │ loud    │");
-        expect(stdout).not.toContain("◇  CLI banner");
+        expect(stdout).not.toContain("🦐  CLI banner");
         expect(stdout).not.toContain("#  VALUE    ROLE");
         expect(stdout).not.toContain("var_b1253af8");
         expect(result.stderr).toBe("");
@@ -680,7 +680,7 @@ describe("entrypoint", () => {
         expect(stdout).toContain("├─────────┼─────────┤");
         expect(stdout).toContain("│ clawhub │ ClawHub │");
         expect(stdout).toContain("╰─────────┴─────────╯");
-        expect(stdout).not.toContain("◇  Projects");
+        expect(stdout).not.toContain("🦐  Projects");
         expect(stdout).not.toContain("KEY      NAME");
         expect(result.stderr).toBe("");
       },
@@ -841,7 +841,7 @@ describe("entrypoint", () => {
         expect(stdout).toContain("│ key        │ state │");
         expect(stdout).toContain("├────────────┼───────┤");
         expect(stdout).toContain("│ cli-banner │ off   │");
-        expect(stdout).not.toContain("◇  Flag updated");
+        expect(stdout).not.toContain("🦐  Flag updated");
         expect(stdout).not.toContain("cli-banner: off");
         expect(result.stderr).toBe("");
       },

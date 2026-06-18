@@ -1,129 +1,170 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
-import { ApiError, api, type Me } from "../api";
+import { api, type Me, type ProjectSummary } from "../api";
+import { FolderIcon } from "../components/brand";
+import { EmptyState } from "../components/EmptyState";
+import { Pagination } from "../components/Pagination";
+import { TableSkeleton } from "../components/Skeleton";
 import { TableFrame } from "../components/TableFrame";
 
+const PAGE_SIZE = 10;
+
+function formatLastChange(epochMs: number | null): string {
+  if (epochMs === null) return "No changes yet";
+  return new Date(epochMs).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function ProjectsPage({ me }: { me: Me }) {
-  const projects = useQuery({ queryKey: ["projects"], queryFn: api.projects });
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const projects = useQuery({
+    queryKey: ["projects", page],
+    queryFn: () =>
+      api.projects({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    placeholderData: keepPreviousData,
+  });
+
+  const isAdmin = me.role === "admin";
+  const rows = projects.data?.projects ?? [];
+  const total = projects.data?.total ?? 0;
+  const pageCount = Math.ceil(total / PAGE_SIZE);
+  const query = search.trim().toLowerCase();
+  const visible = query
+    ? rows.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.key.toLowerCase().includes(query),
+      )
+    : rows;
 
   return (
     <section>
       <header className="page-header">
-        <h1>Projects</h1>
+        <div className="page-title-row">
+          <h1>Projects</h1>
+          {projects.isSuccess && total > 0 && (
+            <span className="title-count">{total}</span>
+          )}
+        </div>
+        {projects.isSuccess && total > 0 && (
+          <div className="header-actions">
+            <input
+              className="input projects-search"
+              type="search"
+              aria-label="Filter projects on this page"
+              placeholder="Filter this page…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            {isAdmin && (
+              <Link className="btn btn-primary btn-link" to="/projects/new">
+                New project
+              </Link>
+            )}
+          </div>
+        )}
       </header>
-      {projects.isPending && <p className="muted">Loading projects…</p>}
+
+      {projects.isPending && (
+        <TableSkeleton
+          columns={4}
+          rows={PAGE_SIZE}
+          frameClassName="table-frame-projects"
+        />
+      )}
       {projects.isError && <p role="alert">Failed to load projects.</p>}
-      {projects.isSuccess && projects.data.projects.length === 0 && (
-        <p className="muted">No projects yet.</p>
+
+      {projects.isSuccess &&
+        total === 0 &&
+        (isAdmin ? (
+          <EmptyState
+            icon={<FolderIcon className="empty-state-glyph" />}
+            title="Create your first project"
+            description="Projects group your flags, environments, and evaluation keys. Create one to start shipping features behind flags."
+            action={
+              <Link className="btn btn-primary btn-link" to="/projects/new">
+                New project
+              </Link>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<FolderIcon className="empty-state-glyph" />}
+            title="No projects yet"
+            description="An admin creates projects. Once one exists, the flags you can read will appear here."
+          />
+        ))}
+
+      {projects.isSuccess && total > 0 && (
+        <>
+          <ProjectsTable projects={visible} query={query} />
+          <Pagination page={page} pageCount={pageCount} onPage={setPage} />
+        </>
       )}
-      {projects.isSuccess && projects.data.projects.length > 0 && (
-        <TableFrame className="table-frame-compact">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Key</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.data.projects.map((project) => (
-                <tr key={project.id}>
-                  <td>
-                    <Link
-                      className="table-link"
-                      to={`/projects/${project.key}`}
-                    >
-                      {project.name}
-                    </Link>
-                  </td>
-                  <td>
-                    <code>{project.key}</code>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableFrame>
-      )}
-      {me.role === "admin" && <NewProjectForm />}
     </section>
   );
 }
 
-function NewProjectForm() {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [key, setKey] = useState("");
-  const [name, setName] = useState("");
-
-  const create = useMutation({
-    mutationFn: () => api.createProject(key.trim(), name.trim()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      setOpen(false);
-      setKey("");
-      setName("");
-    },
-  });
-
-  const errorMessage =
-    create.error instanceof ApiError && create.error.status === 409
-      ? "A project with this key already exists."
-      : create.isError
-        ? "Creating the project failed."
-        : null;
-
-  if (!open) {
+function ProjectsTable({
+  projects,
+  query,
+}: {
+  projects: ProjectSummary[];
+  query: string;
+}) {
+  if (projects.length === 0) {
     return (
-      <div className="below-table">
-        <button
-          type="button"
-          className="btn btn-quiet"
-          onClick={() => setOpen(true)}
-        >
-          New project
-        </button>
-      </div>
+      <EmptyState
+        title="No matching projects"
+        description={`No project name or key matches “${query}” on this page.`}
+      />
     );
   }
 
   return (
-    <div className="inline-create below-table">
-      <input
-        className="input input-mono"
-        aria-label="New project key"
-        placeholder="key (e.g. clawhub)"
-        value={key}
-        onChange={(event) => setKey(event.target.value)}
-      />
-      <input
-        className="input"
-        aria-label="New project name"
-        placeholder="Name"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-      />
-      <button
-        type="button"
-        className="btn btn-primary"
-        disabled={create.isPending || key.trim() === "" || name.trim() === ""}
-        onClick={() => create.mutate()}
-      >
-        Create project
-      </button>
-      <button
-        type="button"
-        className="btn btn-quiet"
-        onClick={() => setOpen(false)}
-      >
-        Cancel
-      </button>
-      {errorMessage && (
-        <p role="alert" className="save-error">
-          {errorMessage}
-        </p>
-      )}
-    </div>
+    <TableFrame className="table-frame-projects">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key</th>
+            <th className="col-num">Flags</th>
+            <th>Last change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {projects.map((project) => (
+            <tr key={project.id} className="row-link">
+              <td>
+                <Link
+                  className="table-link row-stretch"
+                  to={`/projects/${project.key}`}
+                >
+                  {project.name}
+                </Link>
+                {project.description && (
+                  <span className="cell-sub">{project.description}</span>
+                )}
+              </td>
+              <td>
+                <code>{project.key}</code>
+              </td>
+              <td className="col-num">
+                <span className="badge-soft">{project.flagCount}</span>
+              </td>
+              <td className="cell-muted">
+                {formatLastChange(project.lastChangeAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
   );
 }

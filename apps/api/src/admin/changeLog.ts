@@ -1,5 +1,5 @@
 import type { JsonValue } from "@openclaw/krillswitch-core";
-import { desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { type ChangeAction, changeLog } from "../db/schema";
 
@@ -34,19 +34,56 @@ export function changeLogInsert(db: DrizzleD1Database, entry: ChangeEntry) {
   });
 }
 
-const PAGE_SIZE = 200;
+export type ChangeLogFilter = {
+  flagKey?: string;
+  projectKey?: string;
+  actorUserId?: string;
+};
+
+function filterCondition(filter: ChangeLogFilter): SQL | undefined {
+  const conditions: SQL[] = [];
+  if (filter.flagKey) conditions.push(eq(changeLog.flagKey, filter.flagKey));
+  if (filter.projectKey) {
+    conditions.push(eq(changeLog.projectKey, filter.projectKey));
+  }
+  if (filter.actorUserId) {
+    conditions.push(eq(changeLog.actorUserId, filter.actorUserId));
+  }
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
 
 export async function listChangeLog(
   db: DrizzleD1Database,
-  filter: { flagKey?: string; projectKey?: string },
+  filter: ChangeLogFilter & { limit: number; offset: number },
 ) {
   let query = db.select().from(changeLog).$dynamic();
-  if (filter.flagKey) {
-    query = query.where(eq(changeLog.flagKey, filter.flagKey));
-  } else if (filter.projectKey) {
-    query = query.where(eq(changeLog.projectKey, filter.projectKey));
+  const condition = filterCondition(filter);
+  if (condition) {
+    query = query.where(condition);
   }
-  return query.orderBy(desc(changeLog.createdAt)).limit(PAGE_SIZE).all();
+  return query
+    .orderBy(desc(changeLog.createdAt))
+    .limit(filter.limit)
+    .offset(filter.offset)
+    .all();
+}
+
+/** A single audit entry by id, or undefined. Read-only, like the list. */
+export async function getChangeLogEntry(db: DrizzleD1Database, id: string) {
+  return db.select().from(changeLog).where(eq(changeLog.id, id)).get();
+}
+
+export async function countChangeLog(
+  db: DrizzleD1Database,
+  filter: ChangeLogFilter,
+): Promise<number> {
+  let query = db.select({ n: count() }).from(changeLog).$dynamic();
+  const condition = filterCondition(filter);
+  if (condition) {
+    query = query.where(condition);
+  }
+  const row = await query.get();
+  return row?.n ?? 0;
 }
 
 /** Serialization boundary: anything JSON-shaped becomes a storable value. */

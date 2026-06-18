@@ -78,6 +78,27 @@ describe("project detail", () => {
   });
 });
 
+describe("project flag keys", () => {
+  it("lists every flag in the project for the viewer persona", async () => {
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/projects/clawhub/flags`, {
+      headers: { cookie },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json<{ flags: { key: string }[] }>();
+    expect(body.flags.map((flag) => flag.key)).toContain("souls");
+    expect(body.flags.map((flag) => flag.key)).toContain("theme");
+  });
+
+  it("404s on an unknown project", async () => {
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/projects/nope/flags`, {
+      headers: { cookie },
+    });
+    expect(response.status).toBe(404);
+  });
+});
+
 describe("environment flag list", () => {
   it("lists flags with their per-environment enabled state", async () => {
     const cookie = await devLogin("viewer");
