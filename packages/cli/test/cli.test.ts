@@ -1129,6 +1129,22 @@ describe("entrypoint", () => {
       "manage feature flags from the terminal",
     );
     expect(shimResult.stderr).toBe("");
+
+    const directResult = spawnSync(shimPath, ["--help"], {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        KRILLSWITCH_TOKEN: "",
+        KRILLSWITCH_CONFIG: "/does/not/exist.json",
+      },
+    });
+
+    expect(directResult.status).toBe(0);
+    expect(directResult.stdout).toContain(
+      "manage feature flags from the terminal",
+    );
+    expect(directResult.stderr).toBe("");
   });
 });
 
