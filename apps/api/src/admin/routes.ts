@@ -96,6 +96,16 @@ const devLoginSchema = z.object({
   ),
 });
 
+function epochMilliseconds(value: unknown): number | null {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  return null;
+}
+
 export const adminRoutes = new Hono<AdminContext>();
 
 // --- Routes below run BEFORE the session middleware (no session yet). ---
@@ -281,7 +291,7 @@ adminRoutes.get("/projects", async (c) => {
     description: project.description,
     flagCount: flagByProject.get(project.id) ?? 0,
     environmentCount: envByProject.get(project.id) ?? 0,
-    lastChangeAt: lastByKey.get(project.key)?.getTime() ?? null,
+    lastChangeAt: epochMilliseconds(lastByKey.get(project.key)),
   }));
 
   return c.json({ projects: summaries, total: totalRow?.n ?? 0 });
