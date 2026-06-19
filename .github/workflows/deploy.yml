@@ -51,14 +51,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.x
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts=false --config.engine-strict=false --config.enable-pre-post-scripts=true --config.side-effects-cache=true
 
       - name: Apply D1 migrations and deploy public Worker
-        run: bun run deploy:public
+        run: pnpm deploy:public
 
   deploy-admin:
     if: ${{ github.ref == 'refs/heads/main' && inputs.target == 'admin' }}
@@ -76,17 +81,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.x
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline --ignore-scripts=false --config.engine-strict=false --config.enable-pre-post-scripts=true --config.side-effects-cache=true
 
       - name: Verify production build
-        run: bun run --cwd apps/admin build
+        run: pnpm --dir apps/admin build
 
       - name: Provision Cloudflare Access
-        run: bun run cf:access
+        run: pnpm cf:access
 
       - name: Apply D1 migrations and deploy Worker
-        run: bun run --cwd apps/api db:migrate:remote && bun run --cwd apps/api deploy:worker
+        run: pnpm --dir apps/api db:migrate:remote && pnpm --dir apps/api deploy:worker
