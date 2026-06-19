@@ -22,12 +22,14 @@ export class KrillswitchClient {
         "no access token: set KRILLSWITCH_TOKEN, pass --token, or add it to ~/.krillswitch.json",
       );
     }
+    const accessHeaders = cloudflareAccessHeaders(this.config);
     let response: Response;
     try {
       response = await fetch(`${this.config.baseUrl}${path}`, {
         method: options.method ?? "GET",
         headers: {
           authorization: `Bearer ${this.config.token}`,
+          ...accessHeaders,
           ...(options.body ? { "content-type": "application/json" } : {}),
         },
         ...(options.body ? { body: JSON.stringify(options.body) } : {}),
@@ -50,6 +52,22 @@ export class KrillswitchClient {
     }
     return response.json() as Promise<T>;
   }
+}
+
+function cloudflareAccessHeaders(config: CliConfig): Record<string, string> {
+  const { accessClientId, accessClientSecret } = config;
+  if (!accessClientId && !accessClientSecret) {
+    return {};
+  }
+  if (!accessClientId || !accessClientSecret) {
+    throw new CliError(
+      "Cloudflare Access requires both KRILLSWITCH_CF_ACCESS_CLIENT_ID and KRILLSWITCH_CF_ACCESS_CLIENT_SECRET",
+    );
+  }
+  return {
+    "cf-access-client-id": accessClientId,
+    "cf-access-client-secret": accessClientSecret,
+  };
 }
 
 async function errorMessage(response: Response, path: string): Promise<string> {

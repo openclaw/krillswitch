@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun run ensure-dev-vars && bun run db:setup && wrangler dev",
     "db:setup": "wrangler d1 migrations apply krillswitch --local && wrangler d1 execute krillswitch --local --file=./seed/seed.sql",
+    "db:migrate:remote": "wrangler d1 migrations apply krillswitch --remote",
+    "deploy:worker": "wrangler deploy",
     "seed:demo": "node seed/demo.mjs",
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",

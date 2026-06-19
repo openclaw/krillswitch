@@ -11,6 +11,8 @@ import type { ConfigOptions } from "./options";
 export type CliConfig = {
   baseUrl: string;
   token: string | undefined;
+  accessClientId?: string;
+  accessClientSecret?: string;
 };
 
 const DEFAULT_BASE_URL = "http://localhost:8799";
@@ -94,5 +96,12 @@ export async function resolveConfig(
       file.baseUrl ??
       DEFAULT_BASE_URL,
     token: options.token ?? env.KRILLSWITCH_TOKEN ?? keyringToken ?? file.token,
+    ...(env.KRILLSWITCH_CF_ACCESS_CLIENT_ID?.trim() ||
+    env.KRILLSWITCH_CF_ACCESS_CLIENT_SECRET?.trim()
+      ? {
+          accessClientId: env.KRILLSWITCH_CF_ACCESS_CLIENT_ID?.trim(),
+          accessClientSecret: env.KRILLSWITCH_CF_ACCESS_CLIENT_SECRET?.trim(),
+        }
+      : {}),
   };
 }

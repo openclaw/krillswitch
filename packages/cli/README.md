@@ -60,6 +60,15 @@ You can still override settings for one command, in precedence order:
 The base URL resolves `--base-url` > `KRILLSWITCH_URL` > config file > the local
 default `http://localhost:8799`.
 
+When the admin hostname is behind Cloudflare Access, non-browser automation
+also needs an Access service token. Keep those credentials in the environment;
+they are deliberately not written to `~/.krillswitch.json`.
+
+```sh
+export KRILLSWITCH_CF_ACCESS_CLIENT_ID=...
+export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
+```
+
 ```sh
 krillswitch projects list \
   --base-url http://localhost:8799 \

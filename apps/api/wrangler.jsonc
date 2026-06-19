@@ -1,8 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "krillswitch-api",
+  "name": "krillswitch",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-01",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
   // better-auth imports node:crypto / node:async_hooks.
   "compatibility_flags": ["nodejs_compat"],
   // 8787 collides with another service on the primary dev machine.
@@ -15,13 +19,25 @@
     // Assets win by default; these namespaces must reach the Worker.
     "run_worker_first": ["/v1/*", "/api/*", "/admin/*"]
   },
+  "routes": [
+    {
+      "pattern": "flags.openclaw.ai/*",
+      "zone_name": "openclaw.ai"
+    },
+    {
+      "pattern": "switch.openclaw.ai/*",
+      "zone_name": "openclaw.ai"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://switch.openclaw.ai",
+    "GITHUB_VIEWER_ORG": "openclaw"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "krillswitch",
-      // Placeholder id: local dev and tests never talk to a remote database.
-      // Replaced with the real id when the service first deploys (slice 7).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "5323631a-67c1-46f5-b412-586ff2ffe3c3",
       "migrations_dir": "migrations"
     }
   ]

@@ -1,0 +1,62 @@
+name: Deploy Cloudflare
+
+on:
+  workflow_dispatch:
+    inputs:
+      provision_access:
+        description: "Provision or update the Cloudflare Access admin gate"
+        required: false
+        default: false
+        type: boolean
+      access_allowed_emails:
+        description: "Comma-separated email allowlist for Cloudflare Access"
+        required: false
+        default: ""
+        type: string
+      access_allowed_domains:
+        description: "Comma-separated email-domain allowlist for Cloudflare Access"
+        required: false
+        default: "openclaw.ai"
+        type: string
+      access_service_token_ids:
+        description: "Comma-separated Access service-token ids for CLI automation"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KRILLSWITCH_ACCESS_ALLOWED_EMAILS: ${{ inputs.access_allowed_emails }}
+      KRILLSWITCH_ACCESS_ALLOWED_DOMAINS: ${{ inputs.access_allowed_domains }}
+      KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS: ${{ inputs.access_service_token_ids }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify production build
+        run: bun run --cwd apps/admin build
+
+      - name: Provision Cloudflare Access
+        if: ${{ inputs.provision_access }}
+        run: bun run cf:access
+
+      - name: Apply D1 migrations and deploy Worker
+        run: bun run deploy:production

@@ -1191,6 +1191,53 @@ describe("resolveConfig precedence", () => {
     const config = await resolveConfig(noFlags, noFile);
     expect(config.token).toBeUndefined();
   });
+
+  it("passes Cloudflare Access service-token credentials from the environment", async () => {
+    const config = await resolveConfig(noFlags, {
+      ...noFile,
+      KRILLSWITCH_CF_ACCESS_CLIENT_ID: "service-client-id",
+      KRILLSWITCH_CF_ACCESS_CLIENT_SECRET: "service-client-secret",
+    });
+    expect(config).toMatchObject({
+      accessClientId: "service-client-id",
+      accessClientSecret: "service-client-secret",
+    });
+  });
+});
+
+describe("Cloudflare Access service token", () => {
+  it("sends service-token headers with the admin access token", async () => {
+    const fetchMock = vi.fn(async () => new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new KrillswitchClient({
+      baseUrl: "https://switch.openclaw.ai",
+      token: "ksat_test",
+      accessClientId: "service-client-id",
+      accessClientSecret: "service-client-secret",
+    }).request("/admin/projects");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://switch.openclaw.ai/admin/projects",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: "Bearer ksat_test",
+          "cf-access-client-id": "service-client-id",
+          "cf-access-client-secret": "service-client-secret",
+        }),
+      }),
+    );
+  });
+
+  it("rejects a partial Cloudflare Access service-token configuration", async () => {
+    await expect(
+      new KrillswitchClient({
+        baseUrl: "https://switch.openclaw.ai",
+        token: "ksat_test",
+        accessClientId: "service-client-id",
+      }).request("/admin/projects"),
+    ).rejects.toThrow(/requires both KRILLSWITCH_CF_ACCESS/);
+  });
 });
 
 describe("config commands", () => {

@@ -13,7 +13,9 @@
     "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/react typecheck && bun run --cwd packages/cli typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/demo typecheck && bun run --cwd apps/admin typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "bench": "node bench/run.mjs"
+    "bench": "node bench/run.mjs",
+    "cf:access": "bun scripts/provision-cloudflare-access.mjs",
+    "deploy:production": "bun run --cwd apps/admin build && bun run --cwd apps/api db:migrate:remote && bun run --cwd apps/api deploy:worker"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
