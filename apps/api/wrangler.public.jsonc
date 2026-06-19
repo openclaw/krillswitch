@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "krillswitch-public",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-01",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true
+  },
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "flags.openclaw.ai/*",
+      "zone_name": "openclaw.ai"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "krillswitch",
+      "database_id": "5323631a-67c1-46f5-b412-586ff2ffe3c3",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

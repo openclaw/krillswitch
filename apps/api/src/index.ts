@@ -3,7 +3,6 @@ import {
   evaluateFlag,
   type FlagEvaluation,
 } from "@openclaw/krillswitch-core";
-import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -14,11 +13,16 @@ import { getEnvironmentConfig } from "./configCache";
 
 type Bindings = {
   DB: D1Database;
+  ASSETS: Fetcher;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   DEV_AUTH_ENABLED?: string;
   BOOTSTRAP_ADMIN_EMAIL?: string;
 };
+
+const PUBLIC_EVAL_HOST = "flags.openclaw.ai";
+const ADMIN_HOST = "switch.openclaw.ai";
+const PUBLIC_EVAL_PATH = "/v1/eval";
 
 const evalRequestSchema = z.object({
   context: z.object({
@@ -49,6 +53,23 @@ function bearerToken(authorization: string | undefined): string | undefined {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+// Production has two distinct trust boundaries. Keep the public evaluation
+// hostname from reaching admin routes or dashboard assets before Cloudflare
+// Access has a chance to protect the dashboard hostname.
+app.use("*", async (c, next) => {
+  const hostname = new URL(c.req.url).hostname;
+  const isPublicEvalRequest =
+    c.req.path === PUBLIC_EVAL_PATH &&
+    (c.req.method === "POST" || c.req.method === "OPTIONS");
+  if (
+    (hostname === PUBLIC_EVAL_HOST && !isPublicEvalRequest) ||
+    (hostname === ADMIN_HOST && c.req.path === PUBLIC_EVAL_PATH)
+  ) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  await next();
+});
+
 // Eval keys are public flag-set identifiers, not secrets; any browser
 // origin may evaluate.
 app.use(
@@ -59,6 +80,9 @@ app.use(
     // Browsers hide non-safelisted response headers on CORS requests;
     // without this the SDK can never send If-None-Match.
     exposeHeaders: ["ETag", "Server-Timing"],
+    // The public eval API has a stable CORS policy, so avoid a preflight
+    // round-trip on every browser poll.
+    maxAge: 86_400,
   }),
 );
 
@@ -80,10 +104,7 @@ app.post("/v1/eval", async (c) => {
   }
 
   const configStart = performance.now();
-  const { config, source } = await getEnvironmentConfig(
-    drizzle(c.env.DB),
-    evalKey,
-  );
+  const { config, source } = await getEnvironmentConfig(c.env.DB, evalKey);
   const configMs = performance.now() - configStart;
   if (!config) {
     return c.json({ error: "invalid_eval_key" }, 401);
@@ -119,12 +140,24 @@ app.post("/v1/eval", async (c) => {
   const body: EvalResponseBody = { flags: evaluated };
   const serialized = JSON.stringify(body);
   const etag = evalBodyEtag(serialized);
+  // Evaluations are personalized by context. The SDK owns its ETag and
+  // local-storage cache; shared HTTP/CDN caches must never store this body.
+  c.header("Cache-Control", "private, no-store");
   c.header("ETag", etag);
   if (c.req.header("if-none-match") === etag) {
     return c.body(null, 304);
   }
   c.header("content-type", "application/json");
   return c.body(serialized, 200);
+});
+
+// `run_worker_first` lets the hostname policy above protect static assets.
+// The configured Assets binding retains Cloudflare's SPA fallback behavior.
+app.all("*", (c) => {
+  if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.env.ASSETS.fetch(c.req.raw);
 });
 
 export default app;

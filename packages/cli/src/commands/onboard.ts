@@ -77,7 +77,13 @@ export async function onboard(
   }
 
   if (!options.skipVerify) {
-    await new KrillswitchClient({ baseUrl, token }).request("/admin/projects");
+    await new KrillswitchClient({
+      baseUrl,
+      token,
+      accessClientId: existing.accessClientId,
+      accessClientSecret: existing.accessClientSecret,
+      accessOrigin: existing.accessOrigin,
+    }).request("/admin/projects");
   }
 
   const tokenRef = tokenReferenceForBaseUrl(baseUrl);

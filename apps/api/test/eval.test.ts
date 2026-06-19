@@ -26,16 +26,20 @@ async function applySeed(): Promise<void> {
 async function postEval(options: {
   evalKey?: string;
   body?: unknown;
+  baseUrl?: string;
 }): Promise<Response> {
   const headers = new Headers({ "content-type": "application/json" });
   if (options.evalKey !== undefined) {
     headers.set("authorization", `Bearer ${options.evalKey}`);
   }
-  return SELF.fetch("https://krillswitch.test/v1/eval", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(options.body ?? { context: { key: "x" } }),
-  });
+  return SELF.fetch(
+    `${options.baseUrl ?? "https://krillswitch.test"}/v1/eval`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(options.body ?? { context: { key: "x" } }),
+    },
+  );
 }
 
 beforeAll(async () => {
@@ -161,6 +165,7 @@ describe("POST /v1/eval", () => {
     expect(
       preflight.headers.get("access-control-allow-headers")?.toLowerCase(),
     ).toContain("authorization");
+    expect(preflight.headers.get("access-control-max-age")).toBe("86400");
 
     const response = await postEval({ evalKey: DEV_EVAL_KEY });
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
@@ -169,6 +174,32 @@ describe("POST /v1/eval", () => {
     expect(
       response.headers.get("access-control-expose-headers")?.toLowerCase(),
     ).toContain("etag");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("exposes only evaluation on the public hostname", async () => {
+    const evalResponse = await postEval({
+      baseUrl: "https://flags.openclaw.ai",
+      evalKey: DEV_EVAL_KEY,
+    });
+    expect(evalResponse.status).toBe(200);
+
+    const publicAdmin = await SELF.fetch("https://flags.openclaw.ai/admin/me");
+    expect(publicAdmin.status).toBe(404);
+
+    const publicAsset = await SELF.fetch("https://flags.openclaw.ai/");
+    expect(publicAsset.status).toBe(404);
+
+    const unsupportedEvalMethod = await SELF.fetch(
+      "https://flags.openclaw.ai/v1/eval",
+    );
+    expect(unsupportedEvalMethod.status).toBe(404);
+
+    const adminEval = await postEval({
+      baseUrl: "https://switch.openclaw.ai",
+      evalKey: DEV_EVAL_KEY,
+    });
+    expect(adminEval.status).toBe(404);
   });
 
   it("rejects a wrong eval key without serving flag data", async () => {
