@@ -65,13 +65,16 @@ export async function getEnvironmentConfig(
 
   const value = fetchEnvironmentConfig(db, evalKey);
   cache.delete(evalKey);
-  cache.set(evalKey, { fetchedAtMs: nowMs, value });
+  const entry = { fetchedAtMs: nowMs, value };
+  cache.set(evalKey, entry);
   evictCacheEntries(nowMs);
   try {
     return { config: await value, source: "d1" };
   } catch (error) {
-    // Don't cache failures; the next request retries D1.
-    cache.delete(evalKey);
+    // Don't let an older failed refresh evict a newer request's cache entry.
+    if (cache.get(evalKey) === entry) {
+      cache.delete(evalKey);
+    }
     throw error;
   }
 }

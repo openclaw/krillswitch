@@ -98,7 +98,7 @@ function parseValue(
       return { value: raw };
     case "number": {
       const parsed = Number(raw);
-      if (raw.trim() === "" || Number.isNaN(parsed)) {
+      if (raw.trim() === "" || !Number.isFinite(parsed)) {
         return { error: `${label} must be a number` };
       }
       return { value: parsed };
@@ -124,7 +124,7 @@ function coerceAttributeValue(entry: string): string | number | boolean {
   if (entry === "true") return true;
   if (entry === "false") return false;
   const numeric = Number(entry);
-  if (entry.trim() !== "" && !Number.isNaN(numeric)) return numeric;
+  if (entry.trim() !== "" && Number.isFinite(numeric)) return numeric;
   return entry;
 }
 

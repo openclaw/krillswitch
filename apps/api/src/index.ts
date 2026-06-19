@@ -44,11 +44,18 @@ function evalBodyEtag(serializedBody: string): string {
 }
 
 function bearerToken(authorization: string | undefined): string | undefined {
-  if (!authorization?.startsWith("Bearer ")) {
-    return undefined;
-  }
-  const token = authorization.slice("Bearer ".length).trim();
-  return token.length > 0 ? token : undefined;
+  const match = /^Bearer\s+(.+)$/i.exec(authorization ?? "");
+  const token = match?.[1]?.trim();
+  return token && token.length > 0 ? token : undefined;
+}
+
+function matchesEtag(header: string | undefined, etag: string): boolean {
+  return (
+    header
+      ?.split(",")
+      .map((value) => value.trim())
+      .some((value) => value === "*" || value === etag) ?? false
+  );
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -144,7 +151,7 @@ app.post("/v1/eval", async (c) => {
   // local-storage cache; shared HTTP/CDN caches must never store this body.
   c.header("Cache-Control", "private, no-store");
   c.header("ETag", etag);
-  if (c.req.header("if-none-match") === etag) {
+  if (matchesEtag(c.req.header("if-none-match"), etag)) {
     return c.body(null, 304);
   }
   c.header("content-type", "application/json");

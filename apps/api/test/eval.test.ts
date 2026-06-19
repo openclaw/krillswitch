@@ -216,6 +216,23 @@ describe("POST /v1/eval", () => {
     expect(body).toEqual({ error: "missing_eval_key" });
   });
 
+  it("accepts case-insensitive bearer schemes and validator lists", async () => {
+    const first = await postEval({ evalKey: DEV_EVAL_KEY });
+    const etag = first.headers.get("etag");
+    expect(etag).toBeTruthy();
+
+    const response = await SELF.fetch("https://krillswitch.test/v1/eval", {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${DEV_EVAL_KEY}`,
+        "content-type": "application/json",
+        "if-none-match": `"unrelated", ${etag}`,
+      },
+      body: JSON.stringify({ context: { key: "x" } }),
+    });
+    expect(response.status).toBe(304);
+  });
+
   it("rejects a body without a context key", async () => {
     const response = await postEval({
       evalKey: DEV_EVAL_KEY,

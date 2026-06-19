@@ -37,8 +37,12 @@ export async function logTail(
   const { entries } = await client.request<{ entries: ChangeLogEntry[] }>(
     `/admin/changelog${query ? `?${query}` : ""}`,
   );
-  const limit = Number(options.limit ?? "20");
-  const tail = entries.slice(0, Number.isFinite(limit) ? limit : 20);
+  const parsedLimit = Number(options.limit ?? "20");
+  const limit =
+    Number.isFinite(parsedLimit) && parsedLimit >= 0
+      ? Math.trunc(parsedLimit)
+      : 20;
+  const tail = entries.slice(0, limit);
 
   if (wantsJson(options)) {
     printJson({ entries: tail });
