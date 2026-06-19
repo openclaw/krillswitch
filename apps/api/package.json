@@ -7,6 +7,7 @@
     "db:setup": "wrangler d1 migrations apply krillswitch --local && wrangler d1 execute krillswitch --local --file=./seed/seed.sql",
     "db:migrate:remote": "wrangler d1 migrations apply krillswitch --remote",
     "deploy:worker": "wrangler deploy",
+    "deploy:public": "wrangler deploy --config wrangler.public.jsonc",
     "seed:demo": "node seed/demo.mjs",
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",

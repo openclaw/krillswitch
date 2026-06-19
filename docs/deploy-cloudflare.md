@@ -1,11 +1,12 @@
 # Cloudflare Deployment
 
-Krillswitch is one Worker with two public hostnames:
+Krillswitch has two independently deployed Workers that share the same D1
+database:
 
 | Hostname | Purpose | Cloudflare Access |
 | --- | --- | --- |
-| `flags.openclaw.ai` | Public `POST /v1/eval` origin for SDKs | Never |
-| `switch.openclaw.ai` | Dashboard and `/admin/*` management API | Required |
+| `flags.openclaw.ai` | `krillswitch-public`: public `POST /v1/eval` origin for SDKs | Never |
+| `switch.openclaw.ai` | `krillswitch`: dashboard and `/admin/*` management API | Required |
 
 The public host must remain outside Cloudflare Access. Eval keys identify a
 flag environment; they are intentionally usable by browser SDKs. The admin
@@ -32,8 +33,8 @@ The Worker instead caches the environment configuration inside each isolate:
   `Cache-Control: private, no-store`.
 
 Static dashboard assets are immutable Vite assets and are served by Cloudflare
-Assets. CORS preflight for the public eval route is cached by browsers for one
-day.
+Assets only from the admin Worker. CORS preflight for the public eval route is
+cached by browsers for one day.
 
 ## Prerequisites
 
@@ -95,15 +96,20 @@ editor/viewer role.
 
 ## Deploy And Verify
 
-Use the manual `Deploy Cloudflare` workflow after setting
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. It
-builds the dashboard, optionally provisions Access, applies D1 migrations, and
-deploys the Worker.
+Use the manual `Deploy Cloudflare` workflow from `main` after setting
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. Its
+`public` target applies migrations and deploys only `krillswitch-public`, so
+public evaluation does not depend on Cloudflare Access administration. Its
+`admin` target uses the `krillswitch-admin` GitHub Environment, provisions
+Cloudflare Access before the route can be deployed, builds the dashboard, and
+deploys `krillswitch`.
 
-For an operator deploy:
+For an operator deploy, keep the public and admin paths separate:
 
 ```sh
-bun run deploy:production
+bun run deploy:public
+# Requires an Access application/policy write token.
+bun run deploy:admin
 ```
 
 After deployment, verify the public evaluation boundary with a real eval key:
