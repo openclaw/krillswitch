@@ -1,0 +1,15 @@
+# Default product ownership.
+* @openclaw/maintainer
+
+# Security, deployment, and agent-control surfaces.
+/.github/CODEOWNERS @openclaw/openclaw-secops
+/.github/actionlint.yaml @openclaw/openclaw-secops
+/.github/dependabot.yml @openclaw/openclaw-secops
+/.github/workflows/ @openclaw/openclaw-secops
+/.agents/skills/ @openclaw/openclaw-secops
+/apps/api/wrangler.jsonc @openclaw/openclaw-secops
+/apps/api/.dev.vars.example @openclaw/openclaw-secops
+/apps/api/src/auth/ @openclaw/openclaw-secops
+/apps/api/src/admin/tokens.ts @openclaw/openclaw-secops
+/apps/api/src/db/ @openclaw/openclaw-secops
+/packages/cli/src/credentials.ts @openclaw/openclaw-secops

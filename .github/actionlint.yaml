@@ -1,0 +1,3 @@
+# Keep actionlint strict. GitHub-hosted runners need no custom labels.
+self-hosted-runner:
+  labels: []

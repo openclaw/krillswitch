@@ -60,7 +60,7 @@ function evalResponse(flags: Record<string, unknown>): Response {
 const fetchMock = vi.fn<typeof fetch>();
 
 beforeEach(() => {
-  localStorage.clear();
+  window.localStorage.clear();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -79,7 +79,7 @@ describe("bootstrap render", () => {
   });
 
   it("renders last-known localStorage values on first paint", () => {
-    localStorage.setItem(
+    window.localStorage.setItem(
       VALUES_STORAGE_KEY,
       JSON.stringify({ souls: true, theme: "dark" }),
     );
@@ -90,7 +90,7 @@ describe("bootstrap render", () => {
   });
 
   it("ignores cached values whose type no longer matches the manifest", () => {
-    localStorage.setItem(
+    window.localStorage.setItem(
       VALUES_STORAGE_KEY,
       JSON.stringify({ souls: "yes", theme: 3 }),
     );
@@ -111,12 +111,15 @@ describe("fetch lifecycle", () => {
     });
     expect(screen.getByTestId("theme").textContent).toBe("dark");
     expect(
-      JSON.parse(localStorage.getItem(VALUES_STORAGE_KEY) ?? "{}"),
+      JSON.parse(window.localStorage.getItem(VALUES_STORAGE_KEY) ?? "{}"),
     ).toEqual({ souls: true, theme: "dark" });
   });
 
   it("keeps last-known values when the service is unreachable", async () => {
-    localStorage.setItem(VALUES_STORAGE_KEY, JSON.stringify({ souls: true }));
+    window.localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: true }),
+    );
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
     renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
@@ -137,7 +140,7 @@ describe("identity", () => {
     renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
-    const anonymousKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    const anonymousKey = window.localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
     expect(anonymousKey).toBeTruthy();
     const [, init] = fetchMock.mock.calls[0] ?? [];
     const body = JSON.parse(String(init?.body));
@@ -148,24 +151,30 @@ describe("identity", () => {
     fetchMock.mockResolvedValue(evalResponse({ souls: true }));
     const first = renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    const anonymousKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    const anonymousKey = window.localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
     first.unmount();
 
     renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY)).toBe(anonymousKey);
+    expect(window.localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY)).toBe(
+      anonymousKey,
+    );
   });
 
   it("generates distinct anonymous keys for distinct profiles", async () => {
     fetchMock.mockResolvedValue(evalResponse({ souls: true }));
     renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    const firstProfileKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    const firstProfileKey = window.localStorage.getItem(
+      ANONYMOUS_KEY_STORAGE_KEY,
+    );
 
-    localStorage.clear();
+    window.localStorage.clear();
     renderDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    const secondProfileKey = localStorage.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+    const secondProfileKey = window.localStorage.getItem(
+      ANONYMOUS_KEY_STORAGE_KEY,
+    );
     expect(secondProfileKey).toBeTruthy();
     expect(secondProfileKey).not.toBe(firstProfileKey);
   });
@@ -251,7 +260,7 @@ describe("freshness", () => {
     await waitFor(() => {
       expect(screen.getByTestId("souls").textContent).toBe("true");
     });
-    const persisted = localStorage.getItem(VALUES_STORAGE_KEY);
+    const persisted = window.localStorage.getItem(VALUES_STORAGE_KEY);
 
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 304 }));
     setVisibility("visible");
@@ -260,7 +269,7 @@ describe("freshness", () => {
     const [, init] = fetchMock.mock.calls[1] ?? [];
     expect(new Headers(init?.headers).get("if-none-match")).toBe('W/"abc123"');
     expect(screen.getByTestId("souls").textContent).toBe("true");
-    expect(localStorage.getItem(VALUES_STORAGE_KEY)).toBe(persisted);
+    expect(window.localStorage.getItem(VALUES_STORAGE_KEY)).toBe(persisted);
   });
 });
 
