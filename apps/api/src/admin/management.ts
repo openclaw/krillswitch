@@ -1,4 +1,4 @@
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { user } from "../db/authSchema";
 import {
@@ -82,34 +82,18 @@ export async function setUserRole(
     .where(eq(roleGrants.userId, options.userId))
     .get();
 
-  // Make the last-admin guard part of the write. The preflight count alone
-  // races when two administrators are demoted at the same time.
+  // Provide a friendly response for the ordinary last-admin case. The
+  // database trigger installed by migration 0006 closes the concurrent gap
+  // while preserving the atomic mutation-plus-audit batch below.
   if (existing?.role === "admin" && options.role !== "admin") {
-    const retainsAnotherAdmin = sql`(select count(*) from role_grants where role = 'admin') > 1`;
-    const result =
-      options.role === null
-        ? await db
-            .delete(roleGrants)
-            .where(and(eq(roleGrants.id, existing.id), retainsAnotherAdmin))
-            .run()
-        : await db
-            .update(roleGrants)
-            .set({ role: options.role, grantedBy: options.actor.id })
-            .where(and(eq(roleGrants.id, existing.id), retainsAnotherAdmin))
-            .run();
-    if (result.meta.changes === 0) {
+    const adminGrants = await db
+      .select({ id: roleGrants.id })
+      .from(roleGrants)
+      .where(eq(roleGrants.role, "admin"))
+      .all();
+    if (adminGrants.length <= 1) {
       return "last_admin";
     }
-    await db.batch([
-      changeLogInsert(db, {
-        actor: options.actor,
-        action: "role.set",
-        target: target.email,
-        before: { role: existing.role },
-        after: { role: options.role },
-      }),
-    ]);
-    return "ok";
   }
 
   const logEntry = changeLogInsert(db, {
@@ -120,36 +104,48 @@ export async function setUserRole(
     after: { role: options.role },
   });
 
-  if (options.role === null) {
+  try {
+    if (options.role === null) {
+      if (existing) {
+        await db.batch([
+          db.delete(roleGrants).where(eq(roleGrants.id, existing.id)),
+          logEntry,
+        ]);
+      }
+      return "ok";
+    }
     if (existing) {
       await db.batch([
-        db.delete(roleGrants).where(eq(roleGrants.id, existing.id)),
+        db
+          .update(roleGrants)
+          .set({ role: options.role, grantedBy: options.actor.id })
+          .where(eq(roleGrants.id, existing.id)),
         logEntry,
       ]);
+      return "ok";
     }
-    return "ok";
-  }
-  if (existing) {
     await db.batch([
-      db
-        .update(roleGrants)
-        .set({ role: options.role, grantedBy: options.actor.id })
-        .where(eq(roleGrants.id, existing.id)),
+      db.insert(roleGrants).values({
+        id: `grant_${crypto.randomUUID()}`,
+        userId: options.userId,
+        role: options.role,
+        grantedBy: options.actor.id,
+        createdAt: new Date(),
+      }),
       logEntry,
     ]);
     return "ok";
+  } catch (error) {
+    if (
+      existing?.role === "admin" &&
+      options.role !== "admin" &&
+      error instanceof Error &&
+      error.message.includes("last_admin")
+    ) {
+      return "last_admin";
+    }
+    throw error;
   }
-  await db.batch([
-    db.insert(roleGrants).values({
-      id: `grant_${crypto.randomUUID()}`,
-      userId: options.userId,
-      role: options.role,
-      grantedBy: options.actor.id,
-      createdAt: new Date(),
-    }),
-    logEntry,
-  ]);
-  return "ok";
 }
 
 function generateEvalKey(projectKey: string, environmentKey: string): string {

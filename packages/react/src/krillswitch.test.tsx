@@ -156,6 +156,21 @@ describe("identity", () => {
     expect(body.context.key).toBe(anonymousKey);
   });
 
+  it("keeps an anonymous key stable when storage is unavailable", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage disabled");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage disabled");
+    });
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("reuses the same anonymous key across mounts", async () => {
     fetchMock.mockResolvedValue(evalResponse({ souls: true }));
     const first = renderDemo();

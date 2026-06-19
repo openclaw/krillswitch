@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -168,9 +169,13 @@ function createClient<M extends FlagManifest>(
       pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
       children,
     } = props;
+    const anonymousKey = useRef<string | null>(null);
+    if (contextKey === undefined && anonymousKey.current === null) {
+      anonymousKey.current =
+        typeof window === "undefined" ? "anonymous" : anonymousContextKey();
+    }
     const resolvedContextKey =
-      contextKey ??
-      (typeof window === "undefined" ? "anonymous" : anonymousContextKey());
+      contextKey ?? anonymousKey.current ?? "anonymous";
     // Serialized so a new-but-equal attributes object doesn't refetch.
     const attributesJson = JSON.stringify(attributes ?? null);
     const storageKey = flagValuesStorageKey(
