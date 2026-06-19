@@ -26,6 +26,7 @@ export function VariationsEditor({
     variations: VariationDraft[];
     offIndex: number;
     defaultIndex: number;
+    removedIndex?: number;
   }) => void;
 }) {
   function patchVariation(index: number, patch: Partial<VariationDraft>) {
@@ -53,6 +54,7 @@ export function VariationsEditor({
       variations: variations.filter((_, position) => position !== index),
       offIndex: reIndex(offIndex),
       defaultIndex: reIndex(defaultIndex),
+      removedIndex: index,
     });
   }
 

@@ -1423,6 +1423,47 @@ describe("config commands", () => {
     });
   });
 
+  it("clears legacy plaintext tokens when the base URL changes", async () => {
+    const dir = join(tmpdir(), `krillswitch-test-${crypto.randomUUID()}`);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "config.json");
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        baseUrl: "https://old.example",
+        token: "ksat_legacy",
+      }),
+    );
+
+    await configSet(
+      {
+        baseUrl: "https://new.example",
+        token: undefined,
+        json: false,
+      },
+      { KRILLSWITCH_CONFIG: configPath },
+      undefined,
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+    );
+
+    expect(JSON.parse(readFileSync(configPath, "utf8"))).toEqual({
+      baseUrl: "https://new.example",
+    });
+    await expect(
+      resolveConfig(
+        { baseUrl: undefined, token: undefined },
+        { KRILLSWITCH_CONFIG: configPath },
+      ),
+    ).resolves.toMatchObject({
+      baseUrl: "https://new.example",
+      token: undefined,
+    });
+  });
+
   it("shows config without exposing the access token", async () => {
     const dir = join(tmpdir(), `krillswitch-test-${crypto.randomUUID()}`);
     mkdirSync(dir, { recursive: true });

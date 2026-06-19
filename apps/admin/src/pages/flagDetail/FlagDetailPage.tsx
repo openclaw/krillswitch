@@ -114,6 +114,7 @@ function FlagDetailEditor({
       navigate(`/projects/${projectKey}/${environmentKey}`);
     },
   });
+  const draftDisabled = readOnly || save.isPending;
 
   function onSave() {
     const converted = fromDraft(draft, detail.flag.kind);
@@ -162,7 +163,7 @@ function FlagDetailEditor({
           <div className="enable-switch">
             <Switch
               checked={draft.enabled}
-              disabled={readOnly}
+              disabled={draftDisabled}
               ariaLabel={`Flag enabled in ${environmentKey}`}
               onChange={(next) => setDraft({ ...draft, enabled: next })}
               onLabel={`Enabled in ${environmentKey}`}
@@ -205,6 +206,7 @@ function FlagDetailEditor({
                 className="btn btn-quiet"
                 aria-label="Discard changes"
                 onClick={onDiscard}
+                disabled={save.isPending}
               >
                 <span className="save-label-full">Discard changes</span>
                 <span className="save-label-short">Discard</span>
@@ -230,16 +232,45 @@ function FlagDetailEditor({
         variations={draft.variations}
         offIndex={draft.offIndex}
         defaultIndex={draft.defaultIndex}
-        disabled={readOnly}
-        onChange={({ variations, offIndex, defaultIndex }) =>
+        disabled={draftDisabled}
+        onChange={({ variations, offIndex, defaultIndex, removedIndex }) => {
+          const reindex = (index: number) =>
+            removedIndex === undefined || index < removedIndex
+              ? index
+              : index - 1;
           setDraft({
             ...draft,
             variations,
             offIndex,
             defaultIndex,
-            weights: variations.map((_, index) => draft.weights[index] ?? 0),
-          })
-        }
+            targets:
+              removedIndex === undefined
+                ? draft.targets
+                : draft.targets
+                    .filter(
+                      (target) => target.variationIndex !== removedIndex,
+                    )
+                    .map((target) => ({
+                      ...target,
+                      variationIndex: reindex(target.variationIndex),
+                    })),
+            rules:
+              removedIndex === undefined
+                ? draft.rules
+                : draft.rules
+                    .filter((rule) => rule.variationIndex !== removedIndex)
+                    .map((rule) => ({
+                      ...rule,
+                      variationIndex: reindex(rule.variationIndex),
+                    })),
+            weights:
+              removedIndex === undefined
+                ? variations.map(
+                    (_, index) => draft.weights[index] ?? 0,
+                  )
+                : draft.weights.filter((_, index) => index !== removedIndex),
+          });
+        }}
       />
 
       <section className="detail-section">
@@ -265,20 +296,20 @@ function FlagDetailEditor({
             <AllowlistEditor
               targets={draft.targets}
               variations={draft.variations}
-              disabled={readOnly}
+              disabled={draftDisabled}
               onChange={(targets) => setDraft({ ...draft, targets })}
             />
             <RulesEditor
               rules={draft.rules}
               variations={draft.variations}
-              disabled={readOnly}
+              disabled={draftDisabled}
               onChange={(rules) => setDraft({ ...draft, rules })}
             />
             <RolloutEditor
               enabled={draft.rolloutEnabled}
               weights={draft.weights}
               variations={draft.variations}
-              disabled={readOnly}
+              disabled={draftDisabled}
               onChange={({ enabled, weights }) =>
                 setDraft({ ...draft, rolloutEnabled: enabled, weights })
               }

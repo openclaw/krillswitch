@@ -23,9 +23,17 @@ export async function syncOrgViewerMembership(
   fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
   const org = env.GITHUB_VIEWER_ORG?.trim();
-  if (!org || account.providerId !== "github" || !account.accessToken) {
+  if (account.providerId !== "github") {
     return;
   }
+  if (!org) {
+    await db
+      .update(user)
+      .set({ orgViewer: false })
+      .where(eq(user.id, account.userId));
+    return;
+  }
+  if (!account.accessToken) return;
 
   let isMember = false;
   try {

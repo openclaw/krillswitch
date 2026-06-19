@@ -66,12 +66,15 @@ export async function configSet(
 
   const configPath = configPathFromEnv(env);
   const previous = readConfigFile(env);
+  const previousBaseUrl = normalizeBaseUrl(
+    previous.baseUrl ?? defaultBaseUrl(),
+  );
   const baseUrl = options.baseUrl
     ? normalizeBaseUrl(options.baseUrl)
-    : (previous.baseUrl ?? defaultBaseUrl());
+    : previousBaseUrl;
   const next: ConfigFile = { ...previous, baseUrl };
 
-  if (options.baseUrl && previous.tokenRef?.account !== baseUrl) {
+  if (options.baseUrl && previousBaseUrl !== baseUrl) {
     delete next.token;
     delete next.tokenRef;
   }

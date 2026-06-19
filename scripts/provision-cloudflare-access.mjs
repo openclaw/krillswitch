@@ -7,6 +7,7 @@ const host =
   process.env.KRILLSWITCH_ACCESS_HOST?.trim() || "switch.openclaw.ai";
 const appName =
   process.env.KRILLSWITCH_ACCESS_APP_NAME?.trim() || "Krillswitch Admin";
+const configuredAppId = process.env.KRILLSWITCH_ACCESS_APP_ID?.trim();
 const allowedEmails = csv(process.env.KRILLSWITCH_ACCESS_ALLOWED_EMAILS);
 const allowedDomains = csv(
   process.env.KRILLSWITCH_ACCESS_ALLOWED_DOMAINS || "openclaw.ai",
@@ -62,12 +63,7 @@ if (dryRun) {
 }
 
 const apps = await cfAll(`/accounts/${accountId}/access/apps`);
-const existing = apps.find(
-  (app) =>
-    app.name === appName ||
-    app.domain === host ||
-    app.domain === `https://${host}`,
-);
+const existing = resolveExistingApp(apps);
 const preservedIdps =
   allowedIdps.length === 0 && Array.isArray(existing?.allowed_idps)
     ? { allowed_idps: existing.allowed_idps }
@@ -186,6 +182,54 @@ function csv(value) {
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function resolveExistingApp(apps) {
+  if (configuredAppId) {
+    const app = apps.find((candidate) => candidate.id === configuredAppId);
+    if (!app) {
+      throw new Error(
+        `Cloudflare Access app ${configuredAppId} was not found in this account`,
+      );
+    }
+    if (app.name !== appName || accessAppHost(app.domain) !== host) {
+      throw new Error(
+        `Cloudflare Access app ${configuredAppId} does not match the configured name and host`,
+      );
+    }
+    return app;
+  }
+
+  const matches = apps.filter(
+    (app) => app.name === appName || accessAppHost(app.domain) === host,
+  );
+  const exactMatches = matches.filter(
+    (app) => app.name === appName && accessAppHost(app.domain) === host,
+  );
+  if (matches.length === 0) {
+    return undefined;
+  }
+  if (matches.length === 1 && exactMatches.length === 1) {
+    return exactMatches[0];
+  }
+
+  const ids = matches
+    .map((app) => `${app.id} (${app.name} / ${app.domain})`)
+    .join(", ");
+  throw new Error(
+    `refusing ambiguous Cloudflare Access app discovery: ${ids}. Set KRILLSWITCH_ACCESS_APP_ID to the intended app id.`,
+  );
+}
+
+function accessAppHost(domain) {
+  if (typeof domain !== "string") {
+    return "";
+  }
+  try {
+    return new URL(domain.includes("://") ? domain : `https://${domain}`).host;
+  } catch {
+    return domain;
+  }
 }
 
 function printPlan({ app, created, updated }) {

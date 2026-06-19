@@ -183,6 +183,18 @@ describe("flag detail update", () => {
     expect(response.status).toBe(400);
   });
 
+  it("rejects duplicate variation ids before mutating the flag", async () => {
+    const cookie = await devLogin("editor");
+    const draft = rolloutDemoDraft();
+    draft.variations[1] = {
+      id: "var_rollout_a",
+      value: "b",
+      name: "B",
+    };
+    const response = await putDetail(cookie, draft);
+    expect(response.status).toBe(400);
+  });
+
   it("rejects viewer saves with 403", async () => {
     const cookie = await devLogin("viewer");
     expect((await putDetail(cookie, rolloutDemoDraft())).status).toBe(403);

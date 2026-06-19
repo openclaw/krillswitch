@@ -208,7 +208,12 @@ adminRoutes.use("*", async (c, next) => {
   });
   c.set(
     "role",
-    await resolveRole(db, session.user, c.env.BOOTSTRAP_ADMIN_EMAIL),
+    await resolveRole(
+      db,
+      session.user,
+      c.env.BOOTSTRAP_ADMIN_EMAIL,
+      c.env.GITHUB_VIEWER_ORG,
+    ),
   );
   await next();
 });
