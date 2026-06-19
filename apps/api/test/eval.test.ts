@@ -190,6 +190,11 @@ describe("POST /v1/eval", () => {
     const publicAsset = await SELF.fetch("https://flags.openclaw.ai/");
     expect(publicAsset.status).toBe(404);
 
+    const unsupportedEvalMethod = await SELF.fetch(
+      "https://flags.openclaw.ai/v1/eval",
+    );
+    expect(unsupportedEvalMethod.status).toBe(404);
+
     const adminEval = await postEval({
       baseUrl: "https://switch.openclaw.ai",
       evalKey: DEV_EVAL_KEY,

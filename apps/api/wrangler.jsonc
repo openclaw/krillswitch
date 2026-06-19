@@ -23,10 +23,6 @@
   },
   "routes": [
     {
-      "pattern": "flags.openclaw.ai/*",
-      "zone_name": "openclaw.ai"
-    },
-    {
       "pattern": "switch.openclaw.ai/*",
       "zone_name": "openclaw.ai"
     }

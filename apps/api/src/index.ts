@@ -58,8 +58,11 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Access has a chance to protect the dashboard hostname.
 app.use("*", async (c, next) => {
   const hostname = new URL(c.req.url).hostname;
+  const isPublicEvalRequest =
+    c.req.path === PUBLIC_EVAL_PATH &&
+    (c.req.method === "POST" || c.req.method === "OPTIONS");
   if (
-    (hostname === PUBLIC_EVAL_HOST && c.req.path !== PUBLIC_EVAL_PATH) ||
+    (hostname === PUBLIC_EVAL_HOST && !isPublicEvalRequest) ||
     (hostname === ADMIN_HOST && c.req.path === PUBLIC_EVAL_PATH)
   ) {
     return c.json({ error: "not_found" }, 404);
