@@ -81,3 +81,9 @@ pnpm typecheck  # tsc across workspaces (generates worker types first)
 pnpm lint       # biome check
 pnpm lint:fix   # biome check --write
 ```
+
+## Releases
+
+Krillswitch releases are versioned GitHub releases. The application version is
+declared in the root `package.json`; the workspace packages remain private and
+are not published to npm.
