@@ -316,7 +316,7 @@ describe("freshness", () => {
     expect(screen.getByTestId("souls").textContent).toBe("false");
   });
 
-  it("serializes overlapping visibility and polling refreshes", async () => {
+  it("replaces a stalled refresh when a new one is requested", async () => {
     let resolveFirst: ((response: Response) => void) | undefined;
     fetchMock.mockImplementationOnce(
       () =>
@@ -324,16 +324,16 @@ describe("freshness", () => {
           resolveFirst = resolve;
         }),
     );
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: false }));
 
     renderDemo({ contextKey: "serialized-user" });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     setVisibility("visible");
-    expect(fetchMock).toHaveBeenCalledOnce();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     resolveFirst?.(evalResponse({ souls: true }));
-    await waitFor(() => {
-      expect(screen.getByTestId("souls").textContent).toBe("true");
-    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.getByTestId("souls").textContent).toBe("false");
   });
 });
 

@@ -196,8 +196,7 @@ function createClient<M extends FlagManifest>(
 
     useEffect(() => {
       let disposed = false;
-      const controller = new AbortController();
-      let refreshing = false;
+      let activeController: AbortController | null = null;
       const parsedAttributes = JSON.parse(attributesJson) as Record<
         string,
         AttributeValue
@@ -211,8 +210,9 @@ function createClient<M extends FlagManifest>(
 
       // Single fetch path for mount, refocus, and poll.
       async function refresh(): Promise<void> {
-        if (refreshing) return;
-        refreshing = true;
+        activeController?.abort();
+        const controller = new AbortController();
+        activeController = controller;
         try {
           const body: EvalRequestBody = {
             context: {
@@ -233,7 +233,12 @@ function createClient<M extends FlagManifest>(
             body: JSON.stringify(body),
             signal: controller.signal,
           });
-          if (disposed || response.status === 304 || !response.ok) {
+          if (
+            disposed ||
+            controller.signal.aborted ||
+            response.status === 304 ||
+            !response.ok
+          ) {
             return;
           }
           etag = response.headers.get("etag");
@@ -250,7 +255,9 @@ function createClient<M extends FlagManifest>(
         } catch {
           // Unreachable service: keep rendering last-known values.
         } finally {
-          refreshing = false;
+          if (activeController === controller) {
+            activeController = null;
+          }
         }
       }
 
@@ -265,7 +272,7 @@ function createClient<M extends FlagManifest>(
 
       return () => {
         disposed = true;
-        controller.abort();
+        activeController?.abort();
         clearInterval(pollTimer);
         document.removeEventListener("visibilitychange", onVisibilityChange);
       };
