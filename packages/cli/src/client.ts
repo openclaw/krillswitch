@@ -23,6 +23,7 @@ export class KrillswitchClient {
       );
     }
     const accessHeaders = cloudflareAccessHeaders(this.config);
+    const hasBody = options.body !== undefined;
     let response: Response;
     try {
       response = await fetch(`${this.config.baseUrl}${path}`, {
@@ -30,9 +31,9 @@ export class KrillswitchClient {
         headers: {
           authorization: `Bearer ${this.config.token}`,
           ...accessHeaders,
-          ...(options.body ? { "content-type": "application/json" } : {}),
+          ...(hasBody ? { "content-type": "application/json" } : {}),
         },
-        ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+        ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
       });
     } catch {
       throw new CliError(

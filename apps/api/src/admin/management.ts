@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { user } from "../db/authSchema";
 import {
@@ -82,16 +82,34 @@ export async function setUserRole(
     .where(eq(roleGrants.userId, options.userId))
     .get();
 
-  // Lockout guard: the only admin grant cannot be demoted or revoked.
+  // Make the last-admin guard part of the write. The preflight count alone
+  // races when two administrators are demoted at the same time.
   if (existing?.role === "admin" && options.role !== "admin") {
-    const adminGrants = await db
-      .select({ id: roleGrants.id })
-      .from(roleGrants)
-      .where(eq(roleGrants.role, "admin"))
-      .all();
-    if (adminGrants.length <= 1) {
+    const retainsAnotherAdmin = sql`(select count(*) from role_grants where role = 'admin') > 1`;
+    const result =
+      options.role === null
+        ? await db
+            .delete(roleGrants)
+            .where(and(eq(roleGrants.id, existing.id), retainsAnotherAdmin))
+            .run()
+        : await db
+            .update(roleGrants)
+            .set({ role: options.role, grantedBy: options.actor.id })
+            .where(and(eq(roleGrants.id, existing.id), retainsAnotherAdmin))
+            .run();
+    if (result.meta.changes === 0) {
       return "last_admin";
     }
+    await db.batch([
+      changeLogInsert(db, {
+        actor: options.actor,
+        action: "role.set",
+        target: target.email,
+        before: { role: existing.role },
+        after: { role: options.role },
+      }),
+    ]);
+    return "ok";
   }
 
   const logEntry = changeLogInsert(db, {

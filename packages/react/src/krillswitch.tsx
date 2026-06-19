@@ -56,8 +56,18 @@ export interface KrillswitchClient<M extends FlagManifest> {
 
 export const ANONYMOUS_KEY_STORAGE_KEY = "krillswitch.anonymousKey";
 
-export function flagValuesStorageKey(evalKey: string): string {
-  return `krillswitch.flags.${evalKey}`;
+export function flagValuesStorageKey(
+  evalKey: string,
+  contextKey?: string,
+  attributesJson?: string,
+): string {
+  const base = `krillswitch.flags.${evalKey}`;
+  if (contextKey === undefined && attributesJson === undefined) {
+    return base;
+  }
+  return `${base}.${encodeURIComponent(
+    JSON.stringify([contextKey, attributesJson ?? null]),
+  )}`;
 }
 
 function safeStorage(): Storage | null {
@@ -65,6 +75,22 @@ function safeStorage(): Storage | null {
     return typeof window === "undefined" ? null : window.localStorage;
   } catch {
     return null;
+  }
+}
+
+function storageGet(key: string): string | null {
+  try {
+    return safeStorage()?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(key: string, value: string): void {
+  try {
+    safeStorage()?.setItem(key, value);
+  } catch {
+    // Storage can be unavailable in private or quota-constrained contexts.
   }
 }
 
@@ -94,10 +120,9 @@ function mergeIntoManifest<M extends FlagManifest>(
 
 function readCachedValues<M extends FlagManifest>(
   manifest: M,
-  evalKey: string,
+  storageKey: string,
 ): M {
-  const storage = safeStorage();
-  const raw = storage?.getItem(flagValuesStorageKey(evalKey));
+  const raw = storageGet(storageKey);
   if (!raw) {
     return manifest;
   }
@@ -113,13 +138,12 @@ function readCachedValues<M extends FlagManifest>(
 }
 
 function anonymousContextKey(): string {
-  const storage = safeStorage();
-  const existing = storage?.getItem(ANONYMOUS_KEY_STORAGE_KEY);
+  const existing = storageGet(ANONYMOUS_KEY_STORAGE_KEY);
   if (existing) {
     return existing;
   }
   const generated = `anon-${crypto.randomUUID()}`;
-  storage?.setItem(ANONYMOUS_KEY_STORAGE_KEY, generated);
+  storageSet(ANONYMOUS_KEY_STORAGE_KEY, generated);
   return generated;
 }
 
@@ -144,29 +168,49 @@ function createClient<M extends FlagManifest>(
       pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
       children,
     } = props;
-    // First paint: last-known values, manifest defaults on a cold profile.
-    const [values, setValues] = useState<M>(() =>
-      readCachedValues(manifest, evalKey),
-    );
+    const resolvedContextKey =
+      contextKey ??
+      (typeof window === "undefined" ? "anonymous" : anonymousContextKey());
     // Serialized so a new-but-equal attributes object doesn't refetch.
     const attributesJson = JSON.stringify(attributes ?? null);
+    const storageKey = flagValuesStorageKey(
+      evalKey,
+      resolvedContextKey,
+      attributesJson,
+    );
+    const [state, setState] = useState(() => ({
+      storageKey,
+      values: readCachedValues(manifest, storageKey),
+    }));
+    // A new identity or context must never render the previous scope's flags
+    // while its fetch is still pending.
+    const values =
+      state.storageKey === storageKey
+        ? state.values
+        : readCachedValues(manifest, storageKey);
 
     useEffect(() => {
       let disposed = false;
       const controller = new AbortController();
+      let latestRequest = 0;
       const parsedAttributes = JSON.parse(attributesJson) as Record<
         string,
         AttributeValue
       > | null;
       // Scoped to this identity/config; a refetch with the same tag can 304.
       let etag: string | null = null;
+      setState({
+        storageKey,
+        values: readCachedValues(manifest, storageKey),
+      });
 
       // Single fetch path for mount, refocus, and poll.
       async function refresh(): Promise<void> {
+        const request = ++latestRequest;
         try {
           const body: EvalRequestBody = {
             context: {
-              key: contextKey ?? anonymousContextKey(),
+              key: resolvedContextKey,
               ...(parsedAttributes ? { attributes: parsedAttributes } : {}),
             },
           };
@@ -183,7 +227,12 @@ function createClient<M extends FlagManifest>(
             body: JSON.stringify(body),
             signal: controller.signal,
           });
-          if (disposed || response.status === 304 || !response.ok) {
+          if (
+            disposed ||
+            request !== latestRequest ||
+            response.status === 304 ||
+            !response.ok
+          ) {
             return;
           }
           etag = response.headers.get("etag");
@@ -195,11 +244,8 @@ function createClient<M extends FlagManifest>(
             ]),
           );
           const merged = mergeIntoManifest(manifest, remoteValues);
-          setValues(merged);
-          safeStorage()?.setItem(
-            flagValuesStorageKey(evalKey),
-            JSON.stringify(merged),
-          );
+          setState({ storageKey, values: merged });
+          storageSet(storageKey, JSON.stringify(merged));
         } catch {
           // Unreachable service: keep rendering last-known values.
         }
@@ -220,7 +266,14 @@ function createClient<M extends FlagManifest>(
         clearInterval(pollTimer);
         document.removeEventListener("visibilitychange", onVisibilityChange);
       };
-    }, [evalKey, baseUrl, contextKey, attributesJson, pollIntervalMs]);
+    }, [
+      evalKey,
+      baseUrl,
+      resolvedContextKey,
+      attributesJson,
+      pollIntervalMs,
+      storageKey,
+    ]);
 
     const value = useMemo(() => values, [values]);
     return (

@@ -67,7 +67,7 @@ function parseValueForKind(kind: FlagKind, raw: string): JsonValue {
       );
     case "number": {
       const value = Number(raw);
-      if (raw.trim() === "" || Number.isNaN(value)) {
+      if (raw.trim() === "" || !Number.isFinite(value)) {
         throw new CliUsageError(
           `number variation must be numeric, got "${raw}"`,
         );

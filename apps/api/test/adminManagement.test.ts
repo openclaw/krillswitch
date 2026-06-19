@@ -134,6 +134,63 @@ describe("role grant management", () => {
     expect((await me(admin)).role).toBe("admin");
   });
 
+  it("keeps one admin when two demotions race", async () => {
+    const originalAdmin = await devLogin("admin");
+    const originalAdminId = (await me(originalAdmin)).user.id;
+    const secondAdmin = await devLogin("editor");
+    const secondAdminId = (await me(secondAdmin)).user.id;
+
+    const grant = await SELF.fetch(
+      `${BASE}/admin/users/${secondAdminId}/role`,
+      jsonInit(originalAdmin, "PUT", { role: "admin" }),
+    );
+    expect(grant.status).toBe(200);
+
+    const results = await Promise.all([
+      SELF.fetch(
+        `${BASE}/admin/users/${originalAdminId}/role`,
+        jsonInit(secondAdmin, "PUT", { role: "viewer" }),
+      ),
+      SELF.fetch(
+        `${BASE}/admin/users/${secondAdminId}/role`,
+        jsonInit(secondAdmin, "PUT", { role: "viewer" }),
+      ),
+    ]);
+    const statuses = results.map((response) => response.status).sort();
+    expect(statuses.filter((status) => status === 200)).toHaveLength(1);
+    expect(statuses.some((status) => status === 400 || status === 403)).toBe(
+      true,
+    );
+
+    const originalRole = (await me(originalAdmin)).role;
+    const adminCookie = originalRole === "admin" ? originalAdmin : secondAdmin;
+    const users = await (
+      await SELF.fetch(`${BASE}/admin/users`, {
+        headers: { cookie: adminCookie },
+      })
+    ).json<{ users: { id: string; role: string | null }[] }>();
+    expect(users.users.filter((user) => user.role === "admin")).toHaveLength(1);
+
+    // This suite shares seeded D1 state across cases; restore the personas
+    // expected by the remaining management tests.
+    expect(
+      (
+        await SELF.fetch(
+          `${BASE}/admin/users/${originalAdminId}/role`,
+          jsonInit(adminCookie, "PUT", { role: "admin" }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await SELF.fetch(
+          `${BASE}/admin/users/${secondAdminId}/role`,
+          jsonInit(adminCookie, "PUT", { role: "editor" }),
+        )
+      ).status,
+    ).toBe(200);
+  });
+
   it("locks role mutation to admins", async () => {
     const editor = await devLogin("editor");
     const editorUser = (await me(editor)).user.id;

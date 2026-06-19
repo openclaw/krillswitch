@@ -22,7 +22,12 @@ const { FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
 
 const EVAL_KEY = "ks_clawhub_development_local";
 const BASE_URL = "https://krillswitch.test";
-const VALUES_STORAGE_KEY = flagValuesStorageKey(EVAL_KEY);
+const CACHED_CONTEXT_KEY = "cached-user";
+const VALUES_STORAGE_KEY = flagValuesStorageKey(
+  EVAL_KEY,
+  CACHED_CONTEXT_KEY,
+  "null",
+);
 
 function SoulsProbe() {
   const souls = useFeatureFlag("souls");
@@ -41,6 +46,10 @@ function renderDemo(props: { contextKey?: string } = {}) {
       <SoulsProbe />
     </FeatureFlagProvider>,
   );
+}
+
+function renderCachedDemo() {
+  return renderDemo({ contextKey: CACHED_CONTEXT_KEY });
 }
 
 function evalResponse(flags: Record<string, unknown>): Response {
@@ -84,7 +93,7 @@ describe("bootstrap render", () => {
       JSON.stringify({ souls: true, theme: "dark" }),
     );
     fetchMock.mockReturnValue(new Promise(() => {}));
-    renderDemo();
+    renderCachedDemo();
     expect(screen.getByTestId("souls").textContent).toBe("true");
     expect(screen.getByTestId("theme").textContent).toBe("dark");
   });
@@ -95,7 +104,7 @@ describe("bootstrap render", () => {
       JSON.stringify({ souls: "yes", theme: 3 }),
     );
     fetchMock.mockReturnValue(new Promise(() => {}));
-    renderDemo();
+    renderCachedDemo();
     expect(screen.getByTestId("souls").textContent).toBe("false");
     expect(screen.getByTestId("theme").textContent).toBe("light");
   });
@@ -104,7 +113,7 @@ describe("bootstrap render", () => {
 describe("fetch lifecycle", () => {
   it("updates values in place and persists them when the fetch settles", async () => {
     fetchMock.mockResolvedValue(evalResponse({ souls: true, theme: "dark" }));
-    renderDemo();
+    renderCachedDemo();
     expect(screen.getByTestId("souls").textContent).toBe("false");
     await waitFor(() => {
       expect(screen.getByTestId("souls").textContent).toBe("true");
@@ -121,14 +130,14 @@ describe("fetch lifecycle", () => {
       JSON.stringify({ souls: true }),
     );
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
-    renderDemo();
+    renderCachedDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(screen.getByTestId("souls").textContent).toBe("true");
   });
 
   it("keeps manifest defaults when cold and the service is unreachable", async () => {
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
-    renderDemo();
+    renderCachedDemo();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(screen.getByTestId("souls").textContent).toBe("false");
   });
@@ -256,7 +265,7 @@ describe("freshness", () => {
         { status: 200, headers: { etag: 'W/"abc123"' } },
       ),
     );
-    renderDemo();
+    renderCachedDemo();
     await waitFor(() => {
       expect(screen.getByTestId("souls").textContent).toBe("true");
     });
@@ -270,6 +279,26 @@ describe("freshness", () => {
     expect(new Headers(init?.headers).get("if-none-match")).toBe('W/"abc123"');
     expect(screen.getByTestId("souls").textContent).toBe("true");
     expect(window.localStorage.getItem(VALUES_STORAGE_KEY)).toBe(persisted);
+  });
+
+  it("does not render one context's values while another context loads", async () => {
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: true }));
+    const view = renderDemo({ contextKey: "user-a" });
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+
+    fetchMock.mockReturnValueOnce(new Promise(() => {}));
+    view.rerender(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey="user-b"
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    expect(screen.getByTestId("souls").textContent).toBe("false");
   });
 });
 
