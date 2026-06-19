@@ -83,9 +83,19 @@ describe("syncOrgViewerMembership", () => {
     expect(await storedOrgViewer()).toBe(true);
   });
 
-  it("does nothing without a configured org or for non-GitHub accounts", async () => {
+  it("clears cached membership when the configured org is disabled", async () => {
     const fetchMock = membershipResponse(200, "active");
+    await db
+      .update(user)
+      .set({ orgViewer: true })
+      .where(eq(user.id, TEST_USER_ID));
     await syncOrgViewerMembership(db, {}, githubAccount(), fetchMock);
+    expect(await storedOrgViewer()).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does nothing for non-GitHub accounts", async () => {
+    const fetchMock = membershipResponse(200, "active");
     await syncOrgViewerMembership(
       db,
       ORG_ENV,
@@ -103,6 +113,7 @@ describe("org-derived viewer role", () => {
       db,
       { id: TEST_USER_ID, email: "org-member@example.com", orgViewer: true },
       undefined,
+      ORG_ENV.GITHUB_VIEWER_ORG,
     );
     expect(role).toBe("viewer");
   });
@@ -119,6 +130,7 @@ describe("org-derived viewer role", () => {
       db,
       { id: TEST_USER_ID, email: "org-member@example.com", orgViewer: true },
       undefined,
+      ORG_ENV.GITHUB_VIEWER_ORG,
     );
     expect(role).toBe("editor");
   });
@@ -127,6 +139,17 @@ describe("org-derived viewer role", () => {
     const role = await resolveRole(
       db,
       { id: TEST_USER_ID, email: "org-member@example.com", orgViewer: false },
+      undefined,
+      ORG_ENV.GITHUB_VIEWER_ORG,
+    );
+    expect(role).toBeNull();
+  });
+
+  it("does not grant stale membership after the org fallback is disabled", async () => {
+    const role = await resolveRole(
+      db,
+      { id: TEST_USER_ID, email: "org-member@example.com", orgViewer: true },
+      undefined,
       undefined,
     );
     expect(role).toBeNull();

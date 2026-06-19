@@ -78,6 +78,11 @@ export KRILLSWITCH_ACCESS_ALLOWED_DOMAINS=openclaw.ai
 pnpm cf:access
 ```
 
+After the first successful provisioning run, set
+`KRILLSWITCH_ACCESS_APP_ID` as a GitHub Actions repository or environment
+variable. Subsequent runs use that immutable Cloudflare Access application id
+and refuse partial name or hostname matches.
+
 For non-browser CLI/agent access, create an Access service token in Cloudflare,
 pass its token id to the provisioning script, and set the client credentials
 only in the caller environment:

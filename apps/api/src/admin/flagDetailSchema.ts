@@ -50,8 +50,19 @@ export const flagDetailUpdateSchema = z.object({
           }),
         )
         .min(1),
-    })
-    .nullable(),
+  })
+  .nullable(),
+}).superRefine((draft, context) => {
+  const ids = draft.variations
+    .map((variation) => variation.id)
+    .filter((id): id is string => id !== undefined);
+  if (new Set(ids).size !== ids.length) {
+    context.addIssue({
+      code: "custom",
+      message: "variation ids must be unique",
+      path: ["variations"],
+    });
+  }
 });
 
 export type FlagDetailUpdate = z.infer<typeof flagDetailUpdateSchema>;

@@ -18,6 +18,7 @@ export async function resolveRole(
   db: DrizzleD1Database,
   user: { id: string; email: string; orgViewer?: boolean | null },
   bootstrapAdminEmail: string | undefined,
+  githubViewerOrg: string | undefined,
 ): Promise<AdminRole | null> {
   const grant = await db
     .select({ role: roleGrants.role })
@@ -28,7 +29,7 @@ export async function resolveRole(
   if (bootstrapAdminEmail && user.email === bootstrapAdminEmail) {
     return "admin";
   }
-  if (user.orgViewer) {
+  if (githubViewerOrg?.trim() && user.orgViewer) {
     return "viewer";
   }
   return null;
