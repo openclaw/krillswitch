@@ -61,7 +61,7 @@ if (dryRun) {
   process.exit(0);
 }
 
-const apps = asArray(await cf("GET", `/accounts/${accountId}/access/apps`));
+const apps = await cfAll(`/accounts/${accountId}/access/apps`);
 const existing = apps.find(
   (app) =>
     app.name === appName ||
@@ -79,8 +79,8 @@ const app = existing
       id: existing.id,
     })
   : await cf("POST", `/accounts/${accountId}/access/apps`, appPayload);
-const policies = asArray(
-  await cf("GET", `/accounts/${accountId}/access/apps/${app.id}/policies`),
+const policies = await cfAll(
+  `/accounts/${accountId}/access/apps/${app.id}/policies`,
 );
 await upsertPolicy(app.id, policies, humanPolicy);
 await reconcileServiceTokenPolicy(app.id, policies, servicePolicy);
@@ -119,6 +119,32 @@ async function reconcileServiceTokenPolicy(appId, policies, policy) {
 }
 
 async function cf(method, path, body) {
+  const payload = await cfPayload(method, path, body);
+  return payload.result;
+}
+
+async function cfAll(path) {
+  const items = [];
+  for (let page = 1; ; page += 1) {
+    const separator = path.includes("?") ? "&" : "?";
+    const payload = await cfPayload(
+      "GET",
+      `${path}${separator}per_page=100&page=${page}`,
+    );
+    const pageItems = asArray(payload.result);
+    items.push(...pageItems);
+    const totalPages = Number(payload.result_info?.total_pages);
+    if (
+      pageItems.length === 0 ||
+      (Number.isFinite(totalPages) && page >= totalPages) ||
+      (!Number.isFinite(totalPages) && pageItems.length < 100)
+    ) {
+      return items;
+    }
+  }
+}
+
+async function cfPayload(method, path, body) {
   const response = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
     method,
     headers: {
@@ -140,7 +166,7 @@ async function cf(method, path, body) {
       `Cloudflare ${method} ${path} failed (${response.status})${details ? `: ${details}` : ""}.${scopeHint}`,
     );
   }
-  return payload.result;
+  return payload;
 }
 
 function required(name) {

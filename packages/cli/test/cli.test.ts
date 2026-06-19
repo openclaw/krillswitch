@@ -1201,6 +1201,7 @@ describe("resolveConfig precedence", () => {
     expect(config).toMatchObject({
       accessClientId: "service-client-id",
       accessClientSecret: "service-client-secret",
+      accessOrigin: "https://switch.openclaw.ai",
     });
   });
 });
@@ -1237,6 +1238,51 @@ describe("Cloudflare Access service token", () => {
         accessClientId: "service-client-id",
       }).request("/admin/projects"),
     ).rejects.toThrow(/requires both KRILLSWITCH_CF_ACCESS/);
+  });
+
+  it("does not send service-token credentials to an untrusted base URL", async () => {
+    const fetchMock = vi.fn(async () => new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new KrillswitchClient({
+      baseUrl: "http://localhost:8799",
+      token: "ksat_test",
+      accessClientId: "service-client-id",
+      accessClientSecret: "service-client-secret",
+    }).request("/admin/projects");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8799/admin/projects",
+      expect.objectContaining({
+        headers: expect.not.objectContaining({
+          "cf-access-client-id": expect.anything(),
+          "cf-access-client-secret": expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it("allows an explicitly configured Cloudflare Access origin", async () => {
+    const fetchMock = vi.fn(async () => new Response("{}"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new KrillswitchClient({
+      baseUrl: "https://switch.internal.example",
+      token: "ksat_test",
+      accessClientId: "service-client-id",
+      accessClientSecret: "service-client-secret",
+      accessOrigin: "https://switch.internal.example",
+    }).request("/admin/projects");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://switch.internal.example/admin/projects",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "cf-access-client-id": "service-client-id",
+          "cf-access-client-secret": "service-client-secret",
+        }),
+      }),
+    );
   });
 });
 

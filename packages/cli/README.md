@@ -69,6 +69,10 @@ export KRILLSWITCH_CF_ACCESS_CLIENT_ID=...
 export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
 ```
 
+The client sends those credentials only to `https://switch.openclaw.ai`. Set
+`KRILLSWITCH_CF_ACCESS_ORIGIN=https://admin.example.com` before using a
+different HTTPS Access hostname.
+
 ```sh
 krillswitch projects list \
   --base-url http://localhost:8799 \

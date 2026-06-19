@@ -13,9 +13,11 @@ export type CliConfig = {
   token: string | undefined;
   accessClientId?: string;
   accessClientSecret?: string;
+  accessOrigin?: string;
 };
 
 const DEFAULT_BASE_URL = "http://localhost:8799";
+const DEFAULT_CLOUDFLARE_ACCESS_ORIGIN = "https://switch.openclaw.ai";
 
 export function defaultBaseUrl(): string {
   return DEFAULT_BASE_URL;
@@ -101,6 +103,9 @@ export async function resolveConfig(
       ? {
           accessClientId: env.KRILLSWITCH_CF_ACCESS_CLIENT_ID?.trim(),
           accessClientSecret: env.KRILLSWITCH_CF_ACCESS_CLIENT_SECRET?.trim(),
+          accessOrigin:
+            env.KRILLSWITCH_CF_ACCESS_ORIGIN?.trim() ||
+            DEFAULT_CLOUDFLARE_ACCESS_ORIGIN,
         }
       : {}),
   };

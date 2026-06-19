@@ -82,6 +82,7 @@ export async function onboard(
       token,
       accessClientId: existing.accessClientId,
       accessClientSecret: existing.accessClientSecret,
+      accessOrigin: existing.accessOrigin,
     }).request("/admin/projects");
   }
 

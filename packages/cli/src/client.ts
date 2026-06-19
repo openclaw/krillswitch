@@ -64,10 +64,30 @@ function cloudflareAccessHeaders(config: CliConfig): Record<string, string> {
       "Cloudflare Access requires both KRILLSWITCH_CF_ACCESS_CLIENT_ID and KRILLSWITCH_CF_ACCESS_CLIENT_SECRET",
     );
   }
+  if (!isTrustedAccessOrigin(config.baseUrl, config.accessOrigin)) {
+    return {};
+  }
   return {
     "cf-access-client-id": accessClientId,
     "cf-access-client-secret": accessClientSecret,
   };
+}
+
+function isTrustedAccessOrigin(
+  baseUrl: string,
+  accessOrigin = "https://switch.openclaw.ai",
+): boolean {
+  try {
+    const target = new URL(baseUrl);
+    const trusted = new URL(accessOrigin);
+    return (
+      target.protocol === "https:" &&
+      trusted.protocol === "https:" &&
+      target.origin === trusted.origin
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function errorMessage(response: Response, path: string): Promise<string> {

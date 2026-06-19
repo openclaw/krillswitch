@@ -91,10 +91,12 @@ export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
 ```
 
 The CLI sends those service-token headers alongside its Krillswitch admin
-token. They satisfy the edge gate only; the Worker still enforces the token's
-editor/viewer role. An omitted service-token list preserves the existing
-automation policy during later admin deploys. To deliberately revoke all
-automation service tokens, set
+token only to `https://switch.openclaw.ai`; set
+`KRILLSWITCH_CF_ACCESS_ORIGIN` to use a different HTTPS Access hostname. They
+satisfy the edge gate only; the Worker still enforces the token's editor/viewer
+role. An omitted service-token list preserves the existing automation policy
+during later admin deploys. To deliberately revoke all automation service
+tokens, set
 `KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS=1` with no token ids.
 
 ## Deploy And Verify
