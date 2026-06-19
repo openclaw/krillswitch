@@ -13,11 +13,16 @@ import { getEnvironmentConfig } from "./configCache";
 
 type Bindings = {
   DB: D1Database;
+  ASSETS: Fetcher;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   DEV_AUTH_ENABLED?: string;
   BOOTSTRAP_ADMIN_EMAIL?: string;
 };
+
+const PUBLIC_EVAL_HOST = "flags.openclaw.ai";
+const ADMIN_HOST = "switch.openclaw.ai";
+const PUBLIC_EVAL_PATH = "/v1/eval";
 
 const evalRequestSchema = z.object({
   context: z.object({
@@ -47,6 +52,20 @@ function bearerToken(authorization: string | undefined): string | undefined {
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Production has two distinct trust boundaries. Keep the public evaluation
+// hostname from reaching admin routes or dashboard assets before Cloudflare
+// Access has a chance to protect the dashboard hostname.
+app.use("*", async (c, next) => {
+  const hostname = new URL(c.req.url).hostname;
+  if (
+    (hostname === PUBLIC_EVAL_HOST && c.req.path !== PUBLIC_EVAL_PATH) ||
+    (hostname === ADMIN_HOST && c.req.path === PUBLIC_EVAL_PATH)
+  ) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  await next();
+});
 
 // Eval keys are public flag-set identifiers, not secrets; any browser
 // origin may evaluate.
@@ -128,5 +147,9 @@ app.post("/v1/eval", async (c) => {
   c.header("content-type", "application/json");
   return c.body(serialized, 200);
 });
+
+// `run_worker_first` lets the hostname policy above protect static assets.
+// The configured Assets binding retains Cloudflare's SPA fallback behavior.
+app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
 export default app;

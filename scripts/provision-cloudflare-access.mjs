@@ -76,9 +76,7 @@ const policies = asArray(
   await cf("GET", `/accounts/${accountId}/access/apps/${app.id}/policies`),
 );
 await upsertPolicy(app.id, policies, humanPolicy);
-if (servicePolicy.include.length > 0) {
-  await upsertPolicy(app.id, policies, servicePolicy);
-}
+await reconcilePolicy(app.id, policies, servicePolicy);
 
 printPlan({ app, created: !existing, updated: Boolean(existing) });
 
@@ -97,6 +95,20 @@ async function upsertPolicy(appId, policies, policy) {
     `/accounts/${accountId}/access/apps/${appId}/policies`,
     policy,
   );
+}
+
+async function reconcilePolicy(appId, policies, policy) {
+  const existingPolicy = policies.find((entry) => entry.name === policy.name);
+  if (policy.include.length > 0) {
+    await upsertPolicy(appId, policies, policy);
+    return;
+  }
+  if (existingPolicy) {
+    await cf(
+      "DELETE",
+      `/accounts/${accountId}/access/apps/${appId}/policies/${existingPolicy.id}`,
+    );
+  }
 }
 
 async function cf(method, path, body) {
@@ -150,9 +162,9 @@ function printPlan({ app, created, updated }) {
   console.log(`created=${created}`);
   console.log(`updated=${updated}`);
   console.log(`human-policy=${humanPolicy.name}`);
-  if (servicePolicy.include.length > 0) {
-    console.log(`service-policy=${servicePolicy.name}`);
-  }
+  console.log(
+    `service-policy=${servicePolicy.include.length > 0 ? servicePolicy.name : "absent"}`,
+  );
   console.log("");
   console.log("CLI service-token environment:");
   console.log("KRILLSWITCH_CF_ACCESS_CLIENT_ID=<service token client id>");

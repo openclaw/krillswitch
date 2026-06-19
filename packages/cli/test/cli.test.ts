@@ -1503,6 +1503,54 @@ describe("onboard", () => {
     ]);
   });
 
+  it("uses Cloudflare Access service-token credentials while verifying", async () => {
+    const dir = join(tmpdir(), `krillswitch-test-${crypto.randomUUID()}`);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "config.json");
+    const credentialStore: CredentialStore = {
+      async getToken() {
+        return undefined;
+      },
+      async setToken() {},
+    };
+    const fetchMock = vi.fn(async () => new Response('{"projects":[]}'));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await onboard(
+      {
+        baseUrl: "https://switch.openclaw.ai",
+        token: "ksat_secret",
+        json: false,
+        skipVerify: false,
+      },
+      {
+        KRILLSWITCH_CONFIG: configPath,
+        KRILLSWITCH_CF_ACCESS_CLIENT_ID: "service-client-id",
+        KRILLSWITCH_CF_ACCESS_CLIENT_SECRET: "service-client-secret",
+      },
+      credentialStore,
+      {
+        stdin: process.stdin,
+        stdout: new Writable({
+          write(_chunk, _encoding, callback) {
+            callback();
+          },
+        }),
+      },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://switch.openclaw.ai/admin/projects",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: "Bearer ksat_secret",
+          "cf-access-client-id": "service-client-id",
+          "cf-access-client-secret": "service-client-secret",
+        }),
+      }),
+    );
+  });
+
   it("masks pasted access tokens in the interactive prompt", async () => {
     const dir = join(tmpdir(), `krillswitch-test-${crypto.randomUUID()}`);
     mkdirSync(dir, { recursive: true });
