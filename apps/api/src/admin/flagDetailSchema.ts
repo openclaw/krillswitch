@@ -22,48 +22,50 @@ const variationDraftSchema = z.object({
 
 // References use array indexes into `variations`: new variations have no id
 // yet, and the server owns id generation.
-export const flagDetailUpdateSchema = z.object({
-  enabled: z.boolean(),
-  variations: z.array(variationDraftSchema).min(1).max(20),
-  offVariationIndex: z.number().int().nonnegative(),
-  defaultVariationIndex: z.number().int().nonnegative(),
-  targets: z.array(
-    z.object({
-      variationIndex: z.number().int().nonnegative(),
-      contextKeys: z.array(z.string().trim().min(1)).min(1),
-    }),
-  ),
-  rules: z.array(
-    z.object({
-      variationIndex: z.number().int().nonnegative(),
-      attribute: z.string().trim().min(1),
-      values: z.array(attributeValueSchema).min(1),
-    }),
-  ),
-  rollout: z
-    .object({
-      variations: z
-        .array(
-          z.object({
-            variationIndex: z.number().int().nonnegative(),
-            weight: z.number().int().min(0).max(100),
-          }),
-        )
-        .min(1),
+export const flagDetailUpdateSchema = z
+  .object({
+    enabled: z.boolean(),
+    variations: z.array(variationDraftSchema).min(1).max(20),
+    offVariationIndex: z.number().int().nonnegative(),
+    defaultVariationIndex: z.number().int().nonnegative(),
+    targets: z.array(
+      z.object({
+        variationIndex: z.number().int().nonnegative(),
+        contextKeys: z.array(z.string().trim().min(1)).min(1),
+      }),
+    ),
+    rules: z.array(
+      z.object({
+        variationIndex: z.number().int().nonnegative(),
+        attribute: z.string().trim().min(1),
+        values: z.array(attributeValueSchema).min(1),
+      }),
+    ),
+    rollout: z
+      .object({
+        variations: z
+          .array(
+            z.object({
+              variationIndex: z.number().int().nonnegative(),
+              weight: z.number().int().min(0).max(100),
+            }),
+          )
+          .min(1),
+      })
+      .nullable(),
   })
-  .nullable(),
-}).superRefine((draft, context) => {
-  const ids = draft.variations
-    .map((variation) => variation.id)
-    .filter((id): id is string => id !== undefined);
-  if (new Set(ids).size !== ids.length) {
-    context.addIssue({
-      code: "custom",
-      message: "variation ids must be unique",
-      path: ["variations"],
-    });
-  }
-});
+  .superRefine((draft, context) => {
+    const ids = draft.variations
+      .map((variation) => variation.id)
+      .filter((id): id is string => id !== undefined);
+    if (new Set(ids).size !== ids.length) {
+      context.addIssue({
+        code: "custom",
+        message: "variation ids must be unique",
+        path: ["variations"],
+      });
+    }
+  });
 
 export type FlagDetailUpdate = z.infer<typeof flagDetailUpdateSchema>;
 

@@ -247,9 +247,7 @@ function FlagDetailEditor({
               removedIndex === undefined
                 ? draft.targets
                 : draft.targets
-                    .filter(
-                      (target) => target.variationIndex !== removedIndex,
-                    )
+                    .filter((target) => target.variationIndex !== removedIndex)
                     .map((target) => ({
                       ...target,
                       variationIndex: reindex(target.variationIndex),
@@ -265,9 +263,7 @@ function FlagDetailEditor({
                     })),
             weights:
               removedIndex === undefined
-                ? variations.map(
-                    (_, index) => draft.weights[index] ?? 0,
-                  )
+                ? variations.map((_, index) => draft.weights[index] ?? 0)
                 : draft.weights.filter((_, index) => index !== removedIndex),
           });
         }}
