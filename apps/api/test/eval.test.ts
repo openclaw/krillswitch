@@ -161,6 +161,7 @@ describe("POST /v1/eval", () => {
     expect(
       preflight.headers.get("access-control-allow-headers")?.toLowerCase(),
     ).toContain("authorization");
+    expect(preflight.headers.get("access-control-max-age")).toBe("86400");
 
     const response = await postEval({ evalKey: DEV_EVAL_KEY });
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
@@ -169,6 +170,7 @@ describe("POST /v1/eval", () => {
     expect(
       response.headers.get("access-control-expose-headers")?.toLowerCase(),
     ).toContain("etag");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("rejects a wrong eval key without serving flag data", async () => {

@@ -3,7 +3,6 @@ import {
   evaluateFlag,
   type FlagEvaluation,
 } from "@openclaw/krillswitch-core";
-import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -59,6 +58,9 @@ app.use(
     // Browsers hide non-safelisted response headers on CORS requests;
     // without this the SDK can never send If-None-Match.
     exposeHeaders: ["ETag", "Server-Timing"],
+    // The public eval API has a stable CORS policy, so avoid a preflight
+    // round-trip on every browser poll.
+    maxAge: 86_400,
   }),
 );
 
@@ -80,10 +82,7 @@ app.post("/v1/eval", async (c) => {
   }
 
   const configStart = performance.now();
-  const { config, source } = await getEnvironmentConfig(
-    drizzle(c.env.DB),
-    evalKey,
-  );
+  const { config, source } = await getEnvironmentConfig(c.env.DB, evalKey);
   const configMs = performance.now() - configStart;
   if (!config) {
     return c.json({ error: "invalid_eval_key" }, 401);
@@ -119,6 +118,9 @@ app.post("/v1/eval", async (c) => {
   const body: EvalResponseBody = { flags: evaluated };
   const serialized = JSON.stringify(body);
   const etag = evalBodyEtag(serialized);
+  // Evaluations are personalized by context. The SDK owns its ETag and
+  // local-storage cache; shared HTTP/CDN caches must never store this body.
+  c.header("Cache-Control", "private, no-store");
   c.header("ETag", etag);
   if (c.req.header("if-none-match") === etag) {
     return c.body(null, 304);
