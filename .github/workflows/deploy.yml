@@ -26,6 +26,11 @@ on:
         required: false
         default: ""
         type: string
+      access_revoke_service_tokens:
+        description: "Revoke the existing automation service-token policy"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -66,6 +71,7 @@ jobs:
       KRILLSWITCH_ACCESS_ALLOWED_EMAILS: ${{ inputs.access_allowed_emails }}
       KRILLSWITCH_ACCESS_ALLOWED_DOMAINS: ${{ inputs.access_allowed_domains }}
       KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS: ${{ inputs.access_service_token_ids }}
+      KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS: ${{ inputs.access_revoke_service_tokens && '1' || '0' }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

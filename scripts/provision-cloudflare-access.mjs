@@ -13,10 +13,17 @@ const allowedDomains = csv(
 );
 const allowedIdps = csv(process.env.KRILLSWITCH_ACCESS_IDP_IDS);
 const serviceTokenIds = csv(process.env.KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS);
+const revokeServiceTokens =
+  process.env.KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS === "1";
 
 if (allowedEmails.length === 0 && allowedDomains.length === 0) {
   throw new Error(
     "set KRILLSWITCH_ACCESS_ALLOWED_EMAILS or KRILLSWITCH_ACCESS_ALLOWED_DOMAINS",
+  );
+}
+if (revokeServiceTokens && serviceTokenIds.length > 0) {
+  throw new Error(
+    "set service-token ids to empty before revoking the automation policy",
   );
 }
 if (!dryRun && !token) {
@@ -76,7 +83,7 @@ const policies = asArray(
   await cf("GET", `/accounts/${accountId}/access/apps/${app.id}/policies`),
 );
 await upsertPolicy(app.id, policies, humanPolicy);
-await reconcilePolicy(app.id, policies, servicePolicy);
+await reconcileServiceTokenPolicy(app.id, policies, servicePolicy);
 
 printPlan({ app, created: !existing, updated: Boolean(existing) });
 
@@ -97,13 +104,13 @@ async function upsertPolicy(appId, policies, policy) {
   );
 }
 
-async function reconcilePolicy(appId, policies, policy) {
+async function reconcileServiceTokenPolicy(appId, policies, policy) {
   const existingPolicy = policies.find((entry) => entry.name === policy.name);
   if (policy.include.length > 0) {
     await upsertPolicy(appId, policies, policy);
     return;
   }
-  if (existingPolicy) {
+  if (revokeServiceTokens && existingPolicy) {
     await cf(
       "DELETE",
       `/accounts/${accountId}/access/apps/${appId}/policies/${existingPolicy.id}`,
@@ -163,7 +170,13 @@ function printPlan({ app, created, updated }) {
   console.log(`updated=${updated}`);
   console.log(`human-policy=${humanPolicy.name}`);
   console.log(
-    `service-policy=${servicePolicy.include.length > 0 ? servicePolicy.name : "absent"}`,
+    `service-policy=${
+      servicePolicy.include.length > 0
+        ? servicePolicy.name
+        : revokeServiceTokens
+          ? "removed"
+          : "preserved"
+    }`,
   );
   console.log("");
   console.log("CLI service-token environment:");
