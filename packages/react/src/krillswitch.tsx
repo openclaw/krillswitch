@@ -197,7 +197,7 @@ function createClient<M extends FlagManifest>(
     useEffect(() => {
       let disposed = false;
       const controller = new AbortController();
-      let latestRequest = 0;
+      let refreshing = false;
       const parsedAttributes = JSON.parse(attributesJson) as Record<
         string,
         AttributeValue
@@ -211,7 +211,8 @@ function createClient<M extends FlagManifest>(
 
       // Single fetch path for mount, refocus, and poll.
       async function refresh(): Promise<void> {
-        const request = ++latestRequest;
+        if (refreshing) return;
+        refreshing = true;
         try {
           const body: EvalRequestBody = {
             context: {
@@ -232,12 +233,7 @@ function createClient<M extends FlagManifest>(
             body: JSON.stringify(body),
             signal: controller.signal,
           });
-          if (
-            disposed ||
-            request !== latestRequest ||
-            response.status === 304 ||
-            !response.ok
-          ) {
+          if (disposed || response.status === 304 || !response.ok) {
             return;
           }
           etag = response.headers.get("etag");
@@ -253,6 +249,8 @@ function createClient<M extends FlagManifest>(
           storageSet(storageKey, JSON.stringify(merged));
         } catch {
           // Unreachable service: keep rendering last-known values.
+        } finally {
+          refreshing = false;
         }
       }
 

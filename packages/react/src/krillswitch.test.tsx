@@ -315,6 +315,26 @@ describe("freshness", () => {
     );
     expect(screen.getByTestId("souls").textContent).toBe("false");
   });
+
+  it("serializes overlapping visibility and polling refreshes", async () => {
+    let resolveFirst: ((response: Response) => void) | undefined;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+
+    renderDemo({ contextKey: "serialized-user" });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    setVisibility("visible");
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    resolveFirst?.(evalResponse({ souls: true }));
+    await waitFor(() => {
+      expect(screen.getByTestId("souls").textContent).toBe("true");
+    });
+  });
 });
 
 describe("manifest typing", () => {
