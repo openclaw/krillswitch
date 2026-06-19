@@ -9,11 +9,11 @@ LaunchDarkly for ClawHub.
 No Cloudflare account needed — everything runs in wrangler local mode.
 
 ```sh
-bun install
-bun dev
+corepack pnpm install
+pnpm dev
 ```
 
-`bun dev` creates `.dev.vars` from its example on first run, builds the admin
+`pnpm dev` creates `.dev.vars` from its example on first run, builds the admin
 dashboard, applies D1 migrations, seeds a
 `clawhub` project with a boolean `souls` flag, and starts the worker on
 http://localhost:8799 (the dashboard is served at that root; sign in with a
@@ -37,7 +37,7 @@ Toggle the flag in local D1 and the next response flips:
 
 ```sh
 cd apps/api
-bunx wrangler d1 execute krillswitch --local \
+pnpm exec wrangler d1 execute krillswitch --local \
   --command "UPDATE flag_environments SET enabled = 0 WHERE id = 'fe_souls_dev'"
 ```
 
@@ -53,8 +53,8 @@ bunx wrangler d1 execute krillswitch --local \
 ## Benchmarks
 
 ```sh
-bun bench                                          # against the local stack
-TARGET_URL=https://… TARGET_LABEL=workers-dev bun bench
+pnpm bench                                          # against the local stack
+TARGET_URL=https://… TARGET_LABEL=workers-dev pnpm bench
 ```
 
 Three scenarios run against `POST /v1/eval` and a dated JSON report lands in
@@ -76,8 +76,8 @@ stay comparable. Keep load modest against deployed targets.
 ## Commands
 
 ```sh
-bun run test       # core unit tests + worker integration tests (vitest)
-bun run typecheck  # tsc across workspaces (generates worker types first)
-bun run lint       # biome check
-bun run lint:fix   # biome check --write
+pnpm test       # core unit tests + worker integration tests (vitest)
+pnpm typecheck  # tsc across workspaces (generates worker types first)
+pnpm lint       # biome check
+pnpm lint:fix   # biome check --write
 ```

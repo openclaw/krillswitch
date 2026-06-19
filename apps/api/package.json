@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run ensure-dev-vars && bun run db:setup && wrangler dev",
+    "dev": "pnpm run ensure-dev-vars && pnpm run db:setup && wrangler dev",
     "db:setup": "wrangler d1 migrations apply krillswitch --local && wrangler d1 execute krillswitch --local --file=./seed/seed.sql",
     "db:migrate:remote": "wrangler d1 migrations apply krillswitch --remote",
     "deploy:worker": "wrangler deploy",
@@ -14,11 +14,11 @@
     "cf-typegen": "wrangler types",
     "typecheck": "wrangler types && tsc --noEmit",
     "db:generate-auth": "better-auth generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes",
-    "ensure-dev-vars": "bun -e \"const fs=require('node:fs');if(!fs.existsSync('.dev.vars'))fs.copyFileSync('.dev.vars.example','.dev.vars')\""
+    "ensure-dev-vars": "node -e \"const fs=require('node:fs');if(!fs.existsSync('.dev.vars'))fs.copyFileSync('.dev.vars.example','.dev.vars')\""
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",
-    "better-auth": "^1.6.17",
+    "better-auth": "1.6.17",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.25",
     "zod": "^4.4.3"

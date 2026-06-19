@@ -2,8 +2,8 @@
 // the UI fully populated — paginated tables, varied flag kinds, a busy change
 // log. Idempotent (deterministic ids + INSERT OR IGNORE), so re-running is safe.
 //
-//   bun run dev        # once, to migrate + seed the base fixture
-//   bun run seed:demo  # then load this demo data
+//   pnpm dev        # once, to migrate + seed the base fixture
+//   pnpm seed:demo  # then load this demo data
 //
 // This is NOT the test fixture (that's seed.sql); it's purely for eyeballing.
 
@@ -569,8 +569,17 @@ const file = join(mkdtempSync(join(tmpdir(), "ks-demo-")), "demo.sql");
 writeFileSync(file, sql.join("\n"));
 console.log(`Generated ${sql.length} demo statements. Applying to local D1…`);
 execFileSync(
-  "bunx",
-  ["wrangler", "d1", "execute", "krillswitch", "--local", "--file", file],
+  "pnpm",
+  [
+    "exec",
+    "wrangler",
+    "d1",
+    "execute",
+    "krillswitch",
+    "--local",
+    "--file",
+    file,
+  ],
   { cwd: apiRoot, stdio: "inherit" },
 );
 console.log("Demo data loaded. Refresh the admin app to see it.");

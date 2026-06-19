@@ -2,8 +2,8 @@
 // Server-Timing hit/miss processing split, written to a dated results file.
 //
 // Usage:
-//   bun bench                                   # local stack on :8787
-//   TARGET_URL=https://… TARGET_LABEL=workers-dev bun bench
+//   pnpm bench                                  # local stack on :8787
+//   TARGET_URL=https://… TARGET_LABEL=workers-dev pnpm bench
 //
 // Runs under node (autocannon is node-only); pinned in devDependencies.
 import { mkdirSync, writeFileSync } from "node:fs";

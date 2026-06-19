@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Keep newly published dependencies out of the default resolution window.
+minimumReleaseAge: 2880
+
+nodeLinker: hoisted
+blockExoticSubdeps: true
+
+overrides:
+  hono: 4.12.25
+
+allowBuilds:
+  "@prisma/client": false
+  better-sqlite3: true
+  esbuild: true
+  sharp: false
+  workerd: true

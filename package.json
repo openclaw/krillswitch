@@ -2,25 +2,26 @@
   "name": "krillswitch",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "bun run --cwd apps/admin build && bun run --cwd apps/api dev",
-    "seed:demo": "bun run --cwd apps/api seed:demo",
-    "test": "bun run --cwd packages/core test && bun run --cwd packages/react test && bun run --cwd packages/cli test && bun run --cwd apps/api test",
-    "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/react typecheck && bun run --cwd packages/cli typecheck && bun run --cwd apps/api typecheck && bun run --cwd apps/demo typecheck && bun run --cwd apps/admin typecheck",
+    "preinstall": "node scripts/preinstall-package-manager-warning.mjs",
+    "dev": "pnpm --dir apps/admin run build && pnpm --dir apps/api run dev",
+    "seed:demo": "pnpm --dir apps/api run seed:demo",
+    "test": "pnpm --filter @openclaw/krillswitch-core run test && pnpm --filter @openclaw/krillswitch-react run test && pnpm --filter @openclaw/krillswitch-cli run test && pnpm --filter @openclaw/krillswitch-api run test",
+    "typecheck": "pnpm --filter @openclaw/krillswitch-core run typecheck && pnpm --filter @openclaw/krillswitch-react run typecheck && pnpm --filter @openclaw/krillswitch-cli run typecheck && pnpm --filter @openclaw/krillswitch-api run typecheck && pnpm --filter @openclaw/krillswitch-demo run typecheck && pnpm --filter @openclaw/krillswitch-admin run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "bench": "node bench/run.mjs",
-    "cf:access": "bun scripts/provision-cloudflare-access.mjs",
-    "deploy:public": "bun run --cwd apps/api db:migrate:remote && bun run --cwd apps/api deploy:public",
-    "deploy:admin": "bun run cf:access && bun run --cwd apps/admin build && bun run --cwd apps/api db:migrate:remote && bun run --cwd apps/api deploy:worker",
-    "deploy:production": "bun run deploy:admin"
+    "cf:access": "node scripts/provision-cloudflare-access.mjs",
+    "deploy:public": "pnpm --dir apps/api run db:migrate:remote && pnpm --dir apps/api run deploy:public",
+    "deploy:admin": "pnpm run cf:access && pnpm --dir apps/admin run build && pnpm --dir apps/api run db:migrate:remote && pnpm --dir apps/api run deploy:worker",
+    "deploy:production": "pnpm run deploy:admin"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
+    "@biomejs/biome": "2.4.16",
     "autocannon": "8.0.0"
-  }
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "packageManager": "pnpm@11.2.2+sha512.36e6621fad506178936455e70247b8808ef4ec25797a9f437a93281a020484e2607f6a469a22e982987c3dbb8866e3071514ab10a4a1749e06edcd1ec118436f"
 }
