@@ -1,4 +1,4 @@
-# Local bindings for `wrangler dev`. `bun dev` copies this file to .dev.vars
+# Local bindings for `wrangler dev`. `pnpm dev` copies this file to .dev.vars
 # (gitignored) on first run; real secrets belong only in the copy.
 DEV_AUTH_ENABLED=1
 BETTER_AUTH_SECRET=krillswitch-local-dev-secret

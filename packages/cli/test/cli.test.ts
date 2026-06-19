@@ -32,6 +32,8 @@ type CliProcessResult = {
   stderr: string;
 };
 
+const CLI_SOURCE_ARGS = ["--import", "tsx", "src/index.ts"];
+
 function ttyPassThrough(): PassThrough {
   const stream = new PassThrough();
   Object.defineProperty(stream, "isTTY", { value: true });
@@ -106,7 +108,7 @@ async function spawnCli(
   env: Record<string, string | undefined>,
 ): Promise<CliProcessResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn("bun", ["src/index.ts", ...args], {
+    const child = spawn("node", [...CLI_SOURCE_ARGS, ...args], {
       cwd: new URL("..", import.meta.url),
       env: {
         ...process.env,
@@ -175,7 +177,7 @@ function flagDetailResponse(): object {
 
 describe("entrypoint", () => {
   it("prints help successfully without requiring auth", () => {
-    const result = spawnSync("bun", ["src/index.ts", "--help"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "--help"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -197,7 +199,7 @@ describe("entrypoint", () => {
   });
 
   it("prints a framed error when flags list is missing project and env", () => {
-    const result = spawnSync("bun", ["src/index.ts", "flags", "list"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "flags", "list"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -224,7 +226,7 @@ describe("entrypoint", () => {
   });
 
   it("shows the project subcommand when only the group is provided", () => {
-    const result = spawnSync("bun", ["src/index.ts", "projects"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "projects"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -244,8 +246,8 @@ describe("entrypoint", () => {
 
   it("completes partial root commands", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "__complete", "1", "--", "li"],
+      "node",
+      [...CLI_SOURCE_ARGS, "__complete", "1", "--", "li"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -265,8 +267,8 @@ describe("entrypoint", () => {
 
   it("completes nested subcommands", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "__complete", "2", "--", "flags", "l"],
+      "node",
+      [...CLI_SOURCE_ARGS, "__complete", "2", "--", "flags", "l"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -285,15 +287,19 @@ describe("entrypoint", () => {
   });
 
   it("prints zsh completion setup", () => {
-    const result = spawnSync("bun", ["src/index.ts", "completion", "zsh"], {
-      cwd: new URL("..", import.meta.url),
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        KRILLSWITCH_TOKEN: "",
-        KRILLSWITCH_CONFIG: "/does/not/exist.json",
+    const result = spawnSync(
+      "node",
+      [...CLI_SOURCE_ARGS, "completion", "zsh"],
+      {
+        cwd: new URL("..", import.meta.url),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          KRILLSWITCH_TOKEN: "",
+          KRILLSWITCH_CONFIG: "/does/not/exist.json",
+        },
       },
-    });
+    );
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("_krillswitch()");
@@ -308,8 +314,8 @@ describe("entrypoint", () => {
     writeFileSync(rcFile, "# existing config\n");
 
     const first = spawnSync(
-      "bun",
-      ["src/index.ts", "completion", "install", "zsh", "--rc-file", rcFile],
+      "node",
+      [...CLI_SOURCE_ARGS, "completion", "install", "zsh", "--rc-file", rcFile],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -322,8 +328,8 @@ describe("entrypoint", () => {
       },
     );
     const second = spawnSync(
-      "bun",
-      ["src/index.ts", "completion", "install", "zsh", "--rc-file", rcFile],
+      "node",
+      [...CLI_SOURCE_ARGS, "completion", "install", "zsh", "--rc-file", rcFile],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -350,7 +356,7 @@ describe("entrypoint", () => {
   });
 
   it("explains how to recover when live choices cannot be listed", () => {
-    const result = spawnSync("bun", ["src/index.ts", "flags", "list"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "flags", "list"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -377,7 +383,7 @@ describe("entrypoint", () => {
   });
 
   it("shows recovery when flags get cannot choose project and env", () => {
-    const result = spawnSync("bun", ["src/index.ts", "flags", "get"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "flags", "get"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -455,7 +461,7 @@ describe("entrypoint", () => {
   });
 
   it("shows recovery when flags toggle cannot choose project and env", () => {
-    const result = spawnSync("bun", ["src/index.ts", "flags", "toggle"], {
+    const result = spawnSync("node", [...CLI_SOURCE_ARGS, "flags", "toggle"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
       env: {
@@ -479,8 +485,8 @@ describe("entrypoint", () => {
 
   it("treats flags list positional project as a missing env error", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "flags", "list", "clawhub"],
+      "node",
+      [...CLI_SOURCE_ARGS, "flags", "list", "clawhub"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -876,8 +882,8 @@ describe("entrypoint", () => {
 
   it("formats parser syntax errors without placeholder names", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "flags", "list", "clawhub", "development", "extra"],
+      "node",
+      [...CLI_SOURCE_ARGS, "flags", "list", "clawhub", "development", "extra"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -903,8 +909,8 @@ describe("entrypoint", () => {
 
   it("shows allowed values when a required option has a fixed set", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "flags", "create", "demo-flag", "-p", "clawhub"],
+      "node",
+      [...CLI_SOURCE_ARGS, "flags", "create", "demo-flag", "-p", "clawhub"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -929,15 +935,19 @@ describe("entrypoint", () => {
   });
 
   it("explains missing free-form flag create inputs", () => {
-    const missingKey = spawnSync("bun", ["src/index.ts", "flags", "create"], {
-      cwd: new URL("..", import.meta.url),
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        KRILLSWITCH_TOKEN: "",
-        KRILLSWITCH_CONFIG: "/does/not/exist.json",
+    const missingKey = spawnSync(
+      "node",
+      [...CLI_SOURCE_ARGS, "flags", "create"],
+      {
+        cwd: new URL("..", import.meta.url),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          KRILLSWITCH_TOKEN: "",
+          KRILLSWITCH_CONFIG: "/does/not/exist.json",
+        },
       },
-    });
+    );
 
     expect(missingKey.status).toBe(1);
     expect(missingKey.stderr).toContain("flags create needs <key>");
@@ -947,9 +957,9 @@ describe("entrypoint", () => {
     expect(missingKey.stdout).toBe("");
 
     const missingVariation = spawnSync(
-      "bun",
+      "node",
       [
-        "src/index.ts",
+        ...CLI_SOURCE_ARGS,
         "flags",
         "create",
         "demo-flag",
@@ -981,9 +991,9 @@ describe("entrypoint", () => {
 
   it("shows available states when flags toggle is missing on or off", () => {
     const result = spawnSync(
-      "bun",
+      "node",
       [
-        "src/index.ts",
+        ...CLI_SOURCE_ARGS,
         "flags",
         "toggle",
         "cli-banner",
@@ -1015,8 +1025,8 @@ describe("entrypoint", () => {
 
   it("shows usage when a required option has no live choices", () => {
     const result = spawnSync(
-      "bun",
-      ["src/index.ts", "eval", "-p", "clawhub", "-e", "development"],
+      "node",
+      [...CLI_SOURCE_ARGS, "eval", "-p", "clawhub", "-e", "development"],
       {
         cwd: new URL("..", import.meta.url),
         encoding: "utf8",
@@ -1042,9 +1052,9 @@ describe("entrypoint", () => {
 
   it("explains missing targeting JSON", () => {
     const result = spawnSync(
-      "bun",
+      "node",
       [
-        "src/index.ts",
+        ...CLI_SOURCE_ARGS,
         "flags",
         "targeting",
         "set",
@@ -1077,7 +1087,7 @@ describe("entrypoint", () => {
   });
 
   it("builds a Node-runnable package binary", () => {
-    const build = spawnSync("bun", ["run", "build"], {
+    const build = spawnSync("pnpm", ["run", "build"], {
       cwd: new URL("..", import.meta.url),
       encoding: "utf8",
     });

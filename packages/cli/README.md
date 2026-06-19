@@ -9,7 +9,7 @@ scripts and agents can act on results without scraping tables.
 Until the go-live npm publish, build and run the package binary locally:
 
 ```sh
-bun run --cwd packages/cli build
+pnpm --dir packages/cli build
 mkdir -p /tmp/krillswitch-cli-bin
 ln -sf "$PWD/packages/cli/dist/index.js" /tmp/krillswitch-cli-bin/krillswitch
 /tmp/krillswitch-cli-bin/krillswitch <command>

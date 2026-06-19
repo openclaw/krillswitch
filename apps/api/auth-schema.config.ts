@@ -1,4 +1,4 @@
-// CLI-only config: `bun run db:generate-auth` introspects this to emit
+// CLI-only config: `pnpm run db:generate-auth` introspects this to emit
 // src/db/authSchema.ts. The runtime auth instance lives in src/auth/auth.ts
 // and must stay option-compatible with this file where schema is concerned.
 import { betterAuth } from "better-auth";

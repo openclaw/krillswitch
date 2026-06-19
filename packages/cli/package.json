@@ -14,8 +14,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --target=node --external @napi-rs/keyring --outfile=dist/index.js",
-    "prepack": "bun run build",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --external:@napi-rs/keyring --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/index.js",
+    "prepack": "pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -27,7 +27,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
+    "esbuild": "0.28.1",
     "typescript": "~5.9.3",
+    "tsx": "4.22.3",
     "vitest": "^4.1.8"
   }
 }

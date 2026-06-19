@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 const dryRun = process.argv.includes("--dry-run");
 const accountId = required("CLOUDFLARE_ACCOUNT_ID");

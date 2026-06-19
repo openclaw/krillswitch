@@ -75,7 +75,7 @@ application plus its named policies:
 export CLOUDFLARE_ACCOUNT_ID=...
 export CLOUDFLARE_API_TOKEN=...
 export KRILLSWITCH_ACCESS_ALLOWED_DOMAINS=openclaw.ai
-bun run cf:access
+pnpm cf:access
 ```
 
 For non-browser CLI/agent access, create an Access service token in Cloudflare,
@@ -84,7 +84,7 @@ only in the caller environment:
 
 ```sh
 export KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS=...
-bun run cf:access
+pnpm cf:access
 
 export KRILLSWITCH_CF_ACCESS_CLIENT_ID=...
 export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
@@ -112,9 +112,9 @@ deploys `krillswitch`.
 For an operator deploy, keep the public and admin paths separate:
 
 ```sh
-bun run deploy:public
+pnpm deploy:public
 # Requires an Access application/policy write token.
-bun run deploy:admin
+pnpm deploy:admin
 ```
 
 After deployment, verify the public evaluation boundary with a real eval key:
