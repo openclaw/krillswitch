@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
+  actions: read
   contents: read
   security-events: write
 
@@ -36,3 +37,6 @@ jobs:
         uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         with:
           category: "/language:javascript-typescript"
+          # GitHub Code Security is not licensed for this private repository.
+          # Keep the query gate active without uploading SARIF until it is.
+          upload: never
