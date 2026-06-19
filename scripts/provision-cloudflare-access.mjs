@@ -3,8 +3,14 @@
 const dryRun = process.argv.includes("--dry-run");
 const accountId = required("CLOUDFLARE_ACCOUNT_ID");
 const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
-const host =
-  process.env.KRILLSWITCH_ACCESS_HOST?.trim() || "switch.openclaw.ai";
+const host = rootAccessAppDomain(
+  process.env.KRILLSWITCH_ACCESS_HOST?.trim() || "switch.openclaw.ai",
+);
+if (!host) {
+  throw new Error(
+    "KRILLSWITCH_ACCESS_HOST must be a root hostname without a path, query, or fragment",
+  );
+}
 const appName =
   process.env.KRILLSWITCH_ACCESS_APP_NAME?.trim() || "Krillswitch Admin";
 const configuredAppId = process.env.KRILLSWITCH_ACCESS_APP_ID?.trim();
@@ -192,19 +198,19 @@ function resolveExistingApp(apps) {
         `Cloudflare Access app ${configuredAppId} was not found in this account`,
       );
     }
-    if (app.name !== appName || accessAppHost(app.domain) !== host) {
+    if (app.name !== appName || rootAccessAppDomain(app.domain) !== host) {
       throw new Error(
-        `Cloudflare Access app ${configuredAppId} does not match the configured name and host`,
+        `Cloudflare Access app ${configuredAppId} does not match the configured name and root hostname`,
       );
     }
     return app;
   }
 
   const matches = apps.filter(
-    (app) => app.name === appName || accessAppHost(app.domain) === host,
+    (app) => app.name === appName || rootAccessAppDomain(app.domain) === host,
   );
   const exactMatches = matches.filter(
-    (app) => app.name === appName && accessAppHost(app.domain) === host,
+    (app) => app.name === appName && rootAccessAppDomain(app.domain) === host,
   );
   if (matches.length === 0) {
     return undefined;
@@ -221,14 +227,24 @@ function resolveExistingApp(apps) {
   );
 }
 
-function accessAppHost(domain) {
+function rootAccessAppDomain(domain) {
   if (typeof domain !== "string") {
-    return "";
+    return undefined;
   }
   try {
-    return new URL(domain.includes("://") ? domain : `https://${domain}`).host;
+    const url = new URL(domain.includes("://") ? domain : `https://${domain}`);
+    if (
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) {
+      return undefined;
+    }
+    return url.host.toLowerCase();
   } catch {
-    return domain;
+    return undefined;
   }
 }
 

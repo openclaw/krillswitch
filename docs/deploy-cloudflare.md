@@ -81,7 +81,9 @@ pnpm cf:access
 After the first successful provisioning run, set
 `KRILLSWITCH_ACCESS_APP_ID` as a GitHub Actions repository or environment
 variable. Subsequent runs use that immutable Cloudflare Access application id
-and refuse partial name or hostname matches.
+and refuse partial name or root-hostname matches. `KRILLSWITCH_ACCESS_HOST`
+must be a root hostname; path-scoped Access applications are intentionally not
+managed by this deploy flow.
 
 For non-browser CLI/agent access, create an Access service token in Cloudflare,
 pass its token id to the provisioning script, and set the client credentials
