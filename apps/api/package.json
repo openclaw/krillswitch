@@ -25,11 +25,11 @@
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",
-    "@cloudflare/vitest-pool-workers": "^0.16.13",
+    "@cloudflare/vitest-pool-workers": "^0.18.4",
     "@cloudflare/workers-types": "^4.20260609.1",
     "drizzle-kit": "^0.31.10",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.98.0"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
   }
 }
