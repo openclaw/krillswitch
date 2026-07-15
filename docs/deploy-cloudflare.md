@@ -13,6 +13,10 @@ flag environment; they are intentionally usable by browser SDKs. The admin
 host is defense in depth around Better Auth, role grants, and admin tokens.
 Cloudflare Access does not replace the application's authorization checks.
 
+Both hostnames use Cloudflare Worker Custom Domains. Wrangler creates their DNS records and certificates; do not add separate origin records for them.
+
+When migrating from Worker Routes, delete any existing `A`, `AAAA`, or `CNAME` records for `flags.openclaw.ai` and `switch.openclaw.ai` before deploying these configurations. Cloudflare cannot create a Custom Domain while an externally managed record owns the same hostname. If both names return `NXDOMAIN`, there is nothing to remove.
+
 ## Cache Policy
 
 Do not put shared HTTP or Cloudflare Cache API caching in front of evaluation
@@ -39,9 +43,8 @@ cached by browsers for one day.
 ## Prerequisites
 
 The D1 database `krillswitch` already exists in the OpenClaw account. Before
-the first deploy, create proxied DNS records for both hostnames in
-`openclaw.ai`, then make sure the deploy token can manage Workers, D1, Worker
-Routes, and DNS.
+the first deploy, make sure the deploy identity can manage Workers, D1, and
+Worker Custom Domains in the `openclaw.ai` zone.
 
 Set Worker secrets without placing them in git:
 

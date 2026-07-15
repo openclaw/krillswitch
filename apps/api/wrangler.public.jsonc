@@ -10,8 +10,8 @@
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
     {
-      "pattern": "flags.openclaw.ai/*",
-      "zone_name": "openclaw.ai"
+      "pattern": "flags.openclaw.ai",
+      "custom_domain": true
     }
   ],
   "d1_databases": [
