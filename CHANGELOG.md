@@ -4,6 +4,19 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Record access-token mint and revoke operations in the atomic audit trail without storing plaintext tokens.
+- Honor CLI change-log limits and normalize configured API origins before appending request paths.
+
+### Changed
+
+- Update workspace and GitHub Actions dependencies, including TypeScript 7, React Router 8, and the Node.js 22.22 minimum required by the updated toolchain.
+
+### Security
+
+- Update and override vulnerable transitive tooling dependencies so the workspace audit reports no known advisories.
+
 ## [v0.1.0] - 2026-06-19
 
 ### Added

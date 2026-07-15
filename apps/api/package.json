@@ -13,23 +13,22 @@
     "test": "vitest run",
     "cf-typegen": "wrangler types",
     "typecheck": "wrangler types && tsc --noEmit",
-    "db:generate-auth": "better-auth generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes",
+    "db:generate-auth": "pnpm dlx auth@1.6.23 generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes && pnpm --workspace-root exec biome check --write apps/api/src/db/authSchema.ts",
     "ensure-dev-vars": "node -e \"const fs=require('node:fs');if(!fs.existsSync('.dev.vars'))fs.copyFileSync('.dev.vars.example','.dev.vars')\""
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",
-    "better-auth": "1.6.17",
+    "better-auth": "1.6.23",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.25",
+    "hono": "4.12.30",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.4.21",
-    "@cloudflare/vitest-pool-workers": "^0.16.13",
-    "@cloudflare/workers-types": "^4.20260609.1",
+    "@cloudflare/vitest-pool-workers": "^0.18.4",
+    "@cloudflare/workers-types": "^5.20260713.1",
     "drizzle-kit": "^0.31.10",
-    "typescript": "~5.9.3",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.98.0"
+    "typescript": "~7.0.2",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
   }
 }

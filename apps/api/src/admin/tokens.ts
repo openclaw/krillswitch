@@ -1,6 +1,7 @@
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { accessTokens, type TokenRole } from "../db/schema";
+import { type Actor, changeLogInsert } from "./changeLog";
 
 export const TOKEN_PREFIX = "ksat_";
 
@@ -30,20 +31,28 @@ async function hashToken(plaintext: string): Promise<string> {
 
 export async function mintToken(
   db: DrizzleD1Database,
-  options: { name: string; role: TokenRole; createdBy: string },
+  options: { name: string; role: TokenRole; actor: Actor },
 ): Promise<{ id: string; token: string }> {
   const random = new Uint8Array(32);
   crypto.getRandomValues(random);
   const token = `${TOKEN_PREFIX}${toBase64Url(random)}`;
   const id = `tok_${crypto.randomUUID()}`;
-  await db.insert(accessTokens).values({
-    id,
-    name: options.name,
-    role: options.role,
-    tokenHash: await hashToken(token),
-    createdBy: options.createdBy,
-    createdAt: new Date(),
-  });
+  await db.batch([
+    db.insert(accessTokens).values({
+      id,
+      name: options.name,
+      role: options.role,
+      tokenHash: await hashToken(token),
+      createdBy: options.actor.id,
+      createdAt: new Date(),
+    }),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "token.mint",
+      target: options.name,
+      after: { id, role: options.role },
+    }),
+  ]);
   return { id, token };
 }
 
@@ -107,19 +116,37 @@ export async function countTokens(
 export async function revokeToken(
   db: DrizzleD1Database,
   id: string,
+  actor: Actor,
 ): Promise<boolean> {
   const existing = await db
-    .select({ id: accessTokens.id })
+    .select({
+      id: accessTokens.id,
+      name: accessTokens.name,
+      role: accessTokens.role,
+      revokedAt: accessTokens.revokedAt,
+    })
     .from(accessTokens)
     .where(eq(accessTokens.id, id))
     .get();
   if (!existing) {
     return false;
   }
-  await db
-    .update(accessTokens)
-    .set({ revokedAt: new Date() })
-    .where(eq(accessTokens.id, id));
+  if (existing.revokedAt) {
+    return true;
+  }
+  await db.batch([
+    db
+      .update(accessTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(accessTokens.id, id)),
+    changeLogInsert(db, {
+      actor,
+      action: "token.revoke",
+      target: existing.name,
+      before: { id, role: existing.role, revoked: false },
+      after: { id, role: existing.role, revoked: true },
+    }),
+  ]);
   return true;
 }
 

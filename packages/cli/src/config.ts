@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   type CredentialStore,
+  normalizeBaseUrl,
   systemCredentialStore,
   type TokenReference,
 } from "./credentials";
@@ -91,12 +92,10 @@ export async function resolveConfig(
   const keyringToken = file.tokenRef
     ? await credentialStore.getToken(file.tokenRef)
     : undefined;
+  const baseUrl =
+    options.baseUrl ?? env.KRILLSWITCH_URL ?? file.baseUrl ?? DEFAULT_BASE_URL;
   return {
-    baseUrl:
-      options.baseUrl ??
-      env.KRILLSWITCH_URL ??
-      file.baseUrl ??
-      DEFAULT_BASE_URL,
+    baseUrl: normalizeBaseUrl(baseUrl),
     token: options.token ?? env.KRILLSWITCH_TOKEN ?? keyringToken ?? file.token,
     ...(env.KRILLSWITCH_CF_ACCESS_CLIENT_ID?.trim() ||
     env.KRILLSWITCH_CF_ACCESS_CLIENT_SECRET?.trim()

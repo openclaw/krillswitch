@@ -1,7 +1,7 @@
 # Local bindings for `wrangler dev`. `pnpm dev` copies this file to .dev.vars
 # (gitignored) on first run; real secrets belong only in the copy.
 DEV_AUTH_ENABLED=1
-BETTER_AUTH_SECRET=krillswitch-local-dev-secret
+BETTER_AUTH_SECRET=0d35d7229e5912f4454a7d94cb6fe3e6ea4d6815236a9499dcf5fe5e38837be2
 BETTER_AUTH_URL=http://localhost:8799
 
 # Optional: real GitHub login. Create a GitHub OAuth app with callback

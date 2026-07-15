@@ -10,22 +10,22 @@
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/manrope": "^5.2.8",
-    "@radix-ui/react-alert-dialog": "^1.1.17",
-    "@radix-ui/react-select": "^2.3.1",
-    "@tanstack/react-query": "^5.101.0",
+    "@radix-ui/react-alert-dialog": "^1.1.19",
+    "@radix-ui/react-select": "^2.3.3",
+    "@tanstack/react-query": "^5.101.2",
     "clsx": "^2.1.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router": "^7.17.0",
+    "react-router": "^8.2.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.1",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.0.2",
-    "tailwindcss": "^4.3.1",
-    "typescript": "~5.9.3",
-    "vite": "^8.0.16"
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "tailwindcss": "^4.3.2",
+    "typescript": "~7.0.2",
+    "vite": "^8.1.4"
   }
 }

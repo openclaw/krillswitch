@@ -59,7 +59,9 @@ export type ChangeAction =
   | "project.create"
   | "environment.create"
   | "environment.delete"
-  | "key.rotate";
+  | "key.rotate"
+  | "token.mint"
+  | "token.revoke";
 
 // Append-only audit trail; rows are written in the same D1 batch as the
 // mutation they describe and are never updated or deleted (retention is an

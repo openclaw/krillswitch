@@ -693,6 +693,25 @@ describe("entrypoint", () => {
     );
   });
 
+  it("requests the full log tail limit from the API", async () => {
+    await withCliApi(
+      (req, res) => {
+        expect(req.url).toBe("/admin/changelog?limit=75");
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ entries: [] }));
+      },
+      async (baseUrl) => {
+        const result = await spawnCli(["log", "tail", "--limit", "75"], {
+          KRILLSWITCH_TOKEN: "ksat_test",
+          KRILLSWITCH_URL: baseUrl,
+          KRILLSWITCH_CONFIG: "/does/not/exist.json",
+        });
+        expect(result.status).toBe(0);
+        expect(result.stderr).toBe("");
+      },
+    );
+  });
+
   it("prints flag lists as a compact width-aware table", async () => {
     await withCliApi(
       (req, res) => {
@@ -1171,6 +1190,14 @@ describe("resolveConfig precedence", () => {
       KRILLSWITCH_URL: "https://krill.example",
     });
     expect(config.token).toBe("ksat_env");
+    expect(config.baseUrl).toBe("https://krill.example");
+  });
+
+  it("normalizes a trailing slash before request paths are appended", async () => {
+    const config = await resolveConfig(noFlags, {
+      ...noFile,
+      KRILLSWITCH_URL: "https://krill.example/",
+    });
     expect(config.baseUrl).toBe("https://krill.example");
   });
 

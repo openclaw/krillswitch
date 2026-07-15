@@ -10,6 +10,8 @@ export const ACTION_LABELS: Record<string, string> = {
   "environment.create": "Environment created",
   "environment.delete": "Environment deleted",
   "key.rotate": "Key rotated",
+  "token.mint": "Token minted",
+  "token.revoke": "Token revoked",
 };
 
 export function actionLabel(action: string): string {
