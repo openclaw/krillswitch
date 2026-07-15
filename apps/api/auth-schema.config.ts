@@ -5,6 +5,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 export const auth = betterAuth({
+  baseURL: "http://localhost:8799",
   database: drizzleAdapter({}, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
   user: {

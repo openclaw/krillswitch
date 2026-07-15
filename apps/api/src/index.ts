@@ -160,7 +160,7 @@ app.post("/v1/eval", async (c) => {
 
 // `run_worker_first` lets the hostname policy above protect static assets.
 // The configured Assets binding retains Cloudflare's SPA fallback behavior.
-app.all("*", (c) => {
+app.all("*", async (c) => {
   if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     return c.json({ error: "not_found" }, 404);
   }

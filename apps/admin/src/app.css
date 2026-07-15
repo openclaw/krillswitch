@@ -1177,6 +1177,16 @@ input[type="radio"]:focus-visible {
   text-decoration: none;
 }
 
+.state-word {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.state-word.is-on {
+  color: var(--ok);
+}
+
 .state-change-link:hover .state-word {
   text-decoration: underline;
 }
@@ -1245,16 +1255,6 @@ input[type="radio"]:focus-visible {
 
 .flag-toggle.is-on .flag-toggle-track::after {
   transform: translateX(14px);
-}
-
-.state-word {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-muted);
-}
-
-.state-word.is-on {
-  color: var(--ok);
 }
 
 /* --- flag detail --- */
@@ -1337,6 +1337,11 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.combobox {
+  position: relative;
+  width: 100%;
 }
 
 .changelog-filters .combobox {
@@ -1596,11 +1601,6 @@ input[type="radio"]:focus-visible {
 }
 
 /* --- combobox (editable input + filtered option list) --- */
-
-.combobox {
-  position: relative;
-  width: 100%;
-}
 
 .combobox-input {
   width: 100%;
