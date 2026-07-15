@@ -8,6 +8,7 @@ All notable changes to Krillswitch are documented in this file.
 
 - Record access-token mint and revoke operations in the atomic audit trail without storing plaintext tokens.
 - Honor CLI change-log limits and normalize configured API origins before appending request paths.
+- Publish the dashboard and evaluation Worker through Cloudflare Custom Domains so their DNS records and certificates are managed automatically.
 
 ### Changed
 
