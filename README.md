@@ -4,6 +4,8 @@ OpenClaw's self-hosted feature flag service: a Cloudflare Worker (Hono + D1 +
 Drizzle) with a pure TypeScript evaluator and typed SDKs. Replaces
 LaunchDarkly for ClawHub.
 
+Documentation: <https://krillswitch.com>
+
 ## Local development
 
 No Cloudflare account needed — everything runs in wrangler local mode.
@@ -49,6 +51,10 @@ pnpm exec wrangler d1 execute krillswitch --local \
   assets.
 - `packages/core` — `@openclaw/krillswitch-core`: flag/context types and the
   pure `evaluateFlag` function (no I/O).
+- `packages/react` — typed React provider and hooks with local defaults,
+  scoped persistence, ETags, and background refresh.
+- `packages/cli` — human- and agent-friendly flag management with stable JSON.
+- `docs` — Markdown source for the GitHub Pages documentation site.
 
 ## Benchmarks
 
@@ -80,6 +86,7 @@ pnpm test       # core unit tests + worker integration tests (vitest)
 pnpm typecheck  # tsc across workspaces (generates worker types first)
 pnpm lint       # biome check
 pnpm lint:fix   # biome check --write
+pnpm docs:build # render and validate the documentation site
 ```
 
 ## Releases
