@@ -1,4 +1,5 @@
 import type { KrillswitchClient } from "../client";
+import { CliUsageError } from "../errors";
 import type { LogTailOptions } from "../options";
 import { type Column, cell, printJson, printTable, wantsJson } from "../output";
 
@@ -29,19 +30,19 @@ export async function logTail(
   client: KrillswitchClient,
   options: LogTailOptions,
 ): Promise<void> {
+  const limit = Number(options.limit ?? "20");
+  if (!Number.isInteger(limit) || limit < 0 || limit > 100) {
+    throw new CliUsageError("--limit must be an integer from 0 to 100");
+  }
   const params = new URLSearchParams();
   if (options.flagKey) params.set("flagKey", options.flagKey);
   if (options.project) params.set("projectKey", options.project);
+  params.set("limit", String(Math.max(1, limit)));
   const query = params.toString();
 
   const { entries } = await client.request<{ entries: ChangeLogEntry[] }>(
     `/admin/changelog${query ? `?${query}` : ""}`,
   );
-  const parsedLimit = Number(options.limit ?? "20");
-  const limit =
-    Number.isFinite(parsedLimit) && parsedLimit >= 0
-      ? Math.trunc(parsedLimit)
-      : 20;
   const tail = entries.slice(0, limit);
 
   if (wantsJson(options)) {
