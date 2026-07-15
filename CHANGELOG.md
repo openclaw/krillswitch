@@ -12,6 +12,7 @@ All notable changes to Krillswitch are documented in this file.
 ### Changed
 
 - Update workspace and GitHub Actions dependencies, including TypeScript 7, React Router 8, and the Node.js 22.22 minimum required by the updated toolchain.
+- Add the full Markdown documentation site at `krillswitch.com` with GitHub Pages deployment, searchable navigation, operator guides, SDK references, and production runbooks.
 
 ### Security
 

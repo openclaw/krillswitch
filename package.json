@@ -11,6 +11,7 @@
     "typecheck": "pnpm --filter @openclaw/krillswitch-core run typecheck && pnpm --filter @openclaw/krillswitch-react run typecheck && pnpm --filter @openclaw/krillswitch-cli run typecheck && pnpm --filter @openclaw/krillswitch-api run typecheck && pnpm --filter @openclaw/krillswitch-demo run typecheck && pnpm --filter @openclaw/krillswitch-admin run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
+    "docs:build": "node scripts/build-docs-site.mjs",
     "bench": "node bench/run.mjs",
     "cf:access": "node scripts/provision-cloudflare-access.mjs",
     "deploy:public": "pnpm --dir apps/api run db:migrate:remote && pnpm --dir apps/api run deploy:public",
