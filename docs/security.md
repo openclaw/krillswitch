@@ -39,4 +39,4 @@ Development personas require local mode and a loopback host. Production uses Clo
 
 ## Reporting
 
-Report security issues privately to the OpenClaw maintainers. Do not include live tokens, OAuth credentials, private flag values, or customer identifiers in public issues.
+Report security issues through [GitHub private vulnerability reporting](https://github.com/openclaw/krillswitch/security/advisories/new). Do not include live tokens, OAuth credentials, private flag values, or customer identifiers in public issues.

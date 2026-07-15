@@ -1,6 +1,7 @@
 {
   "name": "@openclaw/krillswitch-api",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "pnpm run ensure-dev-vars && pnpm run db:setup && wrangler dev",

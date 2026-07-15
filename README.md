@@ -94,3 +94,11 @@ pnpm docs:build # render and validate the documentation site
 Krillswitch releases are versioned GitHub releases. The application version is
 declared in the root `package.json`; the workspace packages remain private and
 are not published to npm.
+
+## Security
+
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/openclaw/krillswitch/security/advisories/new), not public issues.
+
+## License
+
+MIT © OpenClaw Foundation. See [LICENSE](LICENSE).
