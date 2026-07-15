@@ -383,7 +383,7 @@ adminRoutes.post("/tokens", async (c) => {
   const minted = await mintToken(drizzle(c.env.DB), {
     name: parsed.data.name,
     role: parsed.data.role,
-    createdBy: c.get("actor").id,
+    actor: c.get("actor"),
   });
   // Plaintext returned exactly once; only the hash is stored.
   return c.json({ id: minted.id, token: minted.token }, 201);
@@ -392,7 +392,11 @@ adminRoutes.post("/tokens", async (c) => {
 adminRoutes.post("/tokens/:id/revoke", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
-  const revoked = await revokeToken(drizzle(c.env.DB), c.req.param("id"));
+  const revoked = await revokeToken(
+    drizzle(c.env.DB),
+    c.req.param("id"),
+    c.get("actor"),
+  );
   if (!revoked) {
     return c.json({ error: "not_found" }, 404);
   }

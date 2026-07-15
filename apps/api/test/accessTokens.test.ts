@@ -106,6 +106,37 @@ describe("token lifecycle and bearer auth", () => {
     expect(JSON.stringify(body)).not.toContain(token);
   });
 
+  it("audits token mint and revoke without recording the plaintext", async () => {
+    const admin = await devLogin("admin");
+    const name = `audit-token-${crypto.randomUUID()}`;
+    const minted = await mintToken(admin, { name, role: "viewer" });
+    const { token, id } = await minted.json<{ token: string; id: string }>();
+
+    const revoke = await SELF.fetch(`${BASE}/admin/tokens/${id}/revoke`, {
+      method: "POST",
+      headers: { cookie: admin },
+    });
+    expect(revoke.status).toBe(200);
+
+    const log = await SELF.fetch(`${BASE}/admin/changelog?limit=100`, {
+      headers: { cookie: admin },
+    });
+    const body = await log.json<{
+      entries: {
+        action: string;
+        target: string;
+        before: unknown;
+        after: unknown;
+      }[];
+    }>();
+    const entries = body.entries.filter((entry) => entry.target === name);
+    expect(entries.map((entry) => entry.action).sort()).toEqual([
+      "token.mint",
+      "token.revoke",
+    ]);
+    expect(JSON.stringify(entries)).not.toContain(token);
+  });
+
   it("authenticates an editor token to toggle and attributes the change log to the token name", async () => {
     const admin = await devLogin("admin");
     const { token } = await (
