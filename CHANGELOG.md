@@ -2,7 +2,7 @@
 
 All notable changes to Krillswitch are documented in this file.
 
-## [Unreleased]
+## [v0.1.1] - 2026-07-15
 
 ### Fixed
 
@@ -14,10 +14,12 @@ All notable changes to Krillswitch are documented in this file.
 
 - Update workspace and GitHub Actions dependencies, including TypeScript 7, React Router 8, and the Node.js 22.22 minimum required by the updated toolchain.
 - Add the full Markdown documentation site at `krillswitch.com` with GitHub Pages deployment, searchable navigation, operator guides, SDK references, and production runbooks.
+- Publish the repository under the MIT license with public source, contribution workflows, and GitHub-native security reporting.
 
 ### Security
 
 - Update and override vulnerable transitive tooling dependencies so the workspace audit reports no known advisories.
+- Enable real CodeQL analysis, secret scanning, push protection, and private vulnerability reporting for the public repository.
 
 ## [v0.1.0] - 2026-06-19
 
@@ -46,5 +48,5 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.1.0...HEAD
+[v0.1.1]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.0
