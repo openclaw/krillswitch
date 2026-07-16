@@ -108,6 +108,9 @@ role. An omitted service-token list preserves the existing automation policy
 during later admin deploys. To deliberately revoke all automation service
 tokens, set
 `KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS=1` with no token ids.
+If that automation policy was manually converted to a reusable policy, detach
+it in Cloudflare first; the provisioning script refuses to alter the
+application's complete policy list automatically.
 
 ## Deploy And Verify
 

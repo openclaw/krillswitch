@@ -74,28 +74,42 @@ const preservedIdps =
   allowedIdps.length === 0 && Array.isArray(existing?.allowed_idps)
     ? { allowed_idps: existing.allowed_idps }
     : {};
+const managedAppPayload = { ...appPayload, ...preservedIdps };
 const app = existing
   ? await cf("PUT", `/accounts/${accountId}/access/apps/${existing.id}`, {
-      ...appPayload,
-      ...preservedIdps,
+      ...managedAppPayload,
       id: existing.id,
     })
   : await cf("POST", `/accounts/${accountId}/access/apps`, appPayload);
 const policies = await cfAll(
   `/accounts/${accountId}/access/apps/${app.id}/policies`,
 );
-await upsertPolicy(app.id, policies, humanPolicy);
-await reconcileServiceTokenPolicy(app.id, policies, servicePolicy);
+const reusablePolicies = await cfAll(`/accounts/${accountId}/access/policies`);
+await upsertPolicy(app.id, policies, humanPolicy, reusablePolicies);
+await reconcileServiceTokenPolicy(
+  app.id,
+  policies,
+  servicePolicy,
+  reusablePolicies,
+);
 
 printPlan({ app, created: !existing, updated: Boolean(existing) });
 
-async function upsertPolicy(appId, policies, policy) {
+async function upsertPolicy(appId, policies, policy, reusablePolicies) {
   const existingPolicy = policies.find((entry) => entry.name === policy.name);
   if (existingPolicy) {
+    const reusable = isReusablePolicy(existingPolicy, reusablePolicies);
+    const payload = reusable
+      ? {
+          name: policy.name,
+          decision: policy.decision,
+          include: policy.include,
+        }
+      : { ...policy, id: existingPolicy.id };
     await cf(
       "PUT",
-      `/accounts/${accountId}/access/apps/${appId}/policies/${existingPolicy.id}`,
-      { ...policy, id: existingPolicy.id },
+      accessPolicyPath(appId, existingPolicy, reusablePolicies),
+      payload,
     );
     return;
   }
@@ -106,18 +120,38 @@ async function upsertPolicy(appId, policies, policy) {
   );
 }
 
-async function reconcileServiceTokenPolicy(appId, policies, policy) {
+async function reconcileServiceTokenPolicy(
+  appId,
+  policies,
+  policy,
+  reusablePolicies,
+) {
   const existingPolicy = policies.find((entry) => entry.name === policy.name);
   if (policy.include.length > 0) {
-    await upsertPolicy(appId, policies, policy);
+    await upsertPolicy(appId, policies, policy, reusablePolicies);
     return;
   }
   if (revokeServiceTokens && existingPolicy) {
+    if (isReusablePolicy(existingPolicy, reusablePolicies)) {
+      throw new Error(
+        `refusing to revoke reusable Access policy ${existingPolicy.id}; detach it from the application in Cloudflare first`,
+      );
+    }
     await cf(
       "DELETE",
       `/accounts/${accountId}/access/apps/${appId}/policies/${existingPolicy.id}`,
     );
   }
+}
+
+function accessPolicyPath(appId, policy, reusablePolicies) {
+  return isReusablePolicy(policy, reusablePolicies)
+    ? `/accounts/${accountId}/access/policies/${policy.id}`
+    : `/accounts/${accountId}/access/apps/${appId}/policies/${policy.id}`;
+}
+
+function isReusablePolicy(policy, reusablePolicies) {
+  return reusablePolicies.some((entry) => entry.id === policy.id);
 }
 
 async function cf(method, path, body) {
