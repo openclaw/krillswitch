@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Update reusable Cloudflare Access policies through their account-level API so repeat admin deployments remain idempotent.
+
 ## [v0.1.1] - 2026-07-15
 
 ### Fixed
