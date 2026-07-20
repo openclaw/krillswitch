@@ -3,15 +3,15 @@
 Krillswitch has two independently deployed Workers that share the same D1
 database:
 
-| Hostname | Purpose | Cloudflare Access |
+| Hostname | Purpose | Application authentication |
 | --- | --- | --- |
-| `flags.openclaw.ai` | `krillswitch-public`: public `POST /v1/eval` origin for SDKs | Never |
-| `switch.openclaw.ai` | `krillswitch`: dashboard and `/admin/*` management API | Required |
+| `flags.openclaw.ai` | `krillswitch-public`: public `POST /v1/eval` origin for SDKs | Environment eval key |
+| `switch.openclaw.ai` | `krillswitch`: dashboard and `/admin/*` management API | GitHub session or `ksat_` token |
 
-The public host must remain outside Cloudflare Access. Eval keys identify a
-flag environment; they are intentionally usable by browser SDKs. The admin
-host is defense in depth around Better Auth, role grants, and admin tokens.
-Cloudflare Access does not replace the application's authorization checks.
+Eval keys identify a flag environment; they are intentionally usable by
+browser SDKs. Better Auth, role grants, and admin tokens protect management
+inside the Worker. The admin hostname does not use Cloudflare Access, so users
+authenticate with GitHub only once.
 
 Both hostnames use Cloudflare Worker Custom Domains. Wrangler creates their DNS records and certificates; do not add separate origin records for them.
 
@@ -65,68 +65,41 @@ https://switch.openclaw.ai/api/auth/callback/github
 `BETTER_AUTH_URL` and `GITHUB_VIEWER_ORG` are non-secret production vars in
 `wrangler.jsonc`. Never set `DEV_AUTH_ENABLED` in production.
 
-## Cloudflare Access
+## Remove legacy Cloudflare Access
 
-Use a Cloudflare API token with Zero Trust Access application and policy write
-permission, in addition to the deploy scopes. The normal local Wrangler OAuth
-token can deploy Workers and D1 but may not administer Access.
+Older deployments placed a Cloudflare Access application in front of the admin
+hostname. Removing policy provisioning does not remove that external gate, so
+the first admin deployment after this migration deletes the legacy application.
 
-The provisioning script is idempotent and only manages the `Krillswitch Admin`
-application plus its named policies:
+Set `KRILLSWITCH_ACCESS_APP_ID` to the exact legacy application id. The removal
+script verifies the id, name, and root hostname before deletion and succeeds if
+the application is already absent:
 
 ```sh
 export CLOUDFLARE_ACCOUNT_ID=...
 export CLOUDFLARE_API_TOKEN=...
-export KRILLSWITCH_ACCESS_ALLOWED_DOMAINS=openclaw.ai
-pnpm cf:access
+export KRILLSWITCH_ACCESS_APP_ID=...
+pnpm cf:access:remove
 ```
 
-After the first successful provisioning run, set
-`KRILLSWITCH_ACCESS_APP_ID` as a GitHub Actions repository or environment
-variable. Subsequent runs use that immutable Cloudflare Access application id
-and refuse partial name or root-hostname matches. `KRILLSWITCH_ACCESS_HOST`
-must be a root hostname; path-scoped Access applications are intentionally not
-managed by this deploy flow.
-
-For non-browser CLI/agent access, create an Access service token in Cloudflare,
-pass its token id to the provisioning script, and set the client credentials
-only in the caller environment:
-
-```sh
-export KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS=...
-pnpm cf:access
-
-export KRILLSWITCH_CF_ACCESS_CLIENT_ID=...
-export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
-```
-
-The CLI sends those service-token headers alongside its Krillswitch admin
-token only to `https://switch.openclaw.ai`; set
-`KRILLSWITCH_CF_ACCESS_ORIGIN` to use a different HTTPS Access hostname. They
-satisfy the edge gate only; the Worker still enforces the token's editor/viewer
-role. An omitted service-token list preserves the existing automation policy
-during later admin deploys. To deliberately revoke all automation service
-tokens, set
-`KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS=1` with no token ids.
-If that automation policy was manually converted to a reusable policy, detach
-it in Cloudflare first; the provisioning script refuses to alter the
-application's complete policy list automatically.
+The GitHub workflow runs this step only while the environment variable exists.
+After a successful migration, remove `KRILLSWITCH_ACCESS_APP_ID` from the
+`krillswitch-admin` environment. Future deployments then need only the normal
+Workers and D1 permissions.
 
 ## Deploy And Verify
 
 Use the manual `Deploy Cloudflare` workflow from `main` after setting
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. Its
-`public` target applies migrations and deploys only `krillswitch-public`, so
-public evaluation does not depend on Cloudflare Access administration. Its
-`admin` target uses the `krillswitch-admin` GitHub Environment, provisions
-Cloudflare Access before the route can be deployed, builds the dashboard, and
-deploys `krillswitch`.
+`public` target applies migrations and deploys only `krillswitch-public`. Its
+`admin` target uses the `krillswitch-admin` GitHub Environment, builds and
+deploys `krillswitch`, then removes the legacy Access application when
+configured.
 
 For an operator deploy, keep the public and admin paths separate:
 
 ```sh
 pnpm deploy:public
-# Requires an Access application/policy write token.
 pnpm deploy:admin
 ```
 
@@ -140,6 +113,5 @@ curl -i -X POST https://flags.openclaw.ai/v1/eval \
 ```
 
 The response must include `Cache-Control: private, no-store`, an `ETag`, and
-`Server-Timing`. An unauthenticated request to `https://switch.openclaw.ai/`
-must redirect to, or be denied by, Cloudflare Access. The public
-`flags.openclaw.ai` evaluation route must never redirect to Access.
+`Server-Timing`. The admin dashboard must load without a Cloudflare Access
+prompt, while an unauthenticated request to `/admin/me` returns `401`.

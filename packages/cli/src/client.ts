@@ -22,7 +22,6 @@ export class KrillswitchClient {
         "no access token: set KRILLSWITCH_TOKEN, pass --token, or add it to ~/.krillswitch.json",
       );
     }
-    const accessHeaders = cloudflareAccessHeaders(this.config);
     const hasBody = options.body !== undefined;
     let response: Response;
     try {
@@ -30,7 +29,6 @@ export class KrillswitchClient {
         method: options.method ?? "GET",
         headers: {
           authorization: `Bearer ${this.config.token}`,
-          ...accessHeaders,
           ...(hasBody ? { "content-type": "application/json" } : {}),
         },
         ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
@@ -52,42 +50,6 @@ export class KrillswitchClient {
       throw new CliError(await errorMessage(response, path));
     }
     return response.json() as Promise<T>;
-  }
-}
-
-function cloudflareAccessHeaders(config: CliConfig): Record<string, string> {
-  const { accessClientId, accessClientSecret } = config;
-  if (!accessClientId && !accessClientSecret) {
-    return {};
-  }
-  if (!accessClientId || !accessClientSecret) {
-    throw new CliError(
-      "Cloudflare Access requires both KRILLSWITCH_CF_ACCESS_CLIENT_ID and KRILLSWITCH_CF_ACCESS_CLIENT_SECRET",
-    );
-  }
-  if (!isTrustedAccessOrigin(config.baseUrl, config.accessOrigin)) {
-    return {};
-  }
-  return {
-    "cf-access-client-id": accessClientId,
-    "cf-access-client-secret": accessClientSecret,
-  };
-}
-
-function isTrustedAccessOrigin(
-  baseUrl: string,
-  accessOrigin = "https://switch.openclaw.ai",
-): boolean {
-  try {
-    const target = new URL(baseUrl);
-    const trusted = new URL(accessOrigin);
-    return (
-      target.protocol === "https:" &&
-      trusted.protocol === "https:" &&
-      target.origin === trusted.origin
-    );
-  } catch {
-    return false;
   }
 }
 

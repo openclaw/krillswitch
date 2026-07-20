@@ -51,18 +51,6 @@ Base URL: command flag → `KRILLSWITCH_URL` → config file → `http://localho
 
 Changing the stored base URL without a new token clears the old token reference. This prevents a credential minted for one origin from being sent to another.
 
-## Cloudflare Access
-
-The production admin host also requires a Cloudflare Access service token for non-browser automation:
-
-```sh
-export KRILLSWITCH_CF_ACCESS_CLIENT_ID=...
-export KRILLSWITCH_CF_ACCESS_CLIENT_SECRET=...
-krillswitch projects list --json
-```
-
-Those credentials satisfy only the edge gate. KrillSwitch still requires a valid editor or viewer access token.
-
 ## Roles
 
 Viewer tokens read flags, projects, environments, and the change log. Editor tokens can also create and change flags. Tokens cannot create projects, manage environments, rotate eval keys, grant roles, or mint admin authority.

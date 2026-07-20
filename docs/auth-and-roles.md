@@ -1,19 +1,18 @@
 ---
 title: Auth and roles
-description: Understand Cloudflare Access, Better Auth sessions, grants, and role boundaries.
+description: Understand GitHub sessions, access tokens, grants, and role boundaries.
 ---
 
 # Auth and roles
 
-## Defense in depth
+## Authentication and authorization
 
-Production management uses three independent gates:
+Production management uses two actor paths:
 
-1. Cloudflare Access protects the admin hostname.
-2. Better Auth establishes a GitHub-backed session, or a `ksat_` bearer token establishes an automation actor.
-3. KrillSwitch resolves the actor's role and authorizes the specific route.
+1. Better Auth establishes a GitHub-backed human session, or a `ksat_` bearer token establishes an automation actor.
+2. KrillSwitch resolves the actor's role and authorizes the specific route.
 
-Passing Access does not grant a KrillSwitch role. A valid session without a role sees the no-access state.
+A valid GitHub session does not grant a KrillSwitch role. A user without an explicit grant or configured organization membership sees the no-access state.
 
 ## Roles
 

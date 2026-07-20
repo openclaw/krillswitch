@@ -65,4 +65,4 @@ The public eval path accepts any browser origin because evaluation keys are publ
 
 Production evaluation lives at `https://flags.openclaw.ai`. Only `POST` and `OPTIONS` on `/v1/eval` are exposed there. Dashboard assets, auth, and `/admin/*` return 404.
 
-The management API lives under `/admin/*` on `https://switch.openclaw.ai`, behind Cloudflare Access. Its routes are intended for the dashboard and CLI, not as a stable third-party API.
+The management API lives under `/admin/*` on `https://switch.openclaw.ai`. It requires a GitHub-backed session or role-scoped `ksat_` token and is intended for the dashboard and CLI, not as a stable third-party API.

@@ -11,26 +11,6 @@ on:
         options:
           - public
           - admin
-      access_allowed_emails:
-        description: "Comma-separated email allowlist for Cloudflare Access"
-        required: false
-        default: ""
-        type: string
-      access_allowed_domains:
-        description: "Comma-separated email-domain allowlist for Cloudflare Access"
-        required: false
-        default: "openclaw.ai"
-        type: string
-      access_service_token_ids:
-        description: "Comma-separated Access service-token ids for CLI automation"
-        required: false
-        default: ""
-        type: string
-      access_revoke_service_tokens:
-        description: "Revoke the existing automation service-token policy"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -88,19 +68,16 @@ jobs:
       - name: Verify production build
         run: pnpm --dir apps/admin build
 
-      - name: Provision Cloudflare Access
-        run: pnpm cf:access
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          KRILLSWITCH_ACCESS_APP_ID: ${{ vars.KRILLSWITCH_ACCESS_APP_ID }}
-          KRILLSWITCH_ACCESS_ALLOWED_EMAILS: ${{ inputs.access_allowed_emails }}
-          KRILLSWITCH_ACCESS_ALLOWED_DOMAINS: ${{ inputs.access_allowed_domains }}
-          KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS: ${{ inputs.access_service_token_ids }}
-          KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS: ${{ inputs.access_revoke_service_tokens && '1' || '0' }}
-
       - name: Apply D1 migrations and deploy Worker
         run: pnpm --dir apps/api db:migrate:remote && pnpm --dir apps/api deploy:worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Remove legacy Cloudflare Access gate
+        if: ${{ vars.KRILLSWITCH_ACCESS_APP_ID != '' }}
+        run: pnpm cf:access:remove
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KRILLSWITCH_ACCESS_APP_ID: ${{ vars.KRILLSWITCH_ACCESS_APP_ID }}

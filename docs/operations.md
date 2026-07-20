@@ -12,7 +12,7 @@ Two Workers share one D1 database:
 - `krillswitch-public` on `flags.openclaw.ai` for evaluation;
 - `krillswitch` on `switch.openclaw.ai` for the dashboard and management API.
 
-Deploy public and admin components separately. The public path must never inherit Cloudflare Access.
+Deploy public and admin components separately. Their host boundary is enforced inside the Worker.
 
 ## Migrations
 
@@ -38,7 +38,7 @@ curl -i -X POST https://flags.openclaw.ai/v1/eval \
   -d '{"context":{"key":"smoke"}}'
 ```
 
-An unauthenticated request to `https://switch.openclaw.ai/` should be denied or redirected by Cloudflare Access.
+An unauthenticated request to `https://switch.openclaw.ai/admin/me` should return `401`. The dashboard itself remains public until GitHub sign-in.
 
 With a real eval key, verify `Cache-Control: private, no-store`, `ETag`, and `Server-Timing`.
 

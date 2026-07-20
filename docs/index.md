@@ -9,7 +9,7 @@ description: Edge-native feature flags with deterministic evaluation, typed SDKs
 
 KrillSwitch is OpenClaw's self-hosted feature-flag service. It combines a Cloudflare Worker, D1, a React operator console, a pure TypeScript evaluator, and typed SDKs in one deliberately compact system.
 
-The service keeps the public evaluation path separate from management. Applications call `POST /v1/eval` with an environment key. Operators use an Access-protected dashboard or role-scoped CLI token. Every mutation and actor lands in the same append-only change log.
+The service keeps the public evaluation path separate from management. Applications call `POST /v1/eval` with an environment key. Operators use a GitHub-authenticated dashboard or role-scoped CLI token. Every mutation and actor lands in the same append-only change log.
 
 ## Why it exists
 
@@ -27,7 +27,7 @@ The service keeps the public evaluation path separate from management. Applicati
 - [CLI](cli.md) — human and agent workflows with stable JSON output.
 - [React SDK](react-sdk.md) — typed manifests, cached values, and polling.
 - [HTTP API](api.md) — evaluation contract, caching headers, and management boundary.
-- [Cloudflare deployment](deploy-cloudflare.md) — production topology and Access policy.
+- [Cloudflare deployment](deploy-cloudflare.md) — production topology and deployment boundaries.
 - [Security model](security.md) — secrets, public identifiers, roles, and trust boundaries.
 
 ## Architecture at a glance
@@ -36,7 +36,7 @@ The service keeps the public evaluation path separate from management. Applicati
 | --- | --- | --- | --- |
 | Docs | `krillswitch.com` | Everyone | GitHub Pages |
 | Evaluation | `flags.openclaw.ai` | SDKs and applications | Environment eval key |
-| Dashboard + admin API | `switch.openclaw.ai` | Operators and automation | Cloudflare Access plus app authorization |
+| Dashboard + admin API | `switch.openclaw.ai` | Operators and automation | GitHub session or role-scoped token |
 
 The evaluation host cannot serve dashboard assets or admin routes. The admin host cannot evaluate flags. That split is enforced inside the Worker as well as at the edge.
 

@@ -25,7 +25,7 @@ Check the returned reason. Confirm enabled state, exact context key, attribute t
 
 ## CLI cannot reach production
 
-Production management needs both the KrillSwitch token and Cloudflare Access client credentials. Run `krillswitch config show` to inspect the redacted origin. A base-URL change intentionally clears the previous token reference.
+Production management needs a valid KrillSwitch token. Run `krillswitch config show` to inspect the redacted origin. A base-URL change intentionally clears the previous token reference.
 
 ## CLI shows old values
 
@@ -33,7 +33,7 @@ Read `flags get --json`, then evaluate with the same project, environment, conte
 
 ## Dashboard gives no access
 
-Cloudflare Access admission and a valid GitHub session are not role grants. Ask an existing admin to grant viewer, editor, or admin. Organization membership may resolve to viewer when `GITHUB_VIEWER_ORG` is configured.
+A valid GitHub session is not a role grant. Ask an existing admin to grant viewer, editor, or admin. Organization membership may resolve to viewer when `GITHUB_VIEWER_ORG` is configured.
 
 ## GitHub Pages HTTPS is pending
 
@@ -41,4 +41,4 @@ New custom-domain certificates appear only after public DNS points at GitHub Pag
 
 ## Deployment routes fail
 
-Confirm Wrangler is targeting OpenClaw account `91b59577e757131d68d55a471fe32aca`, both hostnames have proxied DNS in the `openclaw.ai` zone, and the deploy token can manage Workers, D1, routes, and Access where required.
+Confirm Wrangler is targeting OpenClaw account `91b59577e757131d68d55a471fe32aca`, both hostnames have proxied DNS in the `openclaw.ai` zone, and the deploy token can manage Workers, D1, and routes. The one-time Access removal also needs Zero Trust application write permission.

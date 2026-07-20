@@ -80,9 +80,6 @@ export async function onboard(
     await new KrillswitchClient({
       baseUrl,
       token,
-      accessClientId: existing.accessClientId,
-      accessClientSecret: existing.accessClientSecret,
-      accessOrigin: existing.accessOrigin,
     }).request("/admin/projects");
   }
 

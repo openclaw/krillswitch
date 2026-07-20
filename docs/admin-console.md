@@ -5,7 +5,7 @@ description: Operate projects, environments, flags, access, and audit history fr
 
 # Admin console
 
-The production console is served at `https://switch.openclaw.ai` by the same Worker that handles the management API. Cloudflare Access gates the hostname before Better Auth and KrillSwitch role checks run.
+The production console is served at `https://switch.openclaw.ai` by the same Worker that handles the management API. Better Auth establishes a GitHub session, then KrillSwitch role checks authorize management access.
 
 ## Projects and environments
 

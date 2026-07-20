@@ -21,15 +21,6 @@ Use `krillswitch onboard` to place the token in OS secure storage. CI should use
 
 Never commit a token, paste it into an issue, or reuse it across unrelated environments.
 
-## Cloudflare Access service token
-
-Production automation needs two credentials:
-
-- the KrillSwitch access token for application authorization;
-- a Cloudflare Access service token for the edge gate.
-
-The CLI sends Access credentials only to the configured HTTPS Access origin. The edge credential does not replace the KrillSwitch token.
-
 ## Revoke
 
 Revocation is idempotent and immediate for subsequent management requests. The revoke mutation and audit entry land atomically. Existing plaintext cannot be recovered; mint a replacement and rotate callers.

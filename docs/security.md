@@ -11,7 +11,6 @@ description: KrillSwitch trust boundaries, credential classes, storage rules, an
 | --- | --- | --- |
 | Environment eval key `ks_...` | No | Read evaluated flag values for one environment |
 | Access token `ksat_...` | Yes | Viewer or editor management routes |
-| Cloudflare Access service token | Yes | Pass the admin edge gate |
 | GitHub OAuth client secret | Yes | Establish human sessions |
 | Better Auth secret | Yes | Sign and protect auth state |
 
@@ -35,7 +34,7 @@ Management writes validate their complete semantic state before mutation. State 
 
 ## Production auth
 
-Development personas require local mode and a loopback host. Production uses Cloudflare Access plus GitHub-backed Better Auth sessions. Tokens never receive admin authority.
+Development personas require local mode and a loopback host. Production uses GitHub-backed Better Auth sessions. Tokens never receive admin authority.
 
 ## Reporting
 

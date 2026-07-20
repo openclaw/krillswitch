@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Remove the redundant Cloudflare Access login from the admin hostname and rely on GitHub-backed Krillswitch roles for human authorization.
+
 ### Fixed
 
 - Update reusable Cloudflare Access policies through their account-level API so repeat admin deployments remain idempotent.
