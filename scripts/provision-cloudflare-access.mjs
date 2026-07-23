@@ -15,17 +15,26 @@ const appName =
   process.env.KRILLSWITCH_ACCESS_APP_NAME?.trim() || "Krillswitch Admin";
 const configuredAppId = process.env.KRILLSWITCH_ACCESS_APP_ID?.trim();
 const allowedEmails = csv(process.env.KRILLSWITCH_ACCESS_ALLOWED_EMAILS);
-const allowedDomains = csv(
-  process.env.KRILLSWITCH_ACCESS_ALLOWED_DOMAINS || "openclaw.ai",
+const allowedDomains = csv(process.env.KRILLSWITCH_ACCESS_ALLOWED_DOMAINS);
+const allowedGitHubOrgs = csv(
+  process.env.KRILLSWITCH_ACCESS_GITHUB_ORGS ?? "openclaw",
+);
+const allowedGitHubTeams = parseGitHubTeams(
+  process.env.KRILLSWITCH_ACCESS_GITHUB_TEAMS,
 );
 const allowedIdps = csv(process.env.KRILLSWITCH_ACCESS_IDP_IDS);
 const serviceTokenIds = csv(process.env.KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS);
 const revokeServiceTokens =
   process.env.KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS === "1";
 
-if (allowedEmails.length === 0 && allowedDomains.length === 0) {
+if (
+  allowedEmails.length === 0 &&
+  allowedDomains.length === 0 &&
+  allowedGitHubOrgs.length === 0 &&
+  allowedGitHubTeams.length === 0
+) {
   throw new Error(
-    "set KRILLSWITCH_ACCESS_ALLOWED_EMAILS or KRILLSWITCH_ACCESS_ALLOWED_DOMAINS",
+    "set KRILLSWITCH_ACCESS_GITHUB_ORGS, KRILLSWITCH_ACCESS_ALLOWED_EMAILS, or KRILLSWITCH_ACCESS_ALLOWED_DOMAINS",
   );
 }
 if (revokeServiceTokens && serviceTokenIds.length > 0) {
@@ -37,23 +46,6 @@ if (!dryRun && !token) {
   throw new Error("CLOUDFLARE_API_TOKEN is required unless --dry-run is set");
 }
 
-const appPayload = {
-  name: appName,
-  type: "self_hosted",
-  domain: host,
-  session_duration: "24h",
-  app_launcher_visible: false,
-  ...(allowedIdps.length > 0 ? { allowed_idps: allowedIdps } : {}),
-};
-const humanPolicy = {
-  name: "OpenClaw admins",
-  decision: "allow",
-  precedence: 1,
-  include: [
-    ...allowedEmails.map((email) => ({ email: { email } })),
-    ...allowedDomains.map((domain) => ({ email_domain: { domain } })),
-  ],
-};
 const servicePolicy = {
   name: "Krillswitch automation",
   decision: "non_identity",
@@ -64,23 +56,32 @@ const servicePolicy = {
 };
 
 if (dryRun) {
-  printPlan({ app: appPayload, created: false, updated: false });
+  const githubIdpId =
+    needsGitHubIdentityProvider() &&
+    !process.env.KRILLSWITCH_ACCESS_GITHUB_IDP_ID
+      ? "<github-identity-provider-id>"
+      : process.env.KRILLSWITCH_ACCESS_GITHUB_IDP_ID?.trim();
+  const appPayload = buildAppPayload(
+    appIdentityProviderIds(undefined, githubIdpId),
+  );
+  const humanPolicy = buildHumanPolicy(githubIdpId);
+  printPlan({ app: appPayload, humanPolicy, created: false, updated: false });
   process.exit(0);
 }
 
 const apps = await cfAll(`/accounts/${accountId}/access/apps`);
 const existing = resolveExistingApp(apps);
-const preservedIdps =
-  allowedIdps.length === 0 && Array.isArray(existing?.allowed_idps)
-    ? { allowed_idps: existing.allowed_idps }
-    : {};
-const managedAppPayload = { ...appPayload, ...preservedIdps };
+const githubIdpId = await resolveGitHubIdentityProviderId(existing);
+const humanPolicy = buildHumanPolicy(githubIdpId);
+const managedAppPayload = buildAppPayload(
+  appIdentityProviderIds(existing, githubIdpId),
+);
 const app = existing
   ? await cf("PUT", `/accounts/${accountId}/access/apps/${existing.id}`, {
       ...managedAppPayload,
       id: existing.id,
     })
-  : await cf("POST", `/accounts/${accountId}/access/apps`, appPayload);
+  : await cf("POST", `/accounts/${accountId}/access/apps`, managedAppPayload);
 const policies = await cfAll(
   `/accounts/${accountId}/access/apps/${app.id}/policies`,
 );
@@ -93,7 +94,121 @@ await reconcileServiceTokenPolicy(
   reusablePolicies,
 );
 
-printPlan({ app, created: !existing, updated: Boolean(existing) });
+printPlan({ app, humanPolicy, created: !existing, updated: Boolean(existing) });
+
+function buildAppPayload(identityProviderIds) {
+  const idps = unique(identityProviderIds);
+  return {
+    name: appName,
+    type: "self_hosted",
+    domain: host,
+    session_duration: "24h",
+    app_launcher_visible: false,
+    ...(idps.length > 0 ? { allowed_idps: idps } : {}),
+  };
+}
+
+function buildHumanPolicy(githubIdentityProviderId) {
+  return {
+    name: "OpenClaw admins",
+    decision: "allow",
+    precedence: 1,
+    include: [
+      ...allowedEmails.map((email) => ({ email: { email } })),
+      ...allowedDomains.map((domain) => ({ email_domain: { domain } })),
+      ...githubPolicyRules(githubIdentityProviderId),
+    ],
+  };
+}
+
+function githubPolicyRules(identityProviderId) {
+  if (!needsGitHubIdentityProvider()) {
+    return [];
+  }
+  if (!identityProviderId) {
+    throw new Error(
+      "set KRILLSWITCH_ACCESS_GITHUB_IDP_ID or configure exactly one GitHub Access identity provider",
+    );
+  }
+
+  if (allowedGitHubTeams.length > 0) {
+    return allowedGitHubTeams.map(({ org, team }) => ({
+      "github-organization": {
+        identity_provider_id: identityProviderId,
+        name: org,
+        team,
+      },
+    }));
+  }
+
+  return allowedGitHubOrgs.map((org) => ({
+    "github-organization": {
+      identity_provider_id: identityProviderId,
+      name: org,
+    },
+  }));
+}
+
+function appIdentityProviderIds(existing, githubIdentityProviderId) {
+  if (allowedIdps.length > 0) {
+    return unique([...allowedIdps, githubIdentityProviderId].filter(Boolean));
+  }
+  if (
+    Array.isArray(existing?.allowed_idps) &&
+    existing.allowed_idps.length > 0
+  ) {
+    return unique([...existing.allowed_idps, githubIdentityProviderId]);
+  }
+  return [];
+}
+
+async function resolveGitHubIdentityProviderId(existing) {
+  if (!needsGitHubIdentityProvider()) {
+    return undefined;
+  }
+
+  const configured = process.env.KRILLSWITCH_ACCESS_GITHUB_IDP_ID?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  const providers = await cfAll(
+    `/accounts/${accountId}/access/identity_providers`,
+  );
+  const preferredName =
+    process.env.KRILLSWITCH_ACCESS_GITHUB_IDP_NAME?.trim() || "GitHub";
+  const githubProviders = providers.filter(
+    (provider) => provider.type === "github",
+  );
+  const candidates =
+    allowedIdps.length > 0 ? allowedIdps : existing?.allowed_idps;
+  const candidateProviders = Array.isArray(candidates)
+    ? githubProviders.filter((provider) => candidates.includes(provider.id))
+    : [];
+  if (candidateProviders.length === 1) {
+    return candidateProviders[0].id;
+  }
+
+  const namedProviders = githubProviders.filter(
+    (provider) => provider.name === preferredName,
+  );
+  const matches = namedProviders.length > 0 ? namedProviders : githubProviders;
+  if (matches.length === 1) {
+    return matches[0].id;
+  }
+
+  const visibleProviders =
+    githubProviders
+      .map((provider) => `${provider.name || "(unnamed)"}:${provider.id}`)
+      .join(", ") || "none";
+  throw new Error(
+    `could not resolve the GitHub Access identity provider. Set KRILLSWITCH_ACCESS_GITHUB_IDP_ID. GitHub providers: ${visibleProviders}`,
+  );
+}
+
+function needsGitHubIdentityProvider() {
+  return allowedGitHubOrgs.length > 0 || allowedGitHubTeams.length > 0;
+}
 
 async function upsertPolicy(appId, policies, policy, reusablePolicies) {
   const existingPolicy = policies.find((entry) => entry.name === policy.name);
@@ -220,6 +335,35 @@ function csv(value) {
     .filter(Boolean);
 }
 
+function parseGitHubTeams(value) {
+  return csv(value).map((entry) => {
+    const slash = entry.indexOf("/");
+    if (slash >= 0) {
+      const org = entry.slice(0, slash).trim();
+      const team = entry.slice(slash + 1).trim();
+      if (!org || !team) {
+        throw new Error(
+          "KRILLSWITCH_ACCESS_GITHUB_TEAMS org/team entries must include a non-empty org and team",
+        );
+      }
+      return {
+        org,
+        team,
+      };
+    }
+    if (allowedGitHubOrgs.length === 1) {
+      return { org: allowedGitHubOrgs[0], team: entry };
+    }
+    throw new Error(
+      "KRILLSWITCH_ACCESS_GITHUB_TEAMS entries must be org/team when KRILLSWITCH_ACCESS_GITHUB_ORGS does not contain exactly one org",
+    );
+  });
+}
+
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -282,13 +426,21 @@ function rootAccessAppDomain(domain) {
   }
 }
 
-function printPlan({ app, created, updated }) {
+function printPlan({ app, humanPolicy, created, updated }) {
   console.log("Cloudflare Access plan:");
   console.log(`host=${host}`);
   console.log(`app=${app.name}${app.id ? ` (${app.id})` : ""}`);
   console.log(`created=${created}`);
   console.log(`updated=${updated}`);
   console.log(`human-policy=${humanPolicy.name}`);
+  console.log(`github-orgs=${allowedGitHubOrgs.join(",") || "(none)"}`);
+  console.log(
+    `github-teams=${
+      allowedGitHubTeams.map(({ org, team }) => `${org}/${team}`).join(",") ||
+      "(none)"
+    }`,
+  );
+  console.log(`email-domains=${allowedDomains.join(",") || "(none)"}`);
   console.log(
     `service-policy=${
       servicePolicy.include.length > 0

@@ -68,8 +68,10 @@ https://switch.openclaw.ai/api/auth/callback/github
 ## Cloudflare Access
 
 Use a Cloudflare API token with Zero Trust Access application and policy write
-permission, in addition to the deploy scopes. The normal local Wrangler OAuth
-token can deploy Workers and D1 but may not administer Access.
+permission, in addition to the deploy scopes. If the GitHub identity provider
+id is not supplied explicitly, the token also needs permission to list Access
+identity providers. The normal local Wrangler OAuth token can deploy Workers
+and D1 but may not administer Access.
 
 The provisioning script is idempotent and only manages the `Krillswitch Admin`
 application plus its named policies:
@@ -77,7 +79,42 @@ application plus its named policies:
 ```sh
 export CLOUDFLARE_ACCOUNT_ID=...
 export CLOUDFLARE_API_TOKEN=...
-export KRILLSWITCH_ACCESS_ALLOWED_DOMAINS=openclaw.ai
+export KRILLSWITCH_ACCESS_GITHUB_ORGS=openclaw
+pnpm cf:access
+```
+
+The default browser policy allows members of the `openclaw` GitHub
+organization, matching the other OpenClaw Cloudflare Access sites that use
+GitHub auth. This avoids tying maintainer access to an `@openclaw.ai` address.
+Email and email-domain rules are still supported as additive break-glass or
+contractor access:
+
+```sh
+export KRILLSWITCH_ACCESS_ALLOWED_EMAILS=person@example.com
+export KRILLSWITCH_ACCESS_ALLOWED_DOMAINS=example.com
+pnpm cf:access
+```
+
+If the account has multiple GitHub identity providers, set the exact provider
+id instead of relying on name-based discovery:
+
+```sh
+export KRILLSWITCH_ACCESS_GITHUB_IDP_ID=...
+pnpm cf:access
+```
+
+For GitHub Actions deploys, store that value as a repository or environment
+variable named `KRILLSWITCH_ACCESS_GITHUB_IDP_ID`. You can also set
+`KRILLSWITCH_ACCESS_GITHUB_IDP_NAME` when the provider is discoverable by a
+non-default name.
+
+To restrict to GitHub teams instead of the whole organization, pass team names
+when a single org is configured, or `org/team` entries when multiple orgs are
+configured:
+
+```sh
+export KRILLSWITCH_ACCESS_GITHUB_ORGS=openclaw
+export KRILLSWITCH_ACCESS_GITHUB_TEAMS=maintainers
 pnpm cf:access
 ```
 
