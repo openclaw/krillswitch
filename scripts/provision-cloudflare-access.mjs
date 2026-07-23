@@ -338,10 +338,17 @@ function csv(value) {
 function parseGitHubTeams(value) {
   return csv(value).map((entry) => {
     const slash = entry.indexOf("/");
-    if (slash > 0) {
+    if (slash >= 0) {
+      const org = entry.slice(0, slash).trim();
+      const team = entry.slice(slash + 1).trim();
+      if (!org || !team) {
+        throw new Error(
+          "KRILLSWITCH_ACCESS_GITHUB_TEAMS org/team entries must include a non-empty org and team",
+        );
+      }
       return {
-        org: entry.slice(0, slash).trim(),
-        team: entry.slice(slash + 1).trim(),
+        org,
+        team,
       };
     }
     if (allowedGitHubOrgs.length === 1) {

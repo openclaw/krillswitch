@@ -365,6 +365,38 @@ test("keeps unrestricted Access app identity providers unrestricted", async () =
   assert.equal("allowed_idps" in appUpdate.body, false);
 });
 
+test("rejects empty GitHub team components", async () => {
+  const envNames = [
+    "CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_API_TOKEN",
+    "KRILLSWITCH_ACCESS_GITHUB_ORGS",
+    "KRILLSWITCH_ACCESS_GITHUB_TEAMS",
+  ];
+  const originalEnv = Object.fromEntries(
+    envNames.map((name) => [name, process.env[name]]),
+  );
+
+  process.env.CLOUDFLARE_ACCOUNT_ID = "account-id";
+  process.env.CLOUDFLARE_API_TOKEN = "x";
+  process.env.KRILLSWITCH_ACCESS_GITHUB_ORGS = "openclaw";
+  process.env.KRILLSWITCH_ACCESS_GITHUB_TEAMS = "openclaw/";
+
+  try {
+    await assert.rejects(
+      import(`./provision-cloudflare-access.mjs?test=${Date.now()}-empty-team`),
+      /non-empty org and team/,
+    );
+  } finally {
+    for (const [name, value] of Object.entries(originalEnv)) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
+    }
+  }
+});
+
 function json({ result, result_info }) {
   return new Response(
     JSON.stringify({ success: true, result, result_info, errors: [] }),
