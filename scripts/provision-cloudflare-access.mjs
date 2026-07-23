@@ -153,10 +153,13 @@ function appIdentityProviderIds(existing, githubIdentityProviderId) {
   if (allowedIdps.length > 0) {
     return unique([...allowedIdps, githubIdentityProviderId].filter(Boolean));
   }
-  return unique([
-    ...(Array.isArray(existing?.allowed_idps) ? existing.allowed_idps : []),
-    githubIdentityProviderId,
-  ]);
+  if (
+    Array.isArray(existing?.allowed_idps) &&
+    existing.allowed_idps.length > 0
+  ) {
+    return unique([...existing.allowed_idps, githubIdentityProviderId]);
+  }
+  return [];
 }
 
 async function resolveGitHubIdentityProviderId(existing) {
