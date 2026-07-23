@@ -8,6 +8,10 @@ All notable changes to Krillswitch are documented in this file.
 
 - Update reusable Cloudflare Access policies through their account-level API so repeat admin deployments remain idempotent.
 
+### Security
+
+- Default the admin Cloudflare Access policy to the OpenClaw GitHub organization instead of the `openclaw.ai` email domain.
+
 ## [v0.1.1] - 2026-07-15
 
 ### Fixed

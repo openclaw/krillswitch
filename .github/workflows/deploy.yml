@@ -19,7 +19,27 @@ on:
       access_allowed_domains:
         description: "Comma-separated email-domain allowlist for Cloudflare Access"
         required: false
-        default: "openclaw.ai"
+        default: ""
+        type: string
+      access_allowed_github_orgs:
+        description: "Comma-separated GitHub organization allowlist for Cloudflare Access"
+        required: false
+        default: "openclaw"
+        type: string
+      access_allowed_github_teams:
+        description: "Comma-separated GitHub team allowlist; use team when one org is set, otherwise org/team"
+        required: false
+        default: ""
+        type: string
+      access_github_idp_id:
+        description: "Optional Cloudflare Access GitHub identity-provider id"
+        required: false
+        default: ""
+        type: string
+      access_github_idp_name:
+        description: "Cloudflare Access GitHub identity-provider name used for discovery"
+        required: false
+        default: "GitHub"
         type: string
       access_service_token_ids:
         description: "Comma-separated Access service-token ids for CLI automation"
@@ -96,6 +116,10 @@ jobs:
           KRILLSWITCH_ACCESS_APP_ID: ${{ vars.KRILLSWITCH_ACCESS_APP_ID }}
           KRILLSWITCH_ACCESS_ALLOWED_EMAILS: ${{ inputs.access_allowed_emails }}
           KRILLSWITCH_ACCESS_ALLOWED_DOMAINS: ${{ inputs.access_allowed_domains }}
+          KRILLSWITCH_ACCESS_GITHUB_ORGS: ${{ inputs.access_allowed_github_orgs }}
+          KRILLSWITCH_ACCESS_GITHUB_TEAMS: ${{ inputs.access_allowed_github_teams }}
+          KRILLSWITCH_ACCESS_GITHUB_IDP_ID: ${{ inputs.access_github_idp_id }}
+          KRILLSWITCH_ACCESS_GITHUB_IDP_NAME: ${{ inputs.access_github_idp_name }}
           KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS: ${{ inputs.access_service_token_ids }}
           KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS: ${{ inputs.access_revoke_service_tokens && '1' || '0' }}
 
