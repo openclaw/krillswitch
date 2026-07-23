@@ -133,7 +133,7 @@ function githubPolicyRules(identityProviderId) {
 
   if (allowedGitHubTeams.length > 0) {
     return allowedGitHubTeams.map(({ org, team }) => ({
-      github_organization: {
+      "github-organization": {
         identity_provider_id: identityProviderId,
         name: org,
         team,
@@ -142,7 +142,7 @@ function githubPolicyRules(identityProviderId) {
   }
 
   return allowedGitHubOrgs.map((org) => ({
-    github_organization: {
+    "github-organization": {
       identity_provider_id: identityProviderId,
       name: org,
     },
@@ -150,10 +150,13 @@ function githubPolicyRules(identityProviderId) {
 }
 
 function appIdentityProviderIds(existing, githubIdentityProviderId) {
-  if (allowedIdps.length > 0 || githubIdentityProviderId) {
+  if (allowedIdps.length > 0) {
     return unique([...allowedIdps, githubIdentityProviderId].filter(Boolean));
   }
-  return Array.isArray(existing?.allowed_idps) ? existing.allowed_idps : [];
+  return unique([
+    ...(Array.isArray(existing?.allowed_idps) ? existing.allowed_idps : []),
+    githubIdentityProviderId,
+  ]);
 }
 
 async function resolveGitHubIdentityProviderId(existing) {
@@ -166,12 +169,6 @@ async function resolveGitHubIdentityProviderId(existing) {
     return configured;
   }
 
-  const candidates =
-    allowedIdps.length > 0 ? allowedIdps : existing?.allowed_idps;
-  if (Array.isArray(candidates) && candidates.length === 1) {
-    return candidates[0];
-  }
-
   const providers = await cfAll(
     `/accounts/${accountId}/access/identity_providers`,
   );
@@ -180,6 +177,15 @@ async function resolveGitHubIdentityProviderId(existing) {
   const githubProviders = providers.filter(
     (provider) => provider.type === "github",
   );
+  const candidates =
+    allowedIdps.length > 0 ? allowedIdps : existing?.allowed_idps;
+  const candidateProviders = Array.isArray(candidates)
+    ? githubProviders.filter((provider) => candidates.includes(provider.id))
+    : [];
+  if (candidateProviders.length === 1) {
+    return candidateProviders[0].id;
+  }
+
   const namedProviders = githubProviders.filter(
     (provider) => provider.name === preferredName,
   );

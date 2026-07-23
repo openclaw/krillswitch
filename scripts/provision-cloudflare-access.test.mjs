@@ -146,7 +146,17 @@ test("provisions GitHub organization Access policy from the app identity provide
     id: "app-id",
     name: "Krillswitch Admin",
     domain: "switch.openclaw.ai",
-    allowed_idps: ["github-idp"],
+    allowed_idps: ["google-idp"],
+  };
+  const githubIdp = {
+    id: "github-idp",
+    name: "GitHub",
+    type: "github",
+  };
+  const googleIdp = {
+    id: "google-idp",
+    name: "Google",
+    type: "google",
   };
   const applicationPolicy = {
     id: "policy-id",
@@ -178,6 +188,15 @@ test("provisions GitHub organization Access policy from the app identity provide
 
     if (call.method === "GET" && call.path.endsWith("/access/apps")) {
       return json({ result: [app], result_info: { total_pages: 1 } });
+    }
+    if (
+      call.method === "GET" &&
+      call.path.endsWith("/access/identity_providers")
+    ) {
+      return json({
+        result: [googleIdp, githubIdp],
+        result_info: { total_pages: 1 },
+      });
     }
     if (call.method === "PUT" && call.path.endsWith(`/access/apps/${app.id}`)) {
       return json({ result: { ...app, ...call.body } });
@@ -222,7 +241,7 @@ test("provisions GitHub organization Access policy from the app identity provide
     (call) =>
       call.method === "PUT" && call.path.endsWith(`/access/apps/${app.id}`),
   );
-  assert.deepEqual(appUpdate.body.allowed_idps, ["github-idp"]);
+  assert.deepEqual(appUpdate.body.allowed_idps, ["google-idp", "github-idp"]);
 
   const policyUpdate = calls.find(
     (call) =>
@@ -233,7 +252,7 @@ test("provisions GitHub organization Access policy from the app identity provide
   );
   assert.deepEqual(policyUpdate.body.include, [
     {
-      github_organization: {
+      "github-organization": {
         identity_provider_id: "github-idp",
         name: "openclaw",
       },
