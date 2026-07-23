@@ -39,7 +39,7 @@ on:
       access_github_idp_name:
         description: "Cloudflare Access GitHub identity-provider name used for discovery"
         required: false
-        default: "GitHub"
+        default: ""
         type: string
       access_service_token_ids:
         description: "Comma-separated Access service-token ids for CLI automation"
