@@ -118,8 +118,8 @@ jobs:
           KRILLSWITCH_ACCESS_ALLOWED_DOMAINS: ${{ inputs.access_allowed_domains }}
           KRILLSWITCH_ACCESS_GITHUB_ORGS: ${{ github.event_name != 'workflow_dispatch' && 'openclaw' || inputs.access_allowed_github_orgs }}
           KRILLSWITCH_ACCESS_GITHUB_TEAMS: ${{ inputs.access_allowed_github_teams }}
-          KRILLSWITCH_ACCESS_GITHUB_IDP_ID: ${{ inputs.access_github_idp_id }}
-          KRILLSWITCH_ACCESS_GITHUB_IDP_NAME: ${{ github.event_name != 'workflow_dispatch' && 'GitHub' || inputs.access_github_idp_name }}
+          KRILLSWITCH_ACCESS_GITHUB_IDP_ID: ${{ inputs.access_github_idp_id || vars.KRILLSWITCH_ACCESS_GITHUB_IDP_ID }}
+          KRILLSWITCH_ACCESS_GITHUB_IDP_NAME: ${{ inputs.access_github_idp_name || vars.KRILLSWITCH_ACCESS_GITHUB_IDP_NAME || 'GitHub' }}
           KRILLSWITCH_ACCESS_SERVICE_TOKEN_IDS: ${{ inputs.access_service_token_ids }}
           KRILLSWITCH_ACCESS_REVOKE_SERVICE_TOKENS: ${{ inputs.access_revoke_service_tokens && '1' || '0' }}
 

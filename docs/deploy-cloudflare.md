@@ -103,6 +103,11 @@ export KRILLSWITCH_ACCESS_GITHUB_IDP_ID=...
 pnpm cf:access
 ```
 
+For GitHub Actions deploys, store that value as a repository or environment
+variable named `KRILLSWITCH_ACCESS_GITHUB_IDP_ID`. You can also set
+`KRILLSWITCH_ACCESS_GITHUB_IDP_NAME` when the provider is discoverable by a
+non-default name.
+
 To restrict to GitHub teams instead of the whole organization, pass team names
 when a single org is configured, or `org/team` entries when multiple orgs are
 configured:
