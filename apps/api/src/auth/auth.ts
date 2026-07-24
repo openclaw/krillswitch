@@ -13,6 +13,8 @@ export type AuthBindings = {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_VIEWER_ORG?: string;
+  CLOUDFLARE_ACCESS_AUD?: string;
+  CLOUDFLARE_ACCESS_TEAM_DOMAIN?: string;
 };
 
 /** GitHub login exists wherever an OAuth app's credentials are configured. */

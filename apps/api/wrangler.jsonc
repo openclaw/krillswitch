@@ -29,6 +29,7 @@
   ],
   "vars": {
     "BETTER_AUTH_URL": "https://switch.openclaw.ai",
+    "CLOUDFLARE_ACCESS_TEAM_DOMAIN": "https://crabbox-openclaw.cloudflareaccess.com",
     "GITHUB_VIEWER_ORG": "openclaw"
   },
   "d1_databases": [

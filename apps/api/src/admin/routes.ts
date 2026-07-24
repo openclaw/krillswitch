@@ -8,6 +8,7 @@ import {
   createAuth,
   isGitHubAuthConfigured,
 } from "../auth/auth";
+import { cloudflareAccessUser } from "../auth/cloudflareAccess";
 import { isDevPersonaAuthEnabled } from "../auth/devAuth";
 import {
   DEV_PERSONA_PASSWORD,
@@ -199,6 +200,27 @@ adminRoutes.use("*", async (c, next) => {
       email: null,
     });
     c.set("role", tokenActor.role);
+    await next();
+    return;
+  }
+
+  const accessUser = await cloudflareAccessUser(db, c.env, c.req.raw.headers);
+  if (accessUser) {
+    c.set("actor", {
+      kind: "session",
+      id: accessUser.id,
+      name: accessUser.name,
+      email: accessUser.email,
+    });
+    c.set(
+      "role",
+      await resolveRole(
+        db,
+        accessUser,
+        c.env.BOOTSTRAP_ADMIN_EMAIL,
+        c.env.GITHUB_VIEWER_ORG,
+      ),
+    );
     await next();
     return;
   }
