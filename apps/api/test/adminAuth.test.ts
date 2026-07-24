@@ -1,11 +1,16 @@
 import { SELF } from "cloudflare:test";
 import { env } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import { beforeAll, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
 import { isGitHubAuthConfigured } from "../src/auth/auth";
+import { cloudflareAccessUser } from "../src/auth/cloudflareAccess";
+import { user } from "../src/db/authSchema";
 
 // localhost origin: the dev-persona guard requires a localhost request host.
 const BASE = "http://localhost";
+const db = drizzle(env.DB);
 
 beforeAll(async () => {
   const statements = seedSql
@@ -73,6 +78,93 @@ describe("auth providers", () => {
         GITHUB_CLIENT_SECRET: "shh",
       }),
     ).toBe(true);
+  });
+});
+
+describe("Cloudflare Access auth", () => {
+  const accessEnv = {
+    CLOUDFLARE_ACCESS_AUD: "aud-test",
+    CLOUDFLARE_ACCESS_TEAM_DOMAIN: "https://team.cloudflareaccess.com",
+  };
+
+  it("ignores requests when Access JWT verification is not configured", async () => {
+    const headers = new Headers({ "cf-access-jwt-assertion": "token" });
+    await expect(cloudflareAccessUser(db, {}, headers)).resolves.toBeNull();
+  });
+
+  it("upserts a verified Access user and marks them as org-viewer eligible", async () => {
+    const email = "access-user@example.com";
+    await db.delete(user).where(eq(user.email, email));
+
+    const headers = new Headers({ "cf-access-jwt-assertion": "token" });
+    const actor = await cloudflareAccessUser(
+      db,
+      accessEnv,
+      headers,
+      async () => ({
+        email,
+        name: "Access User",
+        aud: "aud-test",
+        iss: "https://team.cloudflareaccess.com",
+      }),
+    );
+
+    expect(actor).toMatchObject({
+      name: "Access User",
+      email,
+      orgViewer: true,
+    });
+
+    const stored = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        emailVerified: user.emailVerified,
+        orgViewer: user.orgViewer,
+      })
+      .from(user)
+      .where(eq(user.email, email))
+      .get();
+    expect(stored).toMatchObject({
+      id: actor?.id,
+      name: "Access User",
+      emailVerified: true,
+      orgViewer: true,
+    });
+  });
+
+  it("reuses an existing user row with the same email", async () => {
+    const email = "access-existing@example.com";
+    await db.delete(user).where(eq(user.email, email));
+    await db.insert(user).values({
+      id: "existing-access-user",
+      name: "Old Name",
+      email,
+      emailVerified: false,
+      orgViewer: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const actor = await cloudflareAccessUser(
+      db,
+      accessEnv,
+      new Headers({ "cf-access-jwt-assertion": "token" }),
+      async () => ({
+        email,
+        name: "New Name",
+        aud: "aud-test",
+        iss: "https://team.cloudflareaccess.com",
+      }),
+    );
+
+    expect(actor?.id).toBe("existing-access-user");
+    const stored = await db
+      .select({ name: user.name, emailVerified: user.emailVerified })
+      .from(user)
+      .where(eq(user.id, "existing-access-user"))
+      .get();
+    expect(stored).toEqual({ name: "New Name", emailVerified: true });
   });
 });
 

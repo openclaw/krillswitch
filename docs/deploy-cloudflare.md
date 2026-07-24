@@ -46,14 +46,26 @@ The D1 database `krillswitch` already exists in the OpenClaw account. Before
 the first deploy, make sure the deploy identity can manage Workers, D1, and
 Worker Custom Domains in the `openclaw.ai` zone.
 
-Set Worker secrets without placing them in git:
+Set Worker secrets without placing them in git. `BOOTSTRAP_ADMIN_EMAIL` is the
+only secret required for the Cloudflare Access-backed production login path;
+Better Auth and GitHub OAuth secrets are only needed if you want the app to
+offer a separate GitHub sign-in button outside the Access gate. The Cloudflare
+Access audience is not a credential, but it is token-shaped, so keep it out of
+git and configure it as a Worker secret.
+
+```sh
+cd apps/api
+wrangler secret put CLOUDFLARE_ACCESS_AUD
+wrangler secret put BOOTSTRAP_ADMIN_EMAIL
+```
+
+Optional Better Auth fallback:
 
 ```sh
 cd apps/api
 wrangler secret put BETTER_AUTH_SECRET
 wrangler secret put GITHUB_CLIENT_ID
 wrangler secret put GITHUB_CLIENT_SECRET
-wrangler secret put BOOTSTRAP_ADMIN_EMAIL
 ```
 
 Create the GitHub OAuth app callback at:
@@ -62,8 +74,9 @@ Create the GitHub OAuth app callback at:
 https://switch.openclaw.ai/api/auth/callback/github
 ```
 
-`BETTER_AUTH_URL` and `GITHUB_VIEWER_ORG` are non-secret production vars in
-`wrangler.jsonc`. Never set `DEV_AUTH_ENABLED` in production.
+`BETTER_AUTH_URL`, `CLOUDFLARE_ACCESS_TEAM_DOMAIN`, and `GITHUB_VIEWER_ORG`
+are non-secret production vars in `wrangler.jsonc`. Never set
+`DEV_AUTH_ENABLED` in production.
 
 ## Cloudflare Access
 

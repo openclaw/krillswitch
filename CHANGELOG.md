@@ -10,6 +10,9 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Security
 
+- Accept verified Cloudflare Access JWTs as production dashboard identities so
+  `switch.openclaw.ai` does not require a second GitHub OAuth login after the
+  Access gate.
 - Default the admin Cloudflare Access policy to the OpenClaw GitHub organization instead of the `openclaw.ai` email domain.
 
 ## [v0.1.1] - 2026-07-15
