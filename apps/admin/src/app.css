@@ -2815,9 +2815,10 @@ tr.is-revoked td {
    controls, compact nav rows, and table wrappers. */
 
 :root {
-  --oc-accent-primary: #d84a31;
-  --oc-accent-primary-hover: #c24028;
+  --oc-accent-primary: #c24028;
+  --oc-accent-primary-hover: #9c3222;
   --oc-accent-primary-deep: #9c3222;
+  --oc-text-link: #9c3222;
   --oc-bg-recessed: color-mix(
     in oklch,
     var(--oc-bg-page) 94%,
@@ -2857,6 +2858,10 @@ tr.is-revoked td {
 }
 
 [data-theme="dark"] {
+  --oc-accent-primary: #f5654a;
+  --oc-accent-primary-hover: #e05540;
+  --oc-accent-primary-deep: #b23a28;
+  --oc-text-link: #ff8d77;
   --oc-bg-recessed: color-mix(in oklch, var(--oc-bg-page) 86%, black);
   --oc-surface-card: rgb(25 25 28 / 0.72);
   --oc-surface-card-strong: rgb(25 25 28 / 0.9);

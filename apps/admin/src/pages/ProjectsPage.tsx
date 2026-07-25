@@ -33,14 +33,6 @@ export function ProjectsPage({ me }: { me: Me }) {
   const isAdmin = me.role === "admin";
   const rows = projects.data?.projects ?? [];
   const total = projects.data?.total ?? 0;
-  const visibleFlagCount = rows.reduce(
-    (sum, project) => sum + project.flagCount,
-    0,
-  );
-  const visibleEnvironmentCount = rows.reduce(
-    (sum, project) => sum + project.environmentCount,
-    0,
-  );
   const pageCount = Math.ceil(total / PAGE_SIZE);
   const query = search.trim().toLowerCase();
   const visible = query
@@ -50,6 +42,14 @@ export function ProjectsPage({ me }: { me: Me }) {
           p.key.toLowerCase().includes(query),
       )
     : rows;
+  const visibleFlagCount = visible.reduce(
+    (sum, project) => sum + project.flagCount,
+    0,
+  );
+  const visibleEnvironmentCount = visible.reduce(
+    (sum, project) => sum + project.environmentCount,
+    0,
+  );
 
   return (
     <section>
