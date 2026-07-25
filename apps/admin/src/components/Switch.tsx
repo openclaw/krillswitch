@@ -18,17 +18,19 @@ export function Switch({
   offLabel?: string;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      className={`flag-toggle ${checked ? "is-on" : ""}`}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-    >
-      <span className="flag-toggle-track" />
-      {checked ? onLabel : offLabel}
-    </button>
+    <label className={`flag-toggle ${checked ? "is-on" : ""}`}>
+      <input
+        className="flag-toggle-control"
+        type="checkbox"
+        role="switch"
+        aria-checked={checked}
+        checked={checked}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+      />
+      <span className="flag-toggle-track" aria-hidden="true" />
+      <span className="flag-toggle-copy">{checked ? onLabel : offLabel}</span>
+    </label>
   );
 }

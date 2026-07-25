@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, type Me, type ProjectSummary } from "../api";
-import { FolderIcon } from "../components/brand";
+import { FolderIcon, LayersIcon, ListIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
@@ -33,6 +33,14 @@ export function ProjectsPage({ me }: { me: Me }) {
   const isAdmin = me.role === "admin";
   const rows = projects.data?.projects ?? [];
   const total = projects.data?.total ?? 0;
+  const visibleFlagCount = rows.reduce(
+    (sum, project) => sum + project.flagCount,
+    0,
+  );
+  const visibleEnvironmentCount = rows.reduce(
+    (sum, project) => sum + project.environmentCount,
+    0,
+  );
   const pageCount = Math.ceil(total / PAGE_SIZE);
   const query = search.trim().toLowerCase();
   const visible = query
@@ -46,10 +54,43 @@ export function ProjectsPage({ me }: { me: Me }) {
   return (
     <section>
       <header className="page-header">
-        <div className="page-title-row">
-          <h1>Projects</h1>
+        <div className="page-header-content">
+          <div className="page-title-row">
+            <h1>Projects</h1>
+            {projects.isSuccess && total > 0 && (
+              <span className="title-count">{total}</span>
+            )}
+          </div>
           {projects.isSuccess && total > 0 && (
-            <span className="title-count">{total}</span>
+            <div className="summary-strip page-header-summary">
+              <div className="summary-metric">
+                <span className="summary-metric-icon" aria-hidden="true">
+                  <FolderIcon />
+                </span>
+                <span className="summary-metric-copy">
+                  <strong>{total}</strong>
+                  <small>Projects</small>
+                </span>
+              </div>
+              <div className="summary-metric">
+                <span className="summary-metric-icon" aria-hidden="true">
+                  <ListIcon />
+                </span>
+                <span className="summary-metric-copy">
+                  <strong>{visibleFlagCount}</strong>
+                  <small>Flags on page</small>
+                </span>
+              </div>
+              <div className="summary-metric">
+                <span className="summary-metric-icon" aria-hidden="true">
+                  <LayersIcon />
+                </span>
+                <span className="summary-metric-copy">
+                  <strong>{visibleEnvironmentCount}</strong>
+                  <small>Environments</small>
+                </span>
+              </div>
+            </div>
           )}
         </div>
         {projects.isSuccess && total > 0 && (

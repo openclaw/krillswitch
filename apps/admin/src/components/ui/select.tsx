@@ -15,6 +15,7 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
+        "select-trigger",
         "inline-flex h-8 w-full cursor-pointer appearance-none items-center justify-between gap-2",
         "rounded-sm border border-input bg-card px-[11px] text-sm text-foreground outline-none",
         "transition-[border-color,box-shadow] duration-150",
