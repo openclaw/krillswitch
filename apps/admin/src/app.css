@@ -15,8 +15,8 @@
   --oc-bg-page: #f6f5f3;
   --oc-bg-surface: #eceae6;
   --oc-bg-elevated: #ffffff;
-  --oc-accent-primary: #d84a31;
-  --oc-accent-primary-hover: #c24028;
+  --oc-accent-primary: #c24028;
+  --oc-accent-primary-hover: #9c3222;
   --oc-accent-primary-deep: #9c3222;
   --oc-accent-secondary: #14806e;
   --oc-accent-secondary-deep: #0f6355;
@@ -31,7 +31,7 @@
   --oc-surface-interactive-hover: rgb(23 23 26 / 0.14);
   --oc-surface-accent-soft: rgb(216 74 49 / 0.12);
   --oc-surface-secondary-soft: rgb(20 128 110 / 0.13);
-  --oc-focus-ring: rgb(20 128 110 / 0.58);
+  --oc-focus-ring: #0f6355;
   --oc-shadow-surface: 0 1px 2px rgb(0 0 0 / 0.12);
   --oc-shadow-elevated: 0 8px 24px -6px rgb(0 0 0 / 0.18);
   --oc-shadow-pop: 0 18px 44px -16px rgb(0 0 0 / 0.28);
@@ -69,9 +69,9 @@
 
   /* State. -fg is the legible text/icon color, -bg the tint
      behind it. Off (flag, neutral) is never red. */
-  --ok: #16a34a;
+  --ok: #166534;
   --ok-bg: rgb(34 197 94 / 0.1);
-  --warn: #d97706;
+  --warn: #92400e;
   --warn-bg: rgb(245 158 11 / 0.1);
   --danger: #dc2626;
   --danger-bg: rgb(239 68 68 / 0.1);
@@ -141,7 +141,9 @@
   --danger: #ef4444;
   --danger-bg: rgb(239 68 68 / 0.12);
   --danger-solid: #ef4444;
-  --danger-ink: #ffffff;
+  --danger-ink: #101012;
+
+  --accent-text: #ff9b87;
 
   --control-track: rgb(237 237 237 / 0.2);
   --control-knob: #ededed;
