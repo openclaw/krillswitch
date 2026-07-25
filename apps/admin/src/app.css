@@ -10,69 +10,87 @@
 :root {
   color-scheme: light;
 
-  /* Surface layering: canvas behind everything, raised panels
-     that lift off it, recessed chrome for nav and headers. */
-  --bg: oklch(0.967 0.004 250);
-  --surface: oklch(0.996 0.001 250);
-  --surface-muted: oklch(0.978 0.004 250);
-  --surface-hover: oklch(0.952 0.005 250);
+  /* Carapace semantic contract. KrillSwitch keeps local aliases below for
+     existing components, but the source of truth is the shared --oc-* shape. */
+  --oc-bg-page: #f6f5f3;
+  --oc-bg-surface: #eceae6;
+  --oc-bg-elevated: #ffffff;
+  --oc-accent-primary: #d84a31;
+  --oc-accent-primary-hover: #c24028;
+  --oc-accent-primary-deep: #9c3222;
+  --oc-accent-secondary: #14806e;
+  --oc-accent-secondary-deep: #0f6355;
+  --oc-text-primary: #17171a;
+  --oc-text-secondary: #46464e;
+  --oc-text-muted: #63636c;
+  --oc-text-on-accent: #ffffff;
+  --oc-border-subtle: rgb(23 23 26 / 0.14);
+  --oc-border-strong: rgb(23 23 26 / 0.24);
+  --oc-border-accent: rgb(216 74 49 / 0.42);
+  --oc-surface-interactive: rgb(23 23 26 / 0.07);
+  --oc-surface-interactive-hover: rgb(23 23 26 / 0.14);
+  --oc-surface-accent-soft: rgb(216 74 49 / 0.12);
+  --oc-surface-secondary-soft: rgb(20 128 110 / 0.13);
+  --oc-focus-ring: rgb(20 128 110 / 0.58);
+  --oc-shadow-surface: 0 1px 2px rgb(0 0 0 / 0.12);
+  --oc-shadow-elevated: 0 8px 24px -6px rgb(0 0 0 / 0.18);
+  --oc-shadow-pop: 0 18px 44px -16px rgb(0 0 0 / 0.28);
+  --oc-radius-surface: 0;
+  --oc-radius-control: 0;
+  --oc-radius-inset: 0;
+  --oc-radius-round: 999px;
+  --oc-duration-fast: 160ms;
+  --oc-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
-  --ink: oklch(0.27 0.02 262);
-  --ink-muted: oklch(0.45 0.02 262);
-  /* Small uppercase labels and placeholders use --ink-faint; kept dark
-     enough to clear WCAG AA (≥4.5:1) on every surface, not a light gray. */
-  --ink-faint: oklch(0.52 0.018 262);
+  --bg: var(--oc-bg-page);
+  --surface: var(--oc-bg-elevated);
+  --surface-muted: var(--oc-bg-surface);
+  --surface-hover: var(--oc-surface-interactive-hover);
+
+  --ink: var(--oc-text-primary);
+  --ink-muted: var(--oc-text-secondary);
+  --ink-faint: var(--oc-text-muted);
   /* Hairline outline that crisps the brand mark on the light surface. */
-  --brand-outline: oklch(0.27 0.05 262 / 0.5);
+  --brand-outline: rgb(23 23 26 / 0.5);
 
-  /* Cobalt accent. -fill backs primary buttons/active states,
-     -text is the accent-colored text on bg (kept ≥4.5:1),
-     -soft tints selected rows and active nav. */
-  --accent: oklch(0.54 0.2 262);
-  --accent-hover: oklch(0.48 0.21 262);
-  --accent-ink: oklch(0.99 0 0);
-  --accent-text: oklch(0.51 0.21 262);
-  --accent-soft: color-mix(in oklch, var(--accent), transparent 90%);
-  --accent-ring: color-mix(in oklch, var(--accent), transparent 50%);
+  --accent: var(--oc-accent-primary);
+  --accent-hover: var(--oc-accent-primary-hover);
+  --accent-ink: var(--oc-text-on-accent);
+  --accent-text: var(--oc-accent-primary-deep);
+  --accent-soft: var(--oc-surface-accent-soft);
+  --accent-ring: var(--oc-focus-ring);
 
   /* viewer role accent (purple) */
-  --viewer: oklch(0.52 0.19 295);
-  --viewer-bg: color-mix(in oklch, var(--viewer), transparent 88%);
+  --viewer: #6f3db8;
+  --viewer-bg: rgb(111 61 184 / 0.12);
 
-  /* decorative backdrop: faint blue glow + dot grid */
-  --bg-glow: color-mix(in oklch, var(--accent), transparent 84%);
-  --dot: color-mix(in oklch, var(--ink) 9%, transparent);
-
-  --line: oklch(0.9 0.005 250);
-  --line-strong: oklch(0.83 0.007 250);
+  --line: var(--oc-border-subtle);
+  --line-strong: var(--oc-border-strong);
 
   /* State. -fg is the legible text/icon color, -bg the tint
      behind it. Off (flag, neutral) is never red. */
-  --ok: oklch(0.52 0.13 150);
-  --ok-bg: color-mix(in oklch, var(--ok), transparent 90%);
-  --warn: oklch(0.56 0.12 75);
-  --warn-bg: color-mix(in oklch, var(--warn), transparent 90%);
-  --danger: oklch(0.53 0.2 25);
-  --danger-bg: color-mix(in oklch, var(--danger), transparent 90%);
-  --danger-solid: oklch(0.53 0.2 25);
-  --danger-ink: oklch(0.99 0 0);
+  --ok: #16a34a;
+  --ok-bg: rgb(34 197 94 / 0.1);
+  --warn: #d97706;
+  --warn-bg: rgb(245 158 11 / 0.1);
+  --danger: #dc2626;
+  --danger-bg: rgb(239 68 68 / 0.1);
+  --danger-solid: #dc2626;
+  --danger-ink: #ffffff;
 
   /* Controls (replace former hard-coded white). */
-  --control-track: oklch(0.82 0.012 255);
-  --control-knob: oklch(1 0 0);
-  --row-hover: oklch(0.964 0.005 255);
+  --control-track: rgb(23 23 26 / 0.2);
+  --control-knob: #ffffff;
+  --row-hover: var(--oc-surface-interactive);
 
-  --shadow-sm: 0 1px 2px oklch(0.2 0.02 262 / 0.06);
-  --shadow-panel:
-    0 1px 2px oklch(0.2 0.02 262 / 0.05),
-    0 4px 14px -6px oklch(0.2 0.02 262 / 0.08);
-  --shadow-pop:
-    0 10px 30px -8px oklch(0.2 0.02 262 / 0.18), 0 0 0 1px var(--line);
+  --shadow-sm: var(--oc-shadow-surface);
+  --shadow-panel: var(--oc-shadow-elevated);
+  --shadow-pop: var(--oc-shadow-pop), 0 0 0 1px var(--line);
 
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 11px;
-  --r-pill: 999px;
+  --r-sm: var(--oc-radius-control);
+  --r-md: var(--oc-radius-surface);
+  --r-lg: var(--oc-radius-surface);
+  --r-pill: var(--oc-radius-round);
 
   --font-ui: "Manrope", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
@@ -89,48 +107,45 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: oklch(0.2 0.013 262);
-  --surface: oklch(0.245 0.015 262);
-  --surface-muted: oklch(0.175 0.012 262);
-  --surface-hover: oklch(0.29 0.016 262);
+  --oc-bg-page: #101012;
+  --oc-bg-surface: #19191c;
+  --oc-bg-elevated: #202024;
+  --oc-accent-primary: #f5654a;
+  --oc-accent-primary-hover: #e05540;
+  --oc-accent-primary-deep: #b23a28;
+  --oc-accent-secondary: #4fc8ae;
+  --oc-accent-secondary-deep: #2fa48d;
+  --oc-text-primary: #ededed;
+  --oc-text-secondary: #bcbcc4;
+  --oc-text-muted: #9a9aa2;
+  --oc-text-on-accent: #101012;
+  --oc-border-subtle: rgb(154 154 162 / 0.18);
+  --oc-border-strong: rgb(154 154 162 / 0.28);
+  --oc-border-accent: rgb(245 101 74 / 0.4);
+  --oc-surface-interactive: rgb(237 237 237 / 0.08);
+  --oc-surface-interactive-hover: rgb(237 237 237 / 0.16);
+  --oc-surface-accent-soft: rgb(245 101 74 / 0.14);
+  --oc-surface-secondary-soft: rgb(79 200 174 / 0.14);
+  --oc-focus-ring: rgb(79 200 174 / 0.72);
+  --oc-shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4);
+  --oc-shadow-elevated: 0 8px 24px -6px rgb(0 0 0 / 0.52);
+  --oc-shadow-pop: 0 18px 44px -16px rgb(0 0 0 / 0.72);
 
-  --ink: oklch(0.95 0.004 262);
-  --ink-muted: oklch(0.73 0.013 262);
-  --ink-faint: oklch(0.66 0.013 262);
+  --viewer: #c4a0ff;
+  --viewer-bg: rgb(196 160 255 / 0.16);
 
-  --accent: oklch(0.62 0.19 262);
-  --accent-hover: oklch(0.68 0.18 262);
-  --accent-ink: oklch(0.99 0 0);
-  --accent-text: oklch(0.8 0.13 262);
-  --accent-soft: color-mix(in oklch, var(--accent), transparent 82%);
-  --accent-ring: color-mix(in oklch, var(--accent), transparent 40%);
+  --ok: #22c55e;
+  --ok-bg: rgb(34 197 94 / 0.12);
+  --warn: #fbbf24;
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --danger: #ef4444;
+  --danger-bg: rgb(239 68 68 / 0.12);
+  --danger-solid: #ef4444;
+  --danger-ink: #ffffff;
 
-  --viewer: oklch(0.76 0.15 298);
-  --viewer-bg: color-mix(in oklch, var(--viewer), transparent 84%);
-
-  --bg-glow: color-mix(in oklch, var(--accent), transparent 88%);
-  --dot: color-mix(in oklch, var(--ink) 12%, transparent);
-
-  --line: oklch(1 0 0 / 0.1);
-  --line-strong: oklch(1 0 0 / 0.18);
-
-  --ok: oklch(0.74 0.15 150);
-  --ok-bg: color-mix(in oklch, var(--ok), transparent 86%);
-  --warn: oklch(0.8 0.13 82);
-  --warn-bg: color-mix(in oklch, var(--warn), transparent 86%);
-  --danger: oklch(0.69 0.19 25);
-  --danger-bg: color-mix(in oklch, var(--danger), transparent 84%);
-  --danger-solid: oklch(0.55 0.2 25);
-  --danger-ink: oklch(0.99 0 0);
-
-  --control-track: oklch(0.42 0.015 262);
-  --control-knob: oklch(0.93 0.004 262);
-  --row-hover: oklch(0.29 0.016 262);
-
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
-  --shadow-panel:
-    0 1px 2px oklch(0 0 0 / 0.45), 0 8px 22px -8px oklch(0 0 0 / 0.55);
-  --shadow-pop: 0 14px 36px -10px oklch(0 0 0 / 0.65), 0 0 0 1px var(--line);
+  --control-track: rgb(237 237 237 / 0.2);
+  --control-knob: #ededed;
+  --row-hover: var(--oc-surface-interactive);
 }
 
 * {
@@ -141,41 +156,18 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 400 15px / 1.55 var(--font-ui);
-  letter-spacing: -0.005em;
+  font: 400 14px / 1.55 var(--font-ui);
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Decorative backdrop behind the whole app: a faint blue glow (top-right)
-   plus a dot grid, masked to fade toward the edges. */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background: radial-gradient(
-    70rem 52rem at 78% -10%,
-    var(--bg-glow),
-    transparent 62%
-  );
+  content: none;
 }
 
 body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
-  background-size: 26px 26px;
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 36%,
-    #000 38%,
-    transparent 85%
-  );
-  mask-image: radial-gradient(circle at 50% 36%, #000 38%, transparent 85%);
+  content: none;
 }
 
 code {
@@ -185,9 +177,9 @@ code {
 }
 
 h1 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.022em;
+  letter-spacing: 0;
   margin: 0;
 }
 
@@ -234,9 +226,9 @@ input[type="radio"]:focus-visible {
   gap: 7px;
   height: 32px;
   padding: 0 13px;
-  border-radius: var(--r-sm);
+  border-radius: var(--oc-radius-control);
   font: 500 14px var(--font-ui);
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   cursor: pointer;
   transition:
     background-color 150ms ease-out,
@@ -271,7 +263,7 @@ input[type="radio"]:focus-visible {
 .persona-button:focus-visible,
 .rail-link:focus-visible,
 .theme-tab:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--oc-focus-ring);
   outline-offset: 1px;
 }
 
@@ -313,12 +305,12 @@ input[type="radio"]:focus-visible {
 .chip {
   display: inline-block;
   padding: 1px 9px;
-  border-radius: var(--r-pill);
+  border-radius: var(--oc-radius-control);
   border: 1px solid var(--line);
   background: var(--surface-muted);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: -0.003em;
+  letter-spacing: 0;
   color: var(--ink-muted);
 }
 
@@ -361,7 +353,7 @@ input[type="radio"]:focus-visible {
   padding: 2px;
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--oc-radius-control);
   background: var(--bg);
 }
 
@@ -374,7 +366,7 @@ input[type="radio"]:focus-visible {
   height: 22px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--oc-radius-control);
   background: transparent;
   color: var(--ink-muted);
   cursor: pointer;
@@ -444,11 +436,9 @@ input[type="radio"]:focus-visible {
   gap: 18px;
   padding: 32px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--oc-radius-surface);
   background: var(--surface);
-  box-shadow:
-    0 1px 2px oklch(0.2 0.02 262 / 0.05),
-    0 18px 50px -18px oklch(0.2 0.04 262 / 0.22);
+  box-shadow: var(--shadow-panel);
 }
 
 .auth-card-centered {
@@ -461,9 +451,9 @@ input[type="radio"]:focus-visible {
 }
 
 .auth-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .auth-subtitle {
@@ -483,7 +473,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: var(--oc-radius-surface);
 }
 
 .status-disc svg {
@@ -506,7 +496,7 @@ input[type="radio"]:focus-visible {
   text-align: left;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-inset);
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -559,7 +549,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-control);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--accent-text);
@@ -594,7 +584,7 @@ input[type="radio"]:focus-visible {
   gap: 14px;
   padding: 13px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-control);
   background: var(--surface);
   text-align: left;
   cursor: pointer;
@@ -767,10 +757,10 @@ input[type="radio"]:focus-visible {
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  height: 72px;
-  padding: 0 24px;
+  height: 60px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--line);
-  background: var(--surface-muted);
+  background: var(--surface);
 }
 
 .identity {
@@ -792,7 +782,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: var(--oc-radius-round);
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11.5px;
@@ -817,11 +807,11 @@ input[type="radio"]:focus-visible {
 }
 
 .rail {
-  width: 280px;
+  width: 252px;
   flex-shrink: 0;
-  padding: 0 14px 18px;
+  padding: 0 10px 16px;
   border-right: 1px solid var(--line);
-  background: var(--surface-muted);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -832,9 +822,9 @@ input[type="radio"]:focus-visible {
 .rail-header {
   display: flex;
   align-items: center;
-  height: 72px;
-  margin: 0 -14px 12px;
-  padding: 0 20px;
+  height: 60px;
+  margin: 0 -10px 12px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -843,10 +833,10 @@ input[type="radio"]:focus-visible {
 }
 
 .rail-group {
-  margin: 16px 8px 4px;
+  margin: 16px 8px 5px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
@@ -855,9 +845,10 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 11px;
-  border-radius: var(--r-md);
-  font-size: 15px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--oc-radius-control);
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-muted);
   text-decoration: none;
@@ -876,10 +867,12 @@ input[type="radio"]:focus-visible {
 .rail-link:hover {
   background: var(--surface-hover);
   color: var(--ink);
+  border-color: var(--line);
 }
 
 .rail-link.active {
   background: var(--accent-soft);
+  border-color: var(--oc-border-accent);
   color: var(--accent-text);
   font-weight: 600;
 }
@@ -887,7 +880,7 @@ input[type="radio"]:focus-visible {
 .content {
   flex: 1;
   min-width: 0;
-  padding: 30px 36px 64px;
+  padding: 24px 28px 56px;
 }
 
 /* Cap and center the working area so tables and rows don't sprawl across
@@ -909,7 +902,9 @@ input[type="radio"]:focus-visible {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
 
 .page-eyebrow {
@@ -930,7 +925,7 @@ input[type="radio"]:focus-visible {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14px;
   table-layout: fixed;
 }
 
@@ -939,7 +934,7 @@ input[type="radio"]:focus-visible {
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-surface);
   background: var(--surface);
   box-shadow: var(--shadow-panel);
   transition: box-shadow 150ms ease-out;
@@ -1076,7 +1071,7 @@ input[type="radio"]:focus-visible {
   min-width: 24px;
   height: 24px;
   padding: 0 7px;
-  border-radius: var(--r-pill);
+  border-radius: var(--oc-radius-control);
   background: var(--surface-muted);
   border: 1px solid var(--line);
   color: var(--ink-muted);
@@ -1289,7 +1284,7 @@ input[type="radio"]:focus-visible {
 .disclosure-title {
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.012em;
+  letter-spacing: 0;
 }
 
 .disclosure-meta {
@@ -1396,7 +1391,7 @@ input[type="radio"]:focus-visible {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 
@@ -1473,7 +1468,7 @@ input[type="radio"]:focus-visible {
   margin: 0 0 4px;
   font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.014em;
+  letter-spacing: 0;
 }
 
 .section-hint {
@@ -2176,7 +2171,7 @@ tr.is-revoked td {
   margin: 0 0 5px;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 
@@ -2212,7 +2207,7 @@ tr.is-revoked td {
   border: 1px solid var(--line);
   background: var(--surface-muted);
   font: 500 11.5px var(--font-mono);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--ink-muted);
 }
 
