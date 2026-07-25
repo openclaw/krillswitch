@@ -78,7 +78,7 @@ export function ProjectsPage({ me }: { me: Me }) {
                 </span>
                 <span className="summary-metric-copy">
                   <strong>{visibleFlagCount}</strong>
-                  <small>Flags on page</small>
+                  <small>Flags shown</small>
                 </span>
               </div>
               <div className="summary-metric">
@@ -87,7 +87,7 @@ export function ProjectsPage({ me }: { me: Me }) {
                 </span>
                 <span className="summary-metric-copy">
                   <strong>{visibleEnvironmentCount}</strong>
-                  <small>Environments</small>
+                  <small>Envs shown</small>
                 </span>
               </div>
             </div>

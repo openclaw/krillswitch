@@ -3084,23 +3084,12 @@ body {
 }
 
 .rail-footer {
-  display: grid;
+  display: flex;
   min-width: 0;
   min-height: 3.5rem;
-  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--oc-space-2);
   padding: var(--oc-space-2) var(--oc-space-3);
   border-top: 1px solid var(--oc-border-subtle);
-}
-
-.rail-presence {
-  width: 0.625rem;
-  height: 0.625rem;
-  border: 2px solid var(--oc-bg-surface);
-  border-radius: var(--oc-radius-round);
-  background: var(--ok);
-  box-shadow: 0 0 0 1px color-mix(in oklch, var(--ok) 45%, transparent);
 }
 
 .main-col {
@@ -3170,6 +3159,8 @@ h1 {
 }
 
 .content > section > :not(.page-header) {
+  box-sizing: border-box;
+  width: auto;
   margin-right: var(--oc-space-4);
   margin-left: var(--oc-space-4);
 }

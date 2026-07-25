@@ -50,8 +50,8 @@ export function Shell({
             <KrillMark />
           </span>
           <span className="rail-context-copy">
-            <strong>openclaw.ai</strong>
-            <small>Production workspace</small>
+            <strong>KrillSwitch</strong>
+            <small>Admin console</small>
           </span>
           <ChevronDownIcon className="rail-context-chevron" />
         </NavLink>
@@ -82,10 +82,9 @@ export function Shell({
           )}
         </div>
         <footer className="rail-footer">
-          <span className="rail-presence" aria-hidden="true" />
           <span className="rail-footer-copy">
-            <strong>Gateway online</strong>
-            <small>Access protected</small>
+            <strong>{me.user.name}</strong>
+            <small>{me.user.email}</small>
           </span>
         </footer>
       </nav>
