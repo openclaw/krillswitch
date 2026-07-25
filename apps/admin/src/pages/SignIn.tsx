@@ -142,7 +142,9 @@ export function SignIn() {
           )}
 
           <div className="auth-footer">
-            <span className="muted">Local development only.</span>
+            <span className="muted">
+              {hasPersonas ? "Local development only." : "Admin access only."}
+            </span>
             <a
               className="auth-learn"
               href="https://github.com/openclaw/krillswitch"

@@ -13,7 +13,7 @@
   /* Carapace semantic contract. KrillSwitch keeps local aliases below for
      existing components, but the source of truth is the shared --oc-* shape. */
   --oc-bg-page: #f6f5f3;
-  --oc-bg-surface: #eceae6;
+  --oc-bg-surface: #eeeee9;
   --oc-bg-elevated: #ffffff;
   --oc-accent-primary: #c24028;
   --oc-accent-primary-hover: #9c3222;
@@ -82,6 +82,13 @@
   --control-track: rgb(23 23 26 / 0.2);
   --control-knob: #ffffff;
   --row-hover: var(--oc-surface-interactive);
+  --chrome-bg: #19191d;
+  --chrome-bg-hover: #24242a;
+  --chrome-bg-active: rgb(216 74 49 / 0.16);
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-text: #f4f1ea;
+  --chrome-muted: #aaa7a0;
+  --chrome-accent: #ff8d77;
 
   --shadow-sm: var(--oc-shadow-surface);
   --shadow-panel: var(--oc-shadow-elevated);
@@ -148,6 +155,13 @@
   --control-track: rgb(237 237 237 / 0.2);
   --control-knob: #ededed;
   --row-hover: var(--oc-surface-interactive);
+  --chrome-bg: #202024;
+  --chrome-bg-hover: #2a2a30;
+  --chrome-bg-active: rgb(245 101 74 / 0.14);
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-text: #f4f1ea;
+  --chrome-muted: #aaa7a0;
+  --chrome-accent: #ff9b87;
 }
 
 * {
@@ -162,6 +176,15 @@ body {
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--bg), white 2%),
+      var(--bg)
+    )
+    fixed;
 }
 
 body::before {
@@ -720,13 +743,13 @@ input[type="radio"]:focus-visible {
    tight to the artwork, so this renders compact, no padding gaps). Auth
    screens: a compact stacked hero. */
 .brandmark-long .brandmark-img {
-  width: 100%;
-  height: auto;
+  width: auto;
+  height: 34px;
 }
 
 .brandmark-stacked .brandmark-img {
   width: auto;
-  height: 120px;
+  height: 96px;
 }
 
 /* Show the variant that matches the theme resolved on <html> before paint;
@@ -745,6 +768,14 @@ input[type="radio"]:focus-visible {
     drop-shadow(0 -0.7px 0 var(--brand-outline));
 }
 
+[data-theme="light"] .rail .brandmark-img-dark {
+  display: block;
+}
+
+[data-theme="light"] .rail .brandmark-img-light {
+  display: none;
+}
+
 /* --- app shell --- */
 
 .shell {
@@ -759,10 +790,11 @@ input[type="radio"]:focus-visible {
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  height: 60px;
-  padding: 0 20px;
+  height: 56px;
+  padding: 0 24px;
   border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  background: color-mix(in oklch, var(--surface), transparent 3%);
+  backdrop-filter: blur(10px);
 }
 
 .identity {
@@ -809,14 +841,15 @@ input[type="radio"]:focus-visible {
 }
 
 .rail {
-  width: 252px;
+  width: 224px;
   flex-shrink: 0;
-  padding: 0 10px 16px;
-  border-right: 1px solid var(--line);
-  background: var(--surface);
+  padding: 0 12px 16px;
+  border-right: 1px solid var(--chrome-line);
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 /* Generous brand header at the top of the rail; its bottom border lines up
@@ -824,10 +857,10 @@ input[type="radio"]:focus-visible {
 .rail-header {
   display: flex;
   align-items: center;
-  height: 60px;
-  margin: 0 -10px 12px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line);
+  height: 56px;
+  margin: 0 -12px 14px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--chrome-line);
 }
 
 .rail-header:hover .brandmark-img {
@@ -835,24 +868,24 @@ input[type="radio"]:focus-visible {
 }
 
 .rail-group {
-  margin: 16px 8px 5px;
+  margin: 18px 8px 6px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--chrome-muted);
 }
 
 .rail-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border: 1px solid transparent;
   border-radius: var(--oc-radius-control);
   font-size: 14px;
   font-weight: 500;
-  color: var(--ink-muted);
+  color: var(--chrome-muted);
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -867,28 +900,28 @@ input[type="radio"]:focus-visible {
 }
 
 .rail-link:hover {
-  background: var(--surface-hover);
-  color: var(--ink);
-  border-color: var(--line);
+  background: var(--chrome-bg-hover);
+  color: var(--chrome-text);
+  border-color: var(--chrome-line);
 }
 
 .rail-link.active {
-  background: var(--accent-soft);
-  border-color: var(--oc-border-accent);
-  color: var(--accent-text);
+  background: var(--chrome-bg-active);
+  border-color: color-mix(in oklch, var(--chrome-accent), transparent 60%);
+  color: var(--chrome-accent);
   font-weight: 600;
 }
 
 .content {
   flex: 1;
   min-width: 0;
-  padding: 24px 28px 56px;
+  padding: 30px 32px 64px;
 }
 
 /* Cap and center the working area so tables and rows don't sprawl across
    ultra-wide monitors (keys would float far from their actions). */
 .content > section {
-  max-width: 1160px;
+  max-width: 1088px;
   margin: 0 auto;
 }
 
@@ -902,10 +935,10 @@ input[type="radio"]:focus-visible {
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -938,8 +971,17 @@ input[type="radio"]:focus-visible {
   border: 1px solid var(--line);
   border-radius: var(--oc-radius-surface);
   background: var(--surface);
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 18px 38px -34px rgb(0 0 0 / 0.45);
   transition: box-shadow 150ms ease-out;
+}
+
+.table-frame::before {
+  content: "";
+  position: sticky;
+  left: 0;
+  display: block;
+  height: 2px;
+  background: var(--accent);
 }
 
 .table-frame.can-scroll-left.can-scroll-right {
@@ -981,19 +1023,24 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding: 10px 14px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--line-strong);
 }
 
 .data-table td {
-  height: 42px;
-  padding: 6px 14px;
+  height: 48px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+  transition: background-color 120ms ease-out;
 }
 
 .data-table tbody tr:hover td {
   background: var(--row-hover);
+}
+
+.data-table tbody tr:hover td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .data-table tbody tr:last-child td {
@@ -1121,7 +1168,8 @@ input[type="radio"]:focus-visible {
 }
 
 .table-link:hover {
-  text-decoration: underline;
+  color: var(--accent);
+  text-decoration: none;
 }
 
 /* Whole-row click: the primary link's hit area stretches over the row (the
@@ -2374,7 +2422,7 @@ tr.is-revoked td {
     flex-direction: row;
     align-items: center;
     border-right: none;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--chrome-line);
     padding: 6px 8px;
     overflow-x: auto;
   }
@@ -2390,7 +2438,7 @@ tr.is-revoked td {
 
   .rail-header .brandmark-img {
     width: auto;
-    height: 26px;
+    height: 24px;
   }
 
   .rail-group {
@@ -2400,12 +2448,13 @@ tr.is-revoked td {
   }
 
   .content {
-    padding: 16px;
+    padding: 18px 16px 48px;
   }
 
   .page-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 14px;
   }
 
   .header-actions {
@@ -2443,6 +2492,146 @@ tr.is-revoked td {
 
   .data-table td {
     height: 44px;
+  }
+
+  .table-frame-projects,
+  .table-frame-flags {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .table-frame-projects::before,
+  .table-frame-flags::before {
+    content: none;
+  }
+
+  .table-frame-projects .data-table,
+  .table-frame-projects thead,
+  .table-frame-projects tbody,
+  .table-frame-projects tr,
+  .table-frame-projects th,
+  .table-frame-projects td,
+  .table-frame-flags .data-table,
+  .table-frame-flags thead,
+  .table-frame-flags tbody,
+  .table-frame-flags tr,
+  .table-frame-flags th,
+  .table-frame-flags td {
+    display: block;
+  }
+
+  .table-frame-projects thead,
+  .table-frame-flags thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .table-frame-projects .data-table,
+  .table-frame-flags .data-table {
+    min-width: 0;
+  }
+
+  .table-frame-projects tbody,
+  .table-frame-flags tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .table-frame-projects tr,
+  .table-frame-flags tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 18px 32px -28px rgb(0 0 0 / 0.45);
+  }
+
+  .table-frame-projects td,
+  .table-frame-flags td {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .table-frame-projects tbody tr:hover td,
+  .table-frame-flags tbody tr:hover td {
+    background: transparent;
+  }
+
+  .table-frame-projects tbody tr:hover td:first-child,
+  .table-frame-flags tbody tr:hover td:first-child {
+    box-shadow: none;
+  }
+
+  .table-frame-projects .data-table tbody tr td:first-child,
+  .table-frame-flags .data-table tbody tr td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .table-frame-projects td:nth-child(n + 2),
+  .table-frame-flags td:nth-child(n + 2) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .table-frame-projects td:nth-child(n + 2)::before,
+  .table-frame-flags td:nth-child(n + 2)::before {
+    color: var(--ink-faint);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .table-frame-projects td:nth-child(2)::before {
+    content: "Key";
+  }
+
+  .table-frame-projects td:nth-child(3)::before {
+    content: "Flags";
+  }
+
+  .table-frame-projects td:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+
+  .table-frame-projects td:nth-child(4)::before {
+    content: "Last change";
+  }
+
+  .table-frame-flags td:nth-child(2)::before {
+    content: "Key";
+  }
+
+  .table-frame-flags td:nth-child(3)::before {
+    content: "Kind";
+  }
+
+  .table-frame-flags td:nth-child(4)::before {
+    content: "State";
+  }
+
+  .table-frame-flags .td-state,
+  .table-frame-flags .th-state {
+    width: auto;
+  }
+
+  .cell-sub,
+  .flag-description {
+    max-width: none;
   }
 
   .flag-toggle {
