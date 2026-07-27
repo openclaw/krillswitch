@@ -33,14 +33,14 @@ export function MembersPage({ me }: { me: Me }) {
         <TableSkeleton
           columns={3}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-access"
+          frameClassName="oc-table-wrap-access"
         />
       )}
       {members.isError && <p role="alert">Failed to load members.</p>}
       {members.isSuccess && (
         <>
-          <TableFrame className="table-frame-access">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-access">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>

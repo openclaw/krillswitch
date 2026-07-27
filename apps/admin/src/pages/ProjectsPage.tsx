@@ -119,7 +119,7 @@ export function ProjectsPage({ me }: { me: Me }) {
         <TableSkeleton
           columns={4}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-projects"
+          frameClassName="oc-table-wrap-projects"
         />
       )}
       {projects.isError && <p role="alert">Failed to load projects.</p>}
@@ -175,8 +175,8 @@ function ProjectsTable({
   }
 
   return (
-    <TableFrame className="table-frame-projects">
-      <table className="data-table">
+    <TableFrame className="oc-table-wrap-projects">
+      <table className="oc-table">
         <thead>
           <tr>
             <th>Name</th>

@@ -62,7 +62,7 @@ export function TokensPage() {
         <TableSkeleton
           columns={5}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-tokens"
+          frameClassName="oc-table-wrap-tokens"
         />
       )}
       {tokensQuery.isError && <p role="alert">Failed to load tokens.</p>}
@@ -74,8 +74,8 @@ export function TokensPage() {
       )}
       {tokensQuery.isSuccess && tokens.length > 0 && (
         <>
-          <TableFrame className="table-frame-tokens">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-tokens">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>

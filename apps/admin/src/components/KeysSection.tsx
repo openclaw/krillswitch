@@ -69,8 +69,8 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
           Deleting the environment failed.
         </p>
       )}
-      <TableFrame className="table-frame-keys">
-        <table className="data-table">
+      <TableFrame className="oc-table-wrap-keys">
+        <table className="oc-table">
           <thead>
             <tr>
               <th>Environment</th>

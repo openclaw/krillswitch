@@ -157,7 +157,7 @@ function FlagTable({
   });
 
   if (flags.isPending) {
-    return <TableSkeleton columns={4} frameClassName="table-frame-flags" />;
+    return <TableSkeleton columns={4} frameClassName="oc-table-wrap-flags" />;
   }
   if (flags.isError) {
     return <p role="alert">Failed to load flags.</p>;
@@ -187,8 +187,8 @@ function FlagTable({
   }
 
   return (
-    <TableFrame className="table-frame-flags">
-      <table className="data-table">
+    <TableFrame className="oc-table-wrap-flags">
+      <table className="oc-table">
         <thead>
           <tr>
             <th>Name</th>

@@ -105,7 +105,7 @@ export function ChangeLogPage() {
         <TableSkeleton
           columns={5}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-changelog"
+          frameClassName="oc-table-wrap-changelog"
         />
       )}
       {log.isError && <p role="alert">Failed to load the change log.</p>}
@@ -137,8 +137,8 @@ export function ChangeLogPage() {
         ))}
       {log.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="table-frame-changelog">
-            <table className="data-table changelog-table">
+          <TableFrame className="oc-table-wrap-changelog">
+            <table className="oc-table changelog-table">
               <thead>
                 <tr>
                   <th>When</th>

@@ -64,8 +64,8 @@ export function VariationsEditor({
       <p className="section-hint">
         Choose the variation returned for each fallback case.
       </p>
-      <TableFrame className="table-frame-variations">
-        <table className="data-table variations-table">
+      <TableFrame className="oc-table-wrap-variations">
+        <table className="oc-table variations-table">
           <thead>
             <tr>
               <th>Name</th>

@@ -203,7 +203,7 @@ function MintedTokensSection({ userId }: { userId: string }) {
         <TableSkeleton
           columns={5}
           rows={5}
-          frameClassName="table-frame-tokens"
+          frameClassName="oc-table-wrap-tokens"
         />
       )}
       {tokensQuery.isError && <p role="alert">Failed to load tokens.</p>}
@@ -215,8 +215,8 @@ function MintedTokensSection({ userId }: { userId: string }) {
       )}
       {tokensQuery.isSuccess && tokens.length > 0 && (
         <>
-          <TableFrame className="table-frame-tokens">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-tokens">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -274,7 +274,7 @@ function AuditHistorySection({ userId }: { userId: string }) {
         <TableSkeleton
           columns={3}
           rows={5}
-          frameClassName="table-frame-audit"
+          frameClassName="oc-table-wrap-audit"
         />
       )}
       {logQuery.isError && <p role="alert">Failed to load history.</p>}
@@ -286,8 +286,8 @@ function AuditHistorySection({ userId }: { userId: string }) {
       )}
       {logQuery.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="table-frame-audit">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-audit">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>When</th>

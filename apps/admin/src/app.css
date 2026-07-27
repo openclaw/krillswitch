@@ -808,25 +808,7 @@ input[type="radio"]:focus-visible {
 
 /* --- tables --- */
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  table-layout: fixed;
-}
-
-.table-frame {
-  position: relative;
-  width: 100%;
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--oc-radius-surface);
-  background: var(--surface);
-  box-shadow: 0 18px 38px -34px rgb(0 0 0 / 0.45);
-  transition: box-shadow 150ms ease-out;
-}
-
-.table-frame::before {
+.oc-table-wrap::before {
   content: "";
   position: sticky;
   left: 0;
@@ -835,35 +817,35 @@ input[type="radio"]:focus-visible {
   background: var(--accent);
 }
 
-.table-frame.can-scroll-left.can-scroll-right {
+.oc-table-wrap.can-scroll-left.can-scroll-right {
   box-shadow:
     var(--shadow-panel),
     inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%),
     inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame.can-scroll-left:not(.can-scroll-right) {
+.oc-table-wrap.can-scroll-left:not(.can-scroll-right) {
   box-shadow:
     var(--shadow-panel),
     inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame.can-scroll-right:not(.can-scroll-left) {
+.oc-table-wrap.can-scroll-right:not(.can-scroll-left) {
   box-shadow:
     var(--shadow-panel),
     inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame:focus-visible {
+.oc-table-wrap:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.table-frame .data-table {
+.oc-table-wrap .oc-table {
   min-width: 560px;
 }
 
-.data-table th {
+.oc-table th {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -878,7 +860,7 @@ input[type="radio"]:focus-visible {
   border-bottom: 1px solid var(--line-strong);
 }
 
-.data-table td {
+.oc-table td {
   height: 48px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
@@ -886,72 +868,72 @@ input[type="radio"]:focus-visible {
   transition: background-color 120ms ease-out;
 }
 
-.data-table tbody tr:hover td {
+.oc-table tbody tr:hover td {
   background: var(--row-hover);
 }
 
-.data-table tbody tr:hover td:first-child {
+.oc-table tbody tr:hover td:first-child {
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
-.data-table tbody tr:last-child td {
+.oc-table tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* The projects list has only name + key; keep it tight so a short list
    doesn't stretch a single row across the whole pane. */
-.table-frame-compact {
+.oc-table-wrap-compact {
   max-width: 680px;
 }
 
-.table-frame-compact .data-table {
+.oc-table-wrap-compact .oc-table {
   min-width: 420px;
 }
 
-.table-frame-access .data-table,
-.table-frame-tokens .data-table {
+.oc-table-wrap-access .oc-table,
+.oc-table-wrap-tokens .oc-table {
   min-width: 620px;
 }
 
-.table-frame-flags .data-table {
+.oc-table-wrap-flags .oc-table {
   min-width: 820px;
 }
 
-.table-frame-keys .data-table {
+.oc-table-wrap-keys .oc-table {
   min-width: 100%;
 }
 
-.table-frame-changelog .data-table {
+.oc-table-wrap-changelog .oc-table {
   min-width: 1040px;
 }
 
 /* Member profile audit table: When/Action fixed, Target takes the rest and
    ellipsizes (the row links through to the full entry). */
-.table-frame-audit .data-table {
+.oc-table-wrap-audit .oc-table {
   min-width: 640px;
 }
 
-.table-frame-audit td {
+.oc-table-wrap-audit td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.table-frame-audit th:nth-child(1),
-.table-frame-audit td:nth-child(1) {
+.oc-table-wrap-audit th:nth-child(1),
+.oc-table-wrap-audit td:nth-child(1) {
   width: 170px;
 }
 
-.table-frame-audit th:nth-child(2),
-.table-frame-audit td:nth-child(2) {
+.oc-table-wrap-audit th:nth-child(2),
+.oc-table-wrap-audit td:nth-child(2) {
   width: 170px;
 }
 
-.table-frame-variations .data-table {
+.oc-table-wrap-variations .oc-table {
   min-width: 760px;
 }
 
-.table-frame-projects .data-table {
+.oc-table-wrap-projects .oc-table {
   min-width: 720px;
 }
 
@@ -1026,7 +1008,7 @@ input[type="radio"]:focus-visible {
 /* Whole-row click: the primary link's hit area stretches over the row (the
    accessible "stretched link" pattern — still a real, focusable anchor).
    Other in-row controls lift above it with .row-control. */
-.data-table tr.row-link {
+.oc-table tr.row-link {
   position: relative;
   cursor: pointer;
 }
@@ -1372,11 +1354,11 @@ input[type="radio"]:focus-visible {
   max-width: 68ch;
 }
 
-.detail-section .data-table {
+.detail-section .oc-table {
   margin-bottom: 0;
 }
 
-.detail-section .table-frame {
+.detail-section .oc-table-wrap {
   margin-bottom: 10px;
 }
 
@@ -1889,7 +1871,7 @@ input[type="radio"]:focus-visible {
   }
 }
 
-.table-frame-tokens {
+.oc-table-wrap-tokens {
   margin-top: 16px;
 }
 
@@ -2258,40 +2240,40 @@ tr.is-revoked td {
     align-items: center;
   }
 
-  .data-table td {
+  .oc-table td {
     height: 44px;
   }
 
-  .table-frame-projects,
-  .table-frame-flags {
+  .oc-table-wrap-projects,
+  .oc-table-wrap-flags {
     overflow: visible;
     border: 0;
     background: transparent;
     box-shadow: none;
   }
 
-  .table-frame-projects::before,
-  .table-frame-flags::before {
+  .oc-table-wrap-projects::before,
+  .oc-table-wrap-flags::before {
     content: none;
   }
 
-  .table-frame-projects .data-table,
-  .table-frame-projects thead,
-  .table-frame-projects tbody,
-  .table-frame-projects tr,
-  .table-frame-projects th,
-  .table-frame-projects td,
-  .table-frame-flags .data-table,
-  .table-frame-flags thead,
-  .table-frame-flags tbody,
-  .table-frame-flags tr,
-  .table-frame-flags th,
-  .table-frame-flags td {
+  .oc-table-wrap-projects .oc-table,
+  .oc-table-wrap-projects thead,
+  .oc-table-wrap-projects tbody,
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-projects th,
+  .oc-table-wrap-projects td,
+  .oc-table-wrap-flags .oc-table,
+  .oc-table-wrap-flags thead,
+  .oc-table-wrap-flags tbody,
+  .oc-table-wrap-flags tr,
+  .oc-table-wrap-flags th,
+  .oc-table-wrap-flags td {
     display: block;
   }
 
-  .table-frame-projects thead,
-  .table-frame-flags thead {
+  .oc-table-wrap-projects thead,
+  .oc-table-wrap-flags thead {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -2300,19 +2282,19 @@ tr.is-revoked td {
     white-space: nowrap;
   }
 
-  .table-frame-projects .data-table,
-  .table-frame-flags .data-table {
+  .oc-table-wrap-projects .oc-table,
+  .oc-table-wrap-flags .oc-table {
     min-width: 0;
   }
 
-  .table-frame-projects tbody,
-  .table-frame-flags tbody {
+  .oc-table-wrap-projects tbody,
+  .oc-table-wrap-flags tbody {
     display: grid;
     gap: 10px;
   }
 
-  .table-frame-projects tr,
-  .table-frame-flags tr {
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-flags tr {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px 14px;
@@ -2322,31 +2304,31 @@ tr.is-revoked td {
     box-shadow: 0 18px 32px -28px rgb(0 0 0 / 0.45);
   }
 
-  .table-frame-projects td,
-  .table-frame-flags td {
+  .oc-table-wrap-projects td,
+  .oc-table-wrap-flags td {
     height: auto;
     padding: 0;
     border: 0;
     background: transparent;
   }
 
-  .table-frame-projects tbody tr:hover td,
-  .table-frame-flags tbody tr:hover td {
+  .oc-table-wrap-projects tbody tr:hover td,
+  .oc-table-wrap-flags tbody tr:hover td {
     background: transparent;
   }
 
-  .table-frame-projects tbody tr:hover td:first-child,
-  .table-frame-flags tbody tr:hover td:first-child {
+  .oc-table-wrap-projects tbody tr:hover td:first-child,
+  .oc-table-wrap-flags tbody tr:hover td:first-child {
     box-shadow: none;
   }
 
-  .table-frame-projects .data-table tbody tr td:first-child,
-  .table-frame-flags .data-table tbody tr td:first-child {
+  .oc-table-wrap-projects .oc-table tbody tr td:first-child,
+  .oc-table-wrap-flags .oc-table tbody tr td:first-child {
     grid-column: 1 / -1;
   }
 
-  .table-frame-projects td:nth-child(n + 2),
-  .table-frame-flags td:nth-child(n + 2) {
+  .oc-table-wrap-projects td:nth-child(n + 2),
+  .oc-table-wrap-flags td:nth-child(n + 2) {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2355,8 +2337,8 @@ tr.is-revoked td {
     font-size: 13px;
   }
 
-  .table-frame-projects td:nth-child(n + 2)::before,
-  .table-frame-flags td:nth-child(n + 2)::before {
+  .oc-table-wrap-projects td:nth-child(n + 2)::before,
+  .oc-table-wrap-flags td:nth-child(n + 2)::before {
     color: var(--ink-faint);
     font-size: 11px;
     font-weight: 600;
@@ -2364,36 +2346,36 @@ tr.is-revoked td {
     text-transform: uppercase;
   }
 
-  .table-frame-projects td:nth-child(2)::before {
+  .oc-table-wrap-projects td:nth-child(2)::before {
     content: "Key";
   }
 
-  .table-frame-projects td:nth-child(3)::before {
+  .oc-table-wrap-projects td:nth-child(3)::before {
     content: "Flags";
   }
 
-  .table-frame-projects td:nth-child(4) {
+  .oc-table-wrap-projects td:nth-child(4) {
     grid-column: 1 / -1;
   }
 
-  .table-frame-projects td:nth-child(4)::before {
+  .oc-table-wrap-projects td:nth-child(4)::before {
     content: "Last change";
   }
 
-  .table-frame-flags td:nth-child(2)::before {
+  .oc-table-wrap-flags td:nth-child(2)::before {
     content: "Key";
   }
 
-  .table-frame-flags td:nth-child(3)::before {
+  .oc-table-wrap-flags td:nth-child(3)::before {
     content: "Kind";
   }
 
-  .table-frame-flags td:nth-child(4)::before {
+  .oc-table-wrap-flags td:nth-child(4)::before {
     content: "State";
   }
 
-  .table-frame-flags .td-state,
-  .table-frame-flags .th-state {
+  .oc-table-wrap-flags .td-state,
+  .oc-table-wrap-flags .th-state {
     width: auto;
   }
 
@@ -2484,7 +2466,7 @@ tr.is-revoked td {
     padding-bottom: 84px;
   }
 
-  .table-frame-variations {
+  .oc-table-wrap-variations {
     display: none;
   }
 
@@ -2550,6 +2532,20 @@ tr.is-revoked td {
     min-width: 40px;
     height: 40px;
   }
+}
+
+/* --- Console table deltas over Carapace ---
+   Fixed layout keeps long flag keys wrapping inside their column instead of
+   widening it and pushing KIND/STATE off screen; Carapace leaves table-layout
+   to the product because its own specimens use short cells. */
+.oc-table {
+  table-layout: fixed;
+}
+
+/* The page-header kicker is a router link here, not the static <p> Carapace
+   previews, so the app's global anchor underline has to be cleared. */
+.oc-page-header-kicker {
+  text-decoration: none;
 }
 
 /* --- Console frame deltas over Carapace ---
@@ -2674,31 +2670,23 @@ h1 {
   border-radius: var(--oc-radius-control);
 }
 
-.table-frame {
-  border: 1px solid var(--oc-border-subtle);
-  border-radius: var(--oc-radius-surface);
-  background: transparent;
-  box-shadow: none;
-  scrollbar-gutter: stable;
-}
-
-.table-frame::before {
+.oc-table-wrap::before {
   content: none;
 }
 
-.data-table {
+.oc-table {
   min-width: 36rem;
   background: var(--oc-surface-card);
   color: var(--oc-text-secondary);
   font-size: var(--oc-font-size-sm);
 }
 
-.data-table :is(th, td) {
+.oc-table :is(th, td) {
   padding: var(--oc-space-3) var(--oc-space-4);
   border-bottom: 1px solid var(--oc-border-subtle);
 }
 
-.data-table th {
+.oc-table th {
   background: transparent;
   color: var(--oc-text-muted);
   font-family: var(--oc-font-mono);
@@ -2707,15 +2695,15 @@ h1 {
   letter-spacing: 0.05em;
 }
 
-.data-table td {
+.oc-table td {
   height: auto;
 }
 
-.data-table tbody tr:hover td {
+.oc-table tbody tr:hover td {
   background: var(--oc-surface-interactive);
 }
 
-.data-table tbody tr:hover td:first-child {
+.oc-table tbody tr:hover td:first-child {
   box-shadow: none;
 }
 
@@ -2818,8 +2806,8 @@ h1 {
     width: max-content;
   }
 
-  .table-frame-projects tr,
-  .table-frame-flags tr {
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-flags tr {
     border-radius: var(--oc-radius-surface);
     background: var(--oc-surface-card);
     box-shadow: none;
