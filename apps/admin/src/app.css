@@ -1772,13 +1772,6 @@ input[type="radio"]:focus-visible {
   margin-top: 4px;
 }
 
-.form-note {
-  margin: 16px 0 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--ink-muted);
-}
-
 .form-grid > label:not(.enabled-control) {
   color: var(--ink-muted);
   font-weight: 500;
@@ -2079,14 +2072,6 @@ tr.is-revoked td {
   overflow-wrap: anywhere;
 }
 
-.change-detail-json-before {
-  color: var(--ink-muted);
-}
-
-.change-detail-json-after {
-  color: var(--ink);
-}
-
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {
@@ -2113,7 +2098,6 @@ tr.is-revoked td {
   }
 
   .oc-action.btn-github,
-  .persona-button,
   .oc-app-navigation-item {
     min-height: 44px;
   }
@@ -2603,20 +2587,6 @@ h1 {
   font-size: var(--oc-font-size-base);
   line-height: 1.4;
   cursor: pointer;
-}
-
-.flag-toggle-track::after {
-  position: absolute;
-  top: 0.1875rem;
-  left: 0.1875rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: var(--oc-radius-round);
-  background: var(--oc-text-muted);
-  box-shadow: none;
-  transition:
-    background var(--oc-duration-fast) var(--oc-ease-out),
-    transform var(--oc-duration-fast) var(--oc-ease-out);
 }
 
 .flag-toggle:hover .flag-toggle-track {
