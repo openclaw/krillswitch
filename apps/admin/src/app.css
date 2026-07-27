@@ -1,72 +1,69 @@
+/* Carapace is the source of truth for the --oc-* contract: tokens, themes,
+   typography, and the stable plus candidate component layers. Import it
+   first so everything below is an override, never a transcription. base.css
+   is deliberately skipped — app.css owns the global resets (see index.css).
+   Imported unlayered so these rules sit alongside app.css in the cascade and
+   lose to the app rules that follow. */
+@import "@openclaw/carapace/tokens.css";
+@import "@openclaw/carapace/themes.css";
+@import "@openclaw/carapace/themes/product.css";
+@import "@openclaw/carapace/typography.css";
+@import "@openclaw/carapace/components.css";
+@import "@openclaw/carapace/candidate/controls.css";
+@import "@openclaw/carapace/candidate/feedback.css";
+@import "@openclaw/carapace/candidate/data.css";
+@import "@openclaw/carapace/candidate/application.css";
+
 /* ============================================================
-   Tokens — themeable. :root holds the light theme; the dark
-   theme overrides under [data-theme="dark"]. The resolved
-   theme is set on <html data-theme> by an inline script in
-   index.html (no flash) and kept in sync by useThemeMode.
-   Every surface, line, and control reads from a token so both
-   themes work with no hard-coded colors.
+   Tokens — themeable. Carapace themes.css supplies the --oc-*
+   palette for html[data-theme="light"|"dark"]; this file only
+   sets KrillSwitch brand identity and the short local aliases
+   existing components and the Tailwind bridge read from.
+   The resolved theme is set on <html data-theme> by an inline
+   script in index.html (no flash) and kept in sync by
+   useThemeMode.
    ============================================================ */
 
 :root {
   color-scheme: light;
 
-  /* Carapace semantic contract. KrillSwitch keeps local aliases below for
-     existing components, but the source of truth is the shared --oc-* shape. */
-  --oc-bg-page: #f6f5f3;
-  --oc-bg-surface: #eeeee9;
-  --oc-bg-elevated: #ffffff;
+  /* KrillSwitch brand identity over the Carapace palette. Everything else
+     (spacing, type scale, surfaces, borders, shadows, motion) comes from the
+     imported tokens; only these carry product identity. */
+  --oc-accent-secondary: #14806e;
+  --oc-accent-secondary-deep: #0f6355;
+  --oc-surface-secondary-soft: rgb(20 128 110 / 0.13);
+
+  /* Brand accent. Carapace ships coral; KrillSwitch pins its own ember pair. */
   --oc-accent-primary: #c24028;
   --oc-accent-primary-hover: #9c3222;
   --oc-accent-primary-deep: #9c3222;
-  --oc-accent-secondary: #14806e;
-  --oc-accent-secondary-deep: #0f6355;
-  --oc-text-primary: #17171a;
-  --oc-text-secondary: #46464e;
-  --oc-text-muted: #63636c;
-  --oc-text-on-accent: #ffffff;
-  --oc-border-subtle: rgb(23 23 26 / 0.14);
-  --oc-border-strong: rgb(23 23 26 / 0.24);
-  --oc-border-accent: rgb(216 74 49 / 0.42);
-  --oc-surface-interactive: rgb(23 23 26 / 0.07);
-  --oc-surface-interactive-hover: rgb(23 23 26 / 0.14);
-  --oc-surface-accent-soft: rgb(216 74 49 / 0.12);
-  --oc-surface-secondary-soft: rgb(20 128 110 / 0.13);
-  --oc-space-1: 0.25rem;
-  --oc-space-2: 0.5rem;
-  --oc-space-3: 0.75rem;
-  --oc-space-4: 1rem;
-  --oc-space-5: 1.5rem;
-  --oc-space-6: 2rem;
-  --oc-space-7: 3rem;
-  --oc-space-8: 4rem;
-  --oc-font-size-xs: 0.75rem;
-  --oc-font-size-sm: 0.8125rem;
-  --oc-font-size-base: 0.875rem;
-  --oc-font-size-md: 0.9375rem;
-  --oc-font-size-lg: 1.0625rem;
-  --oc-font-size-xl: 1.25rem;
-  --oc-font-size-2xl: 1.5rem;
-  --oc-font-size-3xl: 2rem;
+  --oc-text-link: #9c3222;
+
+  /* Rounded console chrome; Carapace leaves radius to the product. */
+  --oc-radius-surface: 0.5rem;
+  --oc-radius-control: 0.5rem;
+  --oc-radius-inset: 0.25rem;
+
+  /* Translucent card surfaces are local: Carapace only defines these in its
+     clawhub compat layer, which this app does not use. */
+  --oc-surface-card: rgb(255 255 255 / 0.8);
+  --oc-surface-card-strong: rgb(255 255 255 / 0.95);
+
+  /* Product type stack; Carapace ships fallback stacks, not font binaries. */
   --oc-font-display: var(--font-ui);
   --oc-font-body: var(--font-ui);
   --oc-font-mono: var(--font-mono);
-  --oc-content-max: 75rem;
-  --oc-content-narrow: 48rem;
-  --oc-focus-ring: #0f6355;
-  --oc-shadow-surface: 0 1px 2px rgb(0 0 0 / 0.12);
-  --oc-shadow-elevated: 0 8px 24px -6px rgb(0 0 0 / 0.18);
-  --oc-shadow-pop: 0 18px 44px -16px rgb(0 0 0 / 0.28);
-  --oc-radius-surface: 0;
-  --oc-radius-control: 0;
-  --oc-radius-inset: 0;
-  --oc-radius-round: 999px;
-  --oc-duration-fast: 160ms;
-  --oc-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
-  --bg: var(--oc-bg-page);
-  --surface: var(--oc-bg-elevated);
+  /* Local shadow aliases: Carapace names its elevation sm/md/lg. */
+  --oc-shadow-surface: var(--oc-shadow-sm);
+  --oc-shadow-elevated: var(--oc-shadow-md);
+  --oc-shadow-pop: var(--oc-shadow-lg);
+
+  --bg: var(--oc-bg-recessed);
+  --surface: var(--oc-surface-card);
   --surface-muted: var(--oc-bg-surface);
-  --surface-hover: var(--oc-surface-interactive-hover);
+  --surface-hover: var(--oc-control-bg-hover);
 
   --ink: var(--oc-text-primary);
   --ink-muted: var(--oc-text-secondary);
@@ -77,7 +74,7 @@
   --accent: var(--oc-accent-primary);
   --accent-hover: var(--oc-accent-primary-hover);
   --accent-ink: var(--oc-text-on-accent);
-  --accent-text: var(--oc-accent-primary-deep);
+  --accent-text: var(--oc-text-link);
   --accent-soft: var(--oc-surface-accent-soft);
   --accent-ring: var(--oc-focus-ring);
 
@@ -112,7 +109,7 @@
   --chrome-accent: #ff8d77;
 
   --shadow-sm: var(--oc-shadow-surface);
-  --shadow-panel: var(--oc-shadow-elevated);
+  --shadow-panel: none;
   --shadow-pop: var(--oc-shadow-pop), 0 0 0 1px var(--line);
 
   --r-sm: var(--oc-radius-control);
@@ -135,29 +132,17 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --oc-bg-page: #101012;
-  --oc-bg-surface: #19191c;
-  --oc-bg-elevated: #202024;
+  /* Dark palette comes from Carapace themes.css; only the brand secondary,
+     which Carapace does not define, is set per theme here. */
   --oc-accent-primary: #f5654a;
   --oc-accent-primary-hover: #e05540;
   --oc-accent-primary-deep: #b23a28;
+  --oc-text-link: #ff8d77;
   --oc-accent-secondary: #4fc8ae;
   --oc-accent-secondary-deep: #2fa48d;
-  --oc-text-primary: #ededed;
-  --oc-text-secondary: #bcbcc4;
-  --oc-text-muted: #9a9aa2;
-  --oc-text-on-accent: #101012;
-  --oc-border-subtle: rgb(154 154 162 / 0.18);
-  --oc-border-strong: rgb(154 154 162 / 0.28);
-  --oc-border-accent: rgb(245 101 74 / 0.4);
-  --oc-surface-interactive: rgb(237 237 237 / 0.08);
-  --oc-surface-interactive-hover: rgb(237 237 237 / 0.16);
-  --oc-surface-accent-soft: rgb(245 101 74 / 0.14);
   --oc-surface-secondary-soft: rgb(79 200 174 / 0.14);
-  --oc-focus-ring: rgb(79 200 174 / 0.72);
-  --oc-shadow-surface: 0 1px 2px rgb(0 0 0 / 0.4);
-  --oc-shadow-elevated: 0 8px 24px -6px rgb(0 0 0 / 0.52);
-  --oc-shadow-pop: 0 18px 44px -16px rgb(0 0 0 / 0.72);
+  --oc-surface-card: rgb(25 25 28 / 0.72);
+  --oc-surface-card-strong: rgb(25 25 28 / 0.9);
 
   --viewer: #c4a0ff;
   --viewer-bg: rgb(196 160 255 / 0.16);
@@ -2809,73 +2794,10 @@ tr.is-revoked td {
   }
 }
 
-/* --- Carapace application parity overrides ---
-   This layer mirrors the current openclaw/carapace app-surface anatomy instead
-   of the earlier bespoke admin skin: app frame, workspace context, rounded
-   controls, compact nav rows, and table wrappers. */
-
-:root {
-  --oc-accent-primary: #c24028;
-  --oc-accent-primary-hover: #9c3222;
-  --oc-accent-primary-deep: #9c3222;
-  --oc-text-link: #9c3222;
-  --oc-bg-recessed: color-mix(
-    in oklch,
-    var(--oc-bg-page) 94%,
-    var(--oc-text-primary)
-  );
-  --oc-surface-card: rgb(255 255 255 / 0.8);
-  --oc-surface-card-strong: rgb(255 255 255 / 0.95);
-  --oc-control-bg: var(--oc-surface-interactive);
-  --oc-control-bg-hover: var(--oc-surface-interactive-hover);
-  --oc-input-bg: var(--oc-bg-elevated);
-  --oc-input-border: var(--oc-border-subtle);
-  --oc-input-focus-border: var(--oc-accent-secondary);
-  --oc-input-focus-ring: color-mix(
-    in oklch,
-    var(--oc-focus-ring) 34%,
-    transparent
-  );
-  --oc-radius-surface: 0.5rem;
-  --oc-radius-control: 0.5rem;
-  --oc-radius-inset: 0.25rem;
-  --oc-control-min-height: 2.75rem;
-
-  --bg: var(--oc-bg-recessed);
-  --surface: var(--oc-surface-card);
-  --surface-muted: var(--oc-bg-surface);
-  --surface-hover: var(--oc-control-bg-hover);
-  --accent: var(--oc-accent-primary);
-  --accent-hover: var(--oc-accent-primary-hover);
-  --accent-text: var(--oc-text-link);
-  --accent-soft: var(--oc-surface-accent-soft);
-  --line: var(--oc-border-subtle);
-  --line-strong: var(--oc-border-strong);
-  --r-sm: var(--oc-radius-control);
-  --r-md: var(--oc-radius-surface);
-  --r-lg: var(--oc-radius-surface);
-  --shadow-panel: none;
-}
-
-[data-theme="dark"] {
-  --oc-accent-primary: #f5654a;
-  --oc-accent-primary-hover: #e05540;
-  --oc-accent-primary-deep: #b23a28;
-  --oc-text-link: #ff8d77;
-  --oc-bg-recessed: color-mix(in oklch, var(--oc-bg-page) 86%, black);
-  --oc-surface-card: rgb(25 25 28 / 0.72);
-  --oc-surface-card-strong: rgb(25 25 28 / 0.9);
-  --oc-control-bg: var(--oc-surface-interactive);
-  --oc-control-bg-hover: var(--oc-surface-interactive-hover);
-  --oc-input-bg: var(--oc-bg-elevated);
-  --oc-input-border: var(--oc-border-subtle);
-  --oc-input-focus-border: var(--oc-accent-secondary);
-  --oc-input-focus-ring: color-mix(
-    in oklch,
-    var(--oc-focus-ring) 34%,
-    transparent
-  );
-}
+/* --- Carapace application parity ---
+   App-surface anatomy: app frame, workspace context, compact nav rows, and
+   table wrappers. Tokens all resolve from the imports at the top of this file;
+   this layer is structure only. */
 
 body {
   background: var(--oc-bg-recessed);
