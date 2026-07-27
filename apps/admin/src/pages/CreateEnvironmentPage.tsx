@@ -49,7 +49,7 @@ export function CreateEnvironmentPage() {
           if (canSubmit) create.mutate();
         }}
       >
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-env-name">Name</label>
           <input
             id="new-env-name"
@@ -59,7 +59,7 @@ export function CreateEnvironmentPage() {
             onChange={(event) => setName(event.target.value)}
           />
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-env-key">Key</label>
           <input
             id="new-env-key"
@@ -69,7 +69,7 @@ export function CreateEnvironmentPage() {
             value={key}
             onChange={(event) => setKey(event.target.value)}
           />
-          <p className="field-hint">
+          <p className="oc-field-message">
             Environments hold their own flag states and targeting. Creating one
             mints its public evaluation key.
           </p>

@@ -62,7 +62,7 @@ export function MintTokenPage() {
 
       {freshToken ? (
         <div className="form-page">
-          <p className="field-hint">
+          <p className="oc-field-message">
             Copy it now. This token is shown once and can't be retrieved later.
           </p>
           <div className="token-value-row">
@@ -112,7 +112,7 @@ export function MintTokenPage() {
             if (canSubmit) mint.mutate();
           }}
         >
-          <div className="field">
+          <div className="oc-field">
             <label htmlFor="mint-name">Token name</label>
             <input
               id="mint-name"
@@ -123,7 +123,7 @@ export function MintTokenPage() {
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          <div className="field">
+          <div className="oc-field">
             <label htmlFor="mint-role">Role</label>
             <Select
               value={role}
@@ -139,7 +139,7 @@ export function MintTokenPage() {
                 <SelectItem value="viewer">viewer</SelectItem>
               </SelectContent>
             </Select>
-            <p className="field-hint">
+            <p className="oc-field-message">
               Tokens are for the CLI and agents — editor or viewer only, never
               admin. Revocable any time; shown once at mint.
             </p>

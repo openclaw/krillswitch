@@ -150,8 +150,8 @@ export function VariationsEditor({
       <div className="variation-cards">
         {variations.map((variation, index) => (
           <div className="variation-card" key={variation.id ?? `new-${index}`}>
-            <div className="field">
-              <span className="field-label">Name</span>
+            <div className="oc-field">
+              <span className="oc-field-label">Name</span>
               <input
                 className="oc-input"
                 aria-label={`Variation ${index + 1} name`}
@@ -162,8 +162,8 @@ export function VariationsEditor({
                 }
               />
             </div>
-            <div className="field">
-              <span className="field-label">Value ({kind})</span>
+            <div className="oc-field">
+              <span className="oc-field-label">Value ({kind})</span>
               <VariationValueInput
                 kind={kind}
                 index={index}

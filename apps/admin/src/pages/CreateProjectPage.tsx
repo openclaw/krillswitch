@@ -44,7 +44,7 @@ export function CreateProjectPage() {
           if (canSubmit) create.mutate();
         }}
       >
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-project-name">Name</label>
           <input
             id="new-project-name"
@@ -54,7 +54,7 @@ export function CreateProjectPage() {
             onChange={(event) => setName(event.target.value)}
           />
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-project-key">Key</label>
           <input
             id="new-project-key"
@@ -64,7 +64,7 @@ export function CreateProjectPage() {
             value={key}
             onChange={(event) => setKey(event.target.value)}
           />
-          <p className="field-hint">
+          <p className="oc-field-message">
             A short, lowercase identifier used in URLs, the API, and the CLI.
             It's permanent; the display name can change later.
           </p>

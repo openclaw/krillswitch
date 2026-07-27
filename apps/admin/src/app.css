@@ -220,7 +220,9 @@ h1 {
 
 /* Native checkbox/radio tied to the cobalt accent in both themes
    (variation default/off, rollout + enabled toggles). */
-input[type="checkbox"],
+/* :not(.oc-switch) keeps this off Carapace's switch, whose own sizing an
+   element+attribute selector would otherwise outrank. */
+input[type="checkbox"]:not(.oc-switch),
 input[type="radio"] {
   accent-color: var(--accent);
   width: 15px;
@@ -1077,62 +1079,16 @@ input[type="radio"]:focus-visible {
 
 /* --- flag toggle --- */
 
-.flag-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  background: none;
-  font: 500 13px var(--font-ui);
-  color: var(--ink-muted);
-  cursor: pointer;
-}
-
-.flag-toggle.is-on {
+/* Carapace owns the switch box (oc-switch-label + oc-switch). KrillSwitch
+   adds the state word beside it, which carries the on/off color. */
+.flag-toggle.is-on .flag-toggle-copy {
   color: var(--ok);
 }
 
-.flag-toggle:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.flag-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 3px;
-}
-
-.flag-toggle-track {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: var(--r-pill);
-  background: var(--control-track);
-  transition: background-color 150ms ease-out;
-}
-
-.flag-toggle-track::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--control-knob);
-  box-shadow: var(--shadow-sm);
-  transition: transform 150ms ease-out;
-}
-
-.flag-toggle.is-on .flag-toggle-track {
-  background: var(--ok);
-}
-
-.flag-toggle.is-on .flag-toggle-track::after {
-  transform: translateX(14px);
+.flag-toggle .flag-toggle-copy {
+  color: var(--ink-muted);
+  font-size: var(--oc-font-size-sm);
+  font-weight: 500;
 }
 
 /* --- flag detail --- */
@@ -1795,28 +1751,15 @@ input[type="radio"]:focus-visible {
   gap: 20px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field > label,
-.field-label {
+.oc-field > label,
+.oc-field-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-muted);
 }
 
-.field .oc-input {
+.oc-field .oc-input {
   width: 100%;
-}
-
-.field-hint {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-muted);
 }
 
 .field-value {
@@ -2720,29 +2663,6 @@ h1 {
   font-size: var(--oc-font-size-base);
   line-height: 1.4;
   cursor: pointer;
-}
-
-.flag-toggle-control {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.flag-toggle-track {
-  position: relative;
-  width: 2.25rem;
-  height: 1.25rem;
-  flex: 0 0 auto;
-  border: 1px solid var(--oc-input-border);
-  border-radius: var(--oc-radius-round);
-  background: var(--oc-input-bg);
-  transition:
-    background var(--oc-duration-fast) var(--oc-ease-out),
-    border-color var(--oc-duration-fast) var(--oc-ease-out);
 }
 
 .flag-toggle-track::after {

@@ -132,14 +132,14 @@ function RoleSection({
     <section className="detail-section">
       <h2>Role</h2>
       <div className="profile-role">
-        <div className="field">
-          <span className="field-label">Email</span>
+        <div className="oc-field">
+          <span className="oc-field-label">Email</span>
           <span className="field-value">
             <code>{member.email}</code>
             {member.id === me.user.id && <span className="muted"> (you)</span>}
           </span>
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="member-role">Role</label>
           <Select value={current} onValueChange={setRole}>
             <SelectTrigger id="member-role">
