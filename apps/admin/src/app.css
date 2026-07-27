@@ -292,7 +292,7 @@ input[type="radio"]:focus-visible {
 
 .btn:focus-visible,
 .persona-button:focus-visible,
-.rail-link:focus-visible,
+.oc-app-navigation-item:focus-visible,
 .theme-tab:focus-visible {
   outline: 2px solid var(--oc-focus-ring);
   outline-offset: 1px;
@@ -774,17 +774,17 @@ input[type="radio"]:focus-visible {
     drop-shadow(0 -0.7px 0 var(--brand-outline));
 }
 
-[data-theme="light"] .rail .brandmark-img-dark {
+[data-theme="light"] .oc-app-navigation .brandmark-img-dark {
   display: block;
 }
 
-[data-theme="light"] .rail .brandmark-img-light {
+[data-theme="light"] .oc-app-navigation .brandmark-img-light {
   display: none;
 }
 
 /* --- app shell --- */
 
-.shell {
+.oc-app-frame {
   min-height: 100vh;
   display: flex;
   flex-direction: row;
@@ -839,28 +839,9 @@ input[type="radio"]:focus-visible {
   text-overflow: ellipsis;
 }
 
-.main-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.rail {
-  width: 224px;
-  flex-shrink: 0;
-  padding: 0 12px 16px;
-  border-right: 1px solid var(--chrome-line);
-  background: var(--chrome-bg);
-  color: var(--chrome-text);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 /* Generous brand header at the top of the rail; its bottom border lines up
    with the topbar's so a single divider runs across the app. */
-.rail-header {
+.oc-app-navigation-header {
   display: flex;
   align-items: center;
   height: 56px;
@@ -869,64 +850,9 @@ input[type="radio"]:focus-visible {
   border-bottom: 1px solid var(--chrome-line);
 }
 
-.rail-header:hover .brandmark-img {
-  opacity: 0.85;
-}
-
-.rail-group {
-  margin: 18px 8px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--chrome-muted);
-}
-
-.rail-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--oc-radius-control);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--chrome-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-}
-
-.rail-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.rail-link:hover {
-  background: var(--chrome-bg-hover);
-  color: var(--chrome-text);
-  border-color: var(--chrome-line);
-}
-
-.rail-link.active {
-  background: var(--chrome-bg-active);
-  border-color: color-mix(in oklch, var(--chrome-accent), transparent 60%);
-  color: var(--chrome-accent);
-  font-weight: 600;
-}
-
-.content {
-  flex: 1;
-  min-width: 0;
-  padding: 30px 32px 64px;
-}
-
 /* Cap and center the working area so tables and rows don't sprawl across
    ultra-wide monitors (keys would float far from their actions). */
-.content > section {
+.oc-app-content > section {
   max-width: 1088px;
   margin: 0 auto;
 }
@@ -934,7 +860,7 @@ input[type="radio"]:focus-visible {
 /* Form and single-record pages are a narrower centered column so the header
    and body align and the content sits balanced, not pinned to the left of a
    wide table-width section. */
-.content > section:has(.form-page) {
+.oc-app-content > section:has(.form-page) {
   max-width: 720px;
 }
 
@@ -2419,42 +2345,17 @@ tr.is-revoked td {
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {
-  .shell {
+  .oc-app-frame {
     flex-direction: column;
   }
 
-  .rail {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    border-right: none;
-    border-bottom: 1px solid var(--chrome-line);
-    padding: 6px 8px;
-    overflow-x: auto;
-  }
-
   /* In the strip the logo sits inline, not as a full-width header box. */
-  .rail-header {
+  .oc-app-navigation-header {
     height: auto;
     margin: 0 6px 0 4px;
     padding: 4px 6px;
     border-bottom: none;
     flex-shrink: 0;
-  }
-
-  .rail-header .brandmark-img {
-    width: auto;
-    height: 24px;
-  }
-
-  .rail-group {
-    flex: 0 0 auto;
-    margin: 0 4px 0 12px;
-    white-space: nowrap;
-  }
-
-  .content {
-    padding: 18px 16px 48px;
   }
 
   .page-header {
@@ -2481,19 +2382,15 @@ tr.is-revoked td {
   .btn-github,
   .input,
   .persona-button,
-  .rail-link {
+  .oc-app-navigation-item {
     min-height: 44px;
   }
 
   .btn,
   .btn-link,
-  .rail-link {
+  .oc-app-navigation-item {
     display: inline-flex;
     align-items: center;
-  }
-
-  .rail-link {
-    flex: 0 0 auto;
   }
 
   .data-table td {
@@ -2655,10 +2552,6 @@ tr.is-revoked td {
     min-height: 44px;
   }
 
-  .rail-header {
-    min-height: 44px;
-  }
-
   .theme-tab {
     flex-basis: 44px;
     width: 44px;
@@ -2794,228 +2687,35 @@ tr.is-revoked td {
   }
 }
 
+/* --- Console frame deltas over Carapace ---
+   Carapace sizes .oc-app-frame for embedded specimens (min-height: 38rem);
+   the console owns the viewport, so it pins the frame to the window and lets
+   the content column scroll on its own. */
+.oc-app-frame {
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--oc-bg-recessed);
+  color: var(--oc-text-primary);
+}
+
+.oc-app-content {
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The workspace context is a router link here, not the static span Carapace
+   previews, so the app's global anchor underline has to be cleared. */
+.oc-app-navigation-context {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* --- Carapace application parity ---
    App-surface anatomy: app frame, workspace context, compact nav rows, and
    table wrappers. Tokens all resolve from the imports at the top of this file;
    this layer is structure only. */
 
 body {
-  background: var(--oc-bg-recessed);
-}
-
-.shell {
-  display: grid;
-  min-height: 100vh;
-  grid-template-columns: minmax(11.5rem, 13rem) minmax(0, 1fr);
-  overflow: hidden;
-  background: var(--oc-bg-recessed);
-  color: var(--oc-text-primary);
-}
-
-.rail {
-  width: auto;
-  min-width: 0;
-  padding: 0;
-  border-right: 1px solid var(--oc-border-subtle);
-  background: color-mix(in oklch, var(--oc-bg-surface) 88%, var(--oc-bg-page));
-  color: var(--oc-text-primary);
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 0;
-  overflow: hidden;
-}
-
-.rail-header {
-  display: flex;
-  min-height: 3rem;
-  height: auto;
-  align-items: center;
-  gap: var(--oc-space-2);
-  margin: 0;
-  padding: var(--oc-space-2) var(--oc-space-3);
-  border-bottom: 1px solid var(--oc-border-subtle);
-}
-
-.rail-header-icon {
-  display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--oc-radius-control);
-  background: var(--oc-accent-primary);
-  color: var(--oc-text-on-accent);
-}
-
-.rail-header-icon svg {
-  width: 1rem;
-  height: 1rem;
-  stroke-width: 1.85;
-}
-
-.rail-title {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--oc-text-primary);
-  font-family: var(--oc-font-display);
-  font-size: var(--oc-font-size-base);
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-context {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--oc-space-2);
-  margin: var(--oc-space-2);
-  padding: var(--oc-space-1) var(--oc-space-2);
-  border: 0;
-  border-radius: var(--oc-radius-control);
-  background: var(--oc-bg-elevated);
-  color: inherit;
-  text-decoration: none;
-  box-shadow: none;
-}
-
-.rail-context:hover {
-  background: var(--oc-control-bg-hover);
-}
-
-.rail-context:focus-visible {
-  outline: 2px solid var(--oc-focus-ring);
-  outline-offset: 1px;
-}
-
-.rail-context-icon,
-.rail-context-chevron {
-  display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  place-items: center;
-  color: var(--oc-text-muted);
-}
-
-.rail-context-icon svg,
-.rail-context-chevron {
-  width: 1rem;
-  height: 1rem;
-}
-
-.rail-context-copy,
-.rail-footer-copy {
-  display: grid;
-  min-width: 0;
-  gap: 0.125rem;
-}
-
-.rail-context-copy strong,
-.rail-footer-copy strong {
-  overflow: hidden;
-  color: var(--oc-text-primary);
-  font-size: var(--oc-font-size-xs);
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-context-copy small,
-.rail-footer-copy small {
-  overflow: hidden;
-  color: var(--oc-text-muted);
-  font-size: 0.6875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-body {
-  min-width: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: var(--oc-space-2);
-}
-
-.rail-section {
-  display: grid;
-  min-width: 0;
-  gap: var(--oc-space-1);
-}
-
-.rail-section + .rail-section {
-  margin-top: var(--oc-space-3);
-}
-
-.rail-group {
-  margin: 0;
-  padding: 0 var(--oc-space-2) var(--oc-space-1);
-  color: var(--oc-text-muted);
-  font-size: var(--oc-font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.rail-link {
-  display: grid;
-  min-width: 0;
-  min-height: 2rem;
-  grid-template-columns: 1.25rem minmax(0, 1fr);
-  align-items: center;
-  gap: var(--oc-space-2);
-  padding: var(--oc-space-1) var(--oc-space-2);
-  border: 1px solid transparent;
-  border-radius: var(--oc-radius-control);
-  background: transparent;
-  color: var(--oc-text-secondary);
-  font-size: var(--oc-font-size-sm);
-  font-weight: 500;
-}
-
-.rail-link:hover {
-  border-color: transparent;
-  background: var(--oc-control-bg-hover);
-  color: var(--oc-text-primary);
-}
-
-.rail-link.active,
-.rail-link[aria-current="page"] {
-  border-color: var(--oc-border-accent);
-  background: var(--oc-surface-accent-soft);
-  color: var(--oc-text-primary);
-  font-weight: 650;
-}
-
-.rail-link.active .rail-icon,
-.rail-link[aria-current="page"] .rail-icon {
-  color: var(--oc-accent-primary);
-}
-
-.rail-icon {
-  width: 1rem;
-  height: 1rem;
-  color: currentColor;
-}
-
-.rail-link-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-footer {
-  display: flex;
-  min-width: 0;
-  min-height: 3.5rem;
-  align-items: center;
-  padding: var(--oc-space-2) var(--oc-space-3);
-  border-top: 1px solid var(--oc-border-subtle);
-}
-
-.main-col {
-  min-height: 0;
   background: var(--oc-bg-recessed);
 }
 
@@ -3026,20 +2726,6 @@ body {
   border-bottom: 1px solid var(--oc-border-subtle);
   background: var(--oc-bg-recessed);
   backdrop-filter: none;
-}
-
-.content {
-  display: grid;
-  min-height: 0;
-  grid-template-rows: minmax(0, 1fr);
-  overflow: auto;
-  padding: 0;
-}
-
-.content > section {
-  max-width: none;
-  min-height: 100%;
-  margin: 0;
 }
 
 .page-header {
@@ -3080,13 +2766,6 @@ h1 {
   gap: var(--oc-space-2);
 }
 
-.content > section > :not(.page-header) {
-  box-sizing: border-box;
-  width: auto;
-  margin-right: var(--oc-space-4);
-  margin-left: var(--oc-space-4);
-}
-
 .summary-strip {
   display: grid;
   gap: 1px;
@@ -3100,22 +2779,6 @@ h1 {
 .page-header-summary {
   align-self: center;
   grid-template-columns: repeat(auto-fit, minmax(7.5rem, auto));
-}
-
-.content > section > .table-frame,
-.content > section > .empty-state,
-.content > section > .detail-section,
-.content > section > .section-hint,
-.content > section > [role="alert"],
-.content > section > .pagination,
-.content > section > .form-page,
-.content > section > .summary-strip,
-.content > section > .skeleton-block {
-  margin-top: var(--oc-space-3);
-}
-
-.content > section > .summary-strip {
-  margin-top: var(--oc-space-3);
 }
 
 .summary-metric {
@@ -3382,47 +3045,9 @@ h1 {
 }
 
 @media (max-width: 768px) {
-  .shell {
+  .oc-app-frame {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .rail {
-    grid-template-rows: auto auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--oc-border-subtle);
-  }
-
-  .rail-header {
-    min-height: auto;
-    padding: var(--oc-space-3) var(--oc-space-4);
-  }
-
-  .rail-header .brandmark-img {
-    height: 1.5rem;
-  }
-
-  .rail-context,
-  .rail-footer,
-  .rail-group {
-    display: none;
-  }
-
-  .rail-body {
-    display: flex;
-    gap: var(--oc-space-1);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0 var(--oc-space-3) var(--oc-space-3);
-  }
-
-  .rail-section {
-    display: contents;
-  }
-
-  .rail-link {
-    width: max-content;
-    white-space: nowrap;
   }
 
   .topbar {
@@ -3440,25 +3065,11 @@ h1 {
     padding: var(--oc-space-4);
   }
 
-  .content .page-header {
-    padding-right: var(--oc-space-4);
-    padding-left: var(--oc-space-4);
-  }
-
-  .content > section > :not(.page-header) {
-    margin-right: var(--oc-space-3);
-    margin-left: var(--oc-space-3);
-  }
-
   .table-frame-projects tr,
   .table-frame-flags tr {
     border-radius: var(--oc-radius-surface);
     background: var(--oc-surface-card);
     box-shadow: none;
-  }
-
-  .content > section > .summary-strip {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .page-header-summary {

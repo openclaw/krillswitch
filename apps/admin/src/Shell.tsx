@@ -37,58 +37,82 @@ export function Shell({
   }
 
   return (
-    <div className="shell" data-navigation="expanded">
-      <nav className="rail" aria-label="Main">
-        <div className="rail-header">
-          <span className="rail-header-icon" aria-hidden="true">
+    <div className="oc-app-frame" data-navigation="expanded">
+      <nav className="oc-app-navigation" aria-label="Main">
+        <div className="oc-app-navigation-header">
+          <span className="oc-app-navigation-brand" aria-hidden="true">
             <KrillMark />
           </span>
-          <span className="rail-title">KrillSwitch</span>
+          <span className="oc-app-navigation-title">KrillSwitch</span>
         </div>
-        <NavLink to="/" end className="rail-context">
-          <span className="rail-context-icon" aria-hidden="true">
+        <NavLink to="/" end className="oc-app-navigation-context">
+          <span className="oc-app-navigation-context-icon" aria-hidden="true">
             <KrillMark />
           </span>
-          <span className="rail-context-copy">
+          <span className="oc-app-navigation-context-copy">
             <strong>KrillSwitch</strong>
             <small>Admin console</small>
           </span>
-          <ChevronDownIcon className="rail-context-chevron" />
+          <ChevronDownIcon className="oc-app-navigation-context-chevron" />
         </NavLink>
-        <div className="rail-body">
-          <div className="rail-section">
-            <div className="rail-group">Workspace</div>
-            <NavLink to="/" end className="rail-link">
-              <FolderIcon className="rail-icon" />
-              <span className="rail-link-label">Projects</span>
-            </NavLink>
-            <NavLink to="/changelog" className="rail-link">
-              <ListIcon className="rail-icon" />
-              <span className="rail-link-label">Change log</span>
-            </NavLink>
-          </div>
+        <div className="oc-app-navigation-body">
+          <section className="oc-app-navigation-section">
+            <p className="oc-app-navigation-label">Workspace</p>
+            <ul className="oc-app-navigation-list">
+              <li>
+                <NavLink to="/" end className="oc-app-navigation-item">
+                  <FolderIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">Projects</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/changelog" className="oc-app-navigation-item">
+                  <ListIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">
+                    Change log
+                  </span>
+                </NavLink>
+              </li>
+            </ul>
+          </section>
           {me.role === "admin" && (
-            <div className="rail-section">
-              <div className="rail-group">Administration</div>
-              <NavLink to="/access/members" className="rail-link">
-                <UsersIcon className="rail-icon" />
-                <span className="rail-link-label">Members</span>
-              </NavLink>
-              <NavLink to="/access/tokens" className="rail-link">
-                <LockIcon className="rail-icon" />
-                <span className="rail-link-label">Access tokens</span>
-              </NavLink>
-            </div>
+            <section className="oc-app-navigation-section">
+              <p className="oc-app-navigation-label">Administration</p>
+              <ul className="oc-app-navigation-list">
+                <li>
+                  <NavLink
+                    to="/access/members"
+                    className="oc-app-navigation-item"
+                  >
+                    <UsersIcon className="oc-app-navigation-icon" />
+                    <span className="oc-app-navigation-item-label">
+                      Members
+                    </span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/access/tokens"
+                    className="oc-app-navigation-item"
+                  >
+                    <LockIcon className="oc-app-navigation-icon" />
+                    <span className="oc-app-navigation-item-label">
+                      Access tokens
+                    </span>
+                  </NavLink>
+                </li>
+              </ul>
+            </section>
           )}
         </div>
-        <footer className="rail-footer">
-          <span className="rail-footer-copy">
+        <footer className="oc-app-navigation-footer">
+          <span className="oc-app-navigation-footer-copy">
             <strong>{me.user.name}</strong>
             <small>{me.user.email}</small>
           </span>
         </footer>
       </nav>
-      <div className="main-col">
+      <div className="oc-app-main">
         <header className="topbar">
           <div className="identity">
             <ThemeToggle theme={theme} />
@@ -99,12 +123,16 @@ export function Shell({
               <span className="user-name">{me.user.name}</span>
               <RoleChip role={me.role} />
             </div>
-            <button type="button" className="btn btn-quiet" onClick={signOut}>
+            <button
+              type="button"
+              className="oc-action oc-action-ghost"
+              onClick={signOut}
+            >
               Sign out
             </button>
           </div>
         </header>
-        <main className="content">{children}</main>
+        <main className="oc-app-content">{children}</main>
       </div>
     </div>
   );
