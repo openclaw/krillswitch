@@ -1263,14 +1263,12 @@ input[type="radio"]:focus-visible {
   gap: 16px;
 }
 
+/* Accent-tinted count pill; the neutral tone drops Carapace's status dot,
+   which a bare number does not want. */
 .oc-badge.badge-soft {
-  display: inline-block;
-  padding: 1px 9px;
   border-radius: var(--r-pill);
   background: var(--accent-soft);
   color: var(--accent-text);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .flag-meta-sep {
@@ -2488,6 +2486,15 @@ h1 {
 
 .oc-action.btn-danger {
   border-color: var(--danger-solid);
+}
+
+/* Carapace lays the summary strip out with auto-fit minmax(9rem), which at
+   narrow widths fits two columns and leaves a blank cell when the count is
+   odd. Three metrics should stack cleanly on a phone instead. */
+@media (max-width: 640px) {
+  .oc-summary-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* oc-select is full-width by default (form context). As a page-header action

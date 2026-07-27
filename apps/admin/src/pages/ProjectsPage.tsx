@@ -203,7 +203,9 @@ function ProjectsTable({
                 <code>{project.key}</code>
               </td>
               <td className="col-num">
-                <span className="oc-badge badge-soft">{project.flagCount}</span>
+                <span className="oc-badge oc-badge-neutral badge-soft">
+                  {project.flagCount}
+                </span>
               </td>
               <td className="cell-muted">
                 {formatLastChange(project.lastChangeAt)}
