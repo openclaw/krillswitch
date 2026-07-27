@@ -2490,20 +2490,10 @@ h1 {
   border-color: var(--danger-solid);
 }
 
-.select-trigger {
-  min-height: var(--oc-control-min-height);
-  height: auto;
-  padding: var(--oc-space-2) var(--oc-space-3);
-  border-color: var(--oc-input-border);
-  border-radius: var(--oc-radius-control);
-  background: var(--oc-input-bg);
-  color: var(--oc-text-primary);
-  font-size: var(--oc-font-size-base);
-}
-
-.select-trigger:focus-visible {
-  border-color: var(--oc-input-focus-border);
-  box-shadow: 0 0 0 3px var(--oc-input-focus-ring);
+/* Radix draws its own chevron, so drop the right padding oc-select reserves
+   for the native one. Everything else about the box comes from Carapace. */
+.oc-select.select-trigger {
+  padding-right: var(--oc-space-3);
 }
 
 .theme-toggle {
