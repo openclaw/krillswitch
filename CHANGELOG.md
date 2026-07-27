@@ -2,7 +2,7 @@
 
 All notable changes to Krillswitch are documented in this file.
 
-## [Unreleased]
+## [v0.1.2] - 2026-07-27
 
 ### Fixed
 
@@ -62,6 +62,6 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.1.1...HEAD
+[v0.1.2]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.0
