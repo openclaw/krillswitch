@@ -167,7 +167,7 @@ function RoleSection({
           <div>
             <button
               type="button"
-              className="btn btn-primary"
+              className="oc-action oc-action-primary"
               disabled={save.isPending}
               onClick={() => save.mutate()}
             >

@@ -48,7 +48,7 @@ export function CreateProjectPage() {
           <label htmlFor="new-project-name">Name</label>
           <input
             id="new-project-name"
-            className="input"
+            className="oc-input"
             placeholder="ClawHub"
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -58,7 +58,7 @@ export function CreateProjectPage() {
           <label htmlFor="new-project-key">Key</label>
           <input
             id="new-project-key"
-            className="input input-mono"
+            className="oc-input input-mono"
             placeholder="e.g. clawhub"
             autoComplete="off"
             value={key}
@@ -77,12 +77,12 @@ export function CreateProjectPage() {
         <div className="form-actions">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="oc-action oc-action-primary"
             disabled={!canSubmit}
           >
             Create project
           </button>
-          <Link className="btn btn-quiet btn-link" to="/">
+          <Link className="oc-action oc-action-ghost btn-link" to="/">
             Cancel
           </Link>
         </div>

@@ -79,7 +79,7 @@ export function VariationsEditor({
               <tr key={variation.id ?? `new-${index}`}>
                 <td>
                   <input
-                    className="input"
+                    className="oc-input"
                     aria-label={`Variation ${index + 1} name`}
                     value={variation.name}
                     disabled={disabled}
@@ -133,7 +133,7 @@ export function VariationsEditor({
                   <td className="td-remove">
                     <button
                       type="button"
-                      className="btn btn-quiet"
+                      className="oc-action oc-action-secondary"
                       aria-label={`Remove variation ${index + 1}`}
                       disabled={variations.length <= 1}
                       onClick={() => removeVariation(index)}
@@ -153,7 +153,7 @@ export function VariationsEditor({
             <div className="field">
               <span className="field-label">Name</span>
               <input
-                className="input"
+                className="oc-input"
                 aria-label={`Variation ${index + 1} name`}
                 value={variation.name}
                 disabled={disabled}
@@ -205,7 +205,7 @@ export function VariationsEditor({
             {!disabled && (
               <button
                 type="button"
-                className="btn btn-quiet variation-card-remove"
+                className="oc-action oc-action-ghost variation-card-remove"
                 aria-label={`Remove variation ${index + 1}`}
                 disabled={variations.length <= 1}
                 onClick={() => removeVariation(index)}
@@ -217,7 +217,7 @@ export function VariationsEditor({
         ))}
       </div>
       {!disabled && (
-        <button type="button" className="btn btn-quiet" onClick={addVariation}>
+        <button type="button" className="oc-action oc-action-secondary" onClick={addVariation}>
           Add variation
         </button>
       )}
@@ -255,7 +255,7 @@ function VariationValueInput({
   if (kind === "json") {
     return (
       <textarea
-        className="input input-json"
+        className="oc-input input-json"
         aria-label={label}
         rows={2}
         value={raw}
@@ -266,7 +266,7 @@ function VariationValueInput({
   }
   return (
     <input
-      className="input input-mono"
+      className="oc-input input-mono"
       aria-label={label}
       type={kind === "number" ? "number" : "text"}
       value={raw}

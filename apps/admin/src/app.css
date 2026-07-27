@@ -250,47 +250,6 @@ input[type="radio"]:focus-visible {
 
 /* --- buttons --- */
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 13px;
-  border-radius: var(--oc-radius-control);
-  font: 500 14px var(--font-ui);
-  letter-spacing: 0;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    border-color 150ms ease-out,
-    color 150ms ease-out,
-    box-shadow 150ms ease-out;
-}
-
-.btn-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.btn:active {
-  transform: translateY(0.5px);
-}
-
-.btn-quiet {
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-quiet:hover {
-  border-color: var(--ink-faint);
-  background: var(--surface-hover);
-}
-
-.btn:focus-visible,
 .persona-button:focus-visible,
 .oc-app-navigation-item:focus-visible,
 .theme-tab:focus-visible {
@@ -298,34 +257,17 @@ input[type="radio"]:focus-visible {
   outline-offset: 1px;
 }
 
-.btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: var(--accent-ink);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.btn-danger {
+.oc-action.btn-danger {
   background: var(--danger-solid);
   border: 1px solid var(--danger-solid);
   color: var(--danger-ink);
 }
 
-.btn-danger:hover {
+.oc-action.btn-danger:hover {
   background: color-mix(in oklch, var(--danger-solid), black 10%);
 }
 
-.btn-link {
+.oc-action.btn-link {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
@@ -493,7 +435,7 @@ input[type="radio"]:focus-visible {
   color: var(--ink-muted);
 }
 
-.btn-github {
+.oc-action.btn-github {
   height: 40px;
   width: 100%;
 }
@@ -562,7 +504,7 @@ input[type="radio"]:focus-visible {
   border-top: 1px solid var(--line);
 }
 
-.auth-actions .btn {
+.auth-actions .oc-action {
   width: 100%;
   height: 40px;
 }
@@ -1468,46 +1410,12 @@ input[type="radio"]:focus-visible {
   margin-bottom: 10px;
 }
 
-.input {
-  height: 32px;
-  padding: 0 11px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  font: 400 14px var(--font-ui);
-  color: var(--ink);
-  min-width: 0;
-  transition:
-    border-color 120ms ease-out,
-    box-shadow 120ms ease-out;
-}
-
-.input::placeholder {
-  color: var(--ink-faint);
-}
-
-.input:hover {
-  border-color: var(--ink-faint);
-}
-
-.input:focus-visible {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-.input:disabled {
-  background: var(--surface-muted);
-  color: var(--ink-muted);
-  cursor: not-allowed;
-}
-
-.input-mono {
+.oc-input.input-mono {
   font-family: var(--font-mono);
   font-size: 13px;
 }
 
-.input-json {
+.oc-input.input-json {
   height: auto;
   padding: 6px 9px;
   font-family: var(--font-mono);
@@ -1516,7 +1424,7 @@ input[type="radio"]:focus-visible {
   width: 100%;
 }
 
-.variations-table td .input {
+.variations-table td .oc-input {
   width: 100%;
 }
 
@@ -1856,7 +1764,7 @@ input[type="radio"]:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.input-weight {
+.oc-input.input-weight {
   width: 72px;
 }
 
@@ -1948,7 +1856,7 @@ input[type="radio"]:focus-visible {
   color: var(--ink-muted);
 }
 
-.field .input {
+.field .oc-input {
   width: 100%;
 }
 
@@ -2378,17 +2286,14 @@ tr.is-revoked td {
     flex-basis: auto;
   }
 
-  .btn,
-  .btn-github,
-  .input,
-  .persona-button,
-  .oc-app-navigation-item {
+  .oc-action.btn-github,
+.persona-button,
+.oc-app-navigation-item {
     min-height: 44px;
   }
 
-  .btn,
-  .btn-link,
-  .oc-app-navigation-item {
+  .oc-action.btn-link,
+.oc-app-navigation-item {
     display: inline-flex;
     align-items: center;
   }
@@ -2599,7 +2504,7 @@ tr.is-revoked td {
     border: 0;
   }
 
-  .save-bar .btn {
+  .save-bar .oc-action {
     justify-content: center;
     min-width: 112px;
     min-height: 44px;
@@ -2634,7 +2539,7 @@ tr.is-revoked td {
     flex-direction: column;
   }
 
-  .targeting-empty-row .btn {
+  .targeting-empty-row .oc-action {
     width: 100%;
   }
 
@@ -2647,7 +2552,7 @@ tr.is-revoked td {
     display: none;
   }
 
-  .targeting-row .btn,
+  .targeting-row .oc-action,
   .targeting-row [role="combobox"] {
     width: 100%;
   }
@@ -2827,45 +2732,10 @@ h1 {
   white-space: nowrap;
 }
 
-.btn {
-  min-height: 2.5rem;
-  height: auto;
-  gap: var(--oc-space-2);
-  padding: var(--oc-space-2) var(--oc-space-4);
-  border-radius: var(--oc-radius-control);
-  font-size: var(--oc-font-size-base);
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.btn-primary {
-  border-color: var(--oc-accent-primary);
-  background: var(--oc-accent-primary);
-  color: var(--oc-text-on-accent);
-}
-
-.btn-primary:hover {
-  border-color: var(--oc-accent-primary-hover);
-  background: var(--oc-accent-primary-hover);
-}
-
-.btn-quiet {
-  border-color: var(--oc-border-subtle);
-  background: var(--oc-surface-card);
-  color: var(--oc-text-primary);
-  box-shadow: none;
-}
-
-.btn-quiet:hover {
-  border-color: var(--oc-border-strong);
-  background: var(--oc-control-bg-hover);
-}
-
-.btn-danger {
+.oc-action.btn-danger {
   border-color: var(--danger-solid);
 }
 
-.input,
 .select-trigger {
   min-height: var(--oc-control-min-height);
   height: auto;
@@ -2877,7 +2747,6 @@ h1 {
   font-size: var(--oc-font-size-base);
 }
 
-.input:focus-visible,
 .select-trigger:focus-visible {
   border-color: var(--oc-input-focus-border);
   box-shadow: 0 0 0 3px var(--oc-input-focus-ring);

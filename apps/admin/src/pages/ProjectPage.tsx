@@ -59,7 +59,7 @@ export function ProjectPage({ me }: { me: Me }) {
             action={
               me.role === "admin" ? (
                 <Link
-                  className="btn btn-primary btn-link"
+                  className="oc-action oc-action-primary btn-link"
                   to={`/projects/${encodeURIComponent(projectKey)}/environments/new`}
                 >
                   New environment
@@ -110,7 +110,7 @@ export function ProjectPage({ me }: { me: Me }) {
           </Select>
           {(me.role === "editor" || me.role === "admin") && (
             <Link
-              className="btn btn-primary btn-link"
+              className="oc-action oc-action-primary btn-link"
               to={`/projects/${projectKey}/${environmentKey}/flags/new`}
             >
               New flag
@@ -164,7 +164,7 @@ function FlagTable({
         description={`Flags turn features on or off and target users without a deploy. Add the first one for ${environmentKey}.`}
         action={
           <Link
-            className="btn btn-primary btn-link"
+            className="oc-action oc-action-primary btn-link"
             to={`/projects/${projectKey}/${environmentKey}/flags/new`}
           >
             New flag

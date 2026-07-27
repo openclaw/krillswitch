@@ -41,7 +41,7 @@ export function TokensPage() {
     <section>
       <header className="page-header">
         <h1>Access tokens</h1>
-        <Link className="btn btn-primary btn-link" to="/access/tokens/new">
+        <Link className="oc-action oc-action-primary btn-link" to="/access/tokens/new">
           Mint token
         </Link>
       </header>
@@ -105,7 +105,7 @@ export function TokensPage() {
                           trigger={
                             <button
                               type="button"
-                              className="btn btn-quiet"
+                              className="oc-action oc-action-secondary"
                               aria-label={`Revoke ${token.name}`}
                             >
                               Revoke

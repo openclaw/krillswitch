@@ -34,14 +34,14 @@ export function ConfirmDialog({
           </AlertDialog.Description>
           <div className="modal-actions">
             <AlertDialog.Cancel asChild>
-              <button type="button" className="btn btn-quiet">
+              <button type="button" className="oc-action oc-action-secondary">
                 Cancel
               </button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
               <button
                 type="button"
-                className="btn btn-danger"
+                className="oc-action oc-action-primary btn-danger"
                 disabled={pending}
                 onClick={onConfirm}
               >

@@ -95,7 +95,7 @@ export function SignIn() {
             <>
               <button
                 type="button"
-                className="btn btn-primary btn-github"
+                className="oc-action oc-action-primary btn-github"
                 disabled={github.isPending}
                 onClick={() => github.mutate()}
               >

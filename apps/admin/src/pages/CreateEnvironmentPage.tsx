@@ -53,7 +53,7 @@ export function CreateEnvironmentPage() {
           <label htmlFor="new-env-name">Name</label>
           <input
             id="new-env-name"
-            className="input"
+            className="oc-input"
             placeholder="Staging"
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -63,7 +63,7 @@ export function CreateEnvironmentPage() {
           <label htmlFor="new-env-key">Key</label>
           <input
             id="new-env-key"
-            className="input input-mono"
+            className="oc-input input-mono"
             placeholder="e.g. staging"
             autoComplete="off"
             value={key}
@@ -82,12 +82,12 @@ export function CreateEnvironmentPage() {
         <div className="form-actions">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="oc-action oc-action-primary"
             disabled={!canSubmit}
           >
             Create environment
           </button>
-          <Link className="btn btn-quiet btn-link" to={projectPath}>
+          <Link className="oc-action oc-action-ghost btn-link" to={projectPath}>
             Cancel
           </Link>
         </div>

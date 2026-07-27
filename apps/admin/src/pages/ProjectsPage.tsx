@@ -96,7 +96,7 @@ export function ProjectsPage({ me }: { me: Me }) {
         {projects.isSuccess && total > 0 && (
           <div className="header-actions">
             <input
-              className="input projects-search"
+              className="oc-input projects-search"
               type="search"
               aria-label="Filter projects on this page"
               placeholder="Filter this page…"
@@ -104,7 +104,7 @@ export function ProjectsPage({ me }: { me: Me }) {
               onChange={(event) => setSearch(event.target.value)}
             />
             {isAdmin && (
-              <Link className="btn btn-primary btn-link" to="/projects/new">
+              <Link className="oc-action oc-action-primary btn-link" to="/projects/new">
                 New project
               </Link>
             )}
@@ -129,7 +129,7 @@ export function ProjectsPage({ me }: { me: Me }) {
             title="Create your first project"
             description="Projects group your flags, environments, and evaluation keys. Create one to start shipping features behind flags."
             action={
-              <Link className="btn btn-primary btn-link" to="/projects/new">
+              <Link className="oc-action oc-action-primary btn-link" to="/projects/new">
                 New project
               </Link>
             }

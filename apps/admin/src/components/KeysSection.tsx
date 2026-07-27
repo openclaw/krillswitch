@@ -94,7 +94,7 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
                       pending={rotate.isPending}
                       onConfirm={() => rotate.mutate(entry.environmentKey)}
                       trigger={
-                        <button type="button" className="btn btn-quiet">
+                        <button type="button" className="oc-action oc-action-secondary">
                           Rotate
                         </button>
                       }
@@ -108,7 +108,7 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
                       trigger={
                         <button
                           type="button"
-                          className="btn btn-quiet"
+                          className="oc-action oc-action-secondary"
                           aria-label={`Delete ${entry.environmentName}`}
                         >
                           Delete
@@ -124,7 +124,7 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
       </TableFrame>
       <div className="below-table">
         <Link
-          className="btn btn-quiet btn-link"
+          className="oc-action oc-action-ghost btn-link"
           to={`/projects/${encodeURIComponent(projectKey)}/environments/new`}
         >
           New environment

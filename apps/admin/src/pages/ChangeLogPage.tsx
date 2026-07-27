@@ -118,7 +118,7 @@ export function ChangeLogPage() {
             action={
               <button
                 type="button"
-                className="btn btn-quiet"
+                className="oc-action oc-action-secondary"
                 onClick={() => {
                   changeProjectFilter("");
                   changeFlagFilter("");

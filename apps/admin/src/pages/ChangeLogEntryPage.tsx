@@ -93,7 +93,7 @@ export function ChangeLogEntryPage() {
             <JsonBlock label="After" value={entry.after} tone="after" />
           )}
           <div className="form-actions">
-            <Link className="btn btn-quiet btn-link" to="/changelog">
+            <Link className="oc-action oc-action-ghost btn-link" to="/changelog">
               Back to change log
             </Link>
           </div>
