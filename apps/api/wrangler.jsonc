@@ -9,9 +9,13 @@
   },
   // better-auth imports node:crypto / node:async_hooks.
   "compatibility_flags": ["nodejs_compat"],
-  // 8787 collides with another service on the primary dev machine.
+  // 8787 collides with another service on the primary dev machine. `host` is
+  // required because the custom-domain route below otherwise makes wrangler
+  // dev serve under the production hostname, which fails the localhost leg of
+  // the dev-persona guard and makes local sign-in impossible.
   "dev": {
-    "port": 8799
+    "port": 8799,
+    "host": "localhost"
   },
   "assets": {
     "directory": "../admin/dist",
