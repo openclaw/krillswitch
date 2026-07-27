@@ -2247,13 +2247,13 @@ tr.is-revoked td {
   }
 
   .oc-action.btn-github,
-.persona-button,
-.oc-app-navigation-item {
+  .persona-button,
+  .oc-app-navigation-item {
     min-height: 44px;
   }
 
   .oc-action.btn-link,
-.oc-app-navigation-item {
+  .oc-app-navigation-item {
     display: inline-flex;
     align-items: center;
   }

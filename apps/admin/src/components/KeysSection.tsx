@@ -94,7 +94,10 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
                       pending={rotate.isPending}
                       onConfirm={() => rotate.mutate(entry.environmentKey)}
                       trigger={
-                        <button type="button" className="oc-action oc-action-secondary">
+                        <button
+                          type="button"
+                          className="oc-action oc-action-secondary"
+                        >
                           Rotate
                         </button>
                       }

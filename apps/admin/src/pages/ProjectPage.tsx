@@ -46,7 +46,10 @@ export function ProjectPage({ me }: { me: Me }) {
         <section>
           <header className="oc-page-header">
             <div>
-              <Link className="oc-page-header-kicker" to={`/projects/${projectKey}`}>
+              <Link
+                className="oc-page-header-kicker"
+                to={`/projects/${projectKey}`}
+              >
                 {projectKey}
               </Link>
               <h1>{project.name}</h1>
@@ -82,7 +85,10 @@ export function ProjectPage({ me }: { me: Me }) {
     <section>
       <header className="oc-page-header">
         <div>
-          <Link className="oc-page-header-kicker" to={`/projects/${projectKey}`}>
+          <Link
+            className="oc-page-header-kicker"
+            to={`/projects/${projectKey}`}
+          >
             {projectKey}
           </Link>
           <h1>{project.name}</h1>

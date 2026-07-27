@@ -41,7 +41,10 @@ export function TokensPage() {
     <section>
       <header className="oc-page-header">
         <h1>Access tokens</h1>
-        <Link className="oc-action oc-action-primary btn-link" to="/access/tokens/new">
+        <Link
+          className="oc-action oc-action-primary btn-link"
+          to="/access/tokens/new"
+        >
           Mint token
         </Link>
       </header>

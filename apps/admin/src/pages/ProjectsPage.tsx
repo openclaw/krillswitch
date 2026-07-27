@@ -104,7 +104,10 @@ export function ProjectsPage({ me }: { me: Me }) {
               onChange={(event) => setSearch(event.target.value)}
             />
             {isAdmin && (
-              <Link className="oc-action oc-action-primary btn-link" to="/projects/new">
+              <Link
+                className="oc-action oc-action-primary btn-link"
+                to="/projects/new"
+              >
                 New project
               </Link>
             )}
@@ -129,7 +132,10 @@ export function ProjectsPage({ me }: { me: Me }) {
             title="Create your first project"
             description="Projects group your flags, environments, and evaluation keys. Create one to start shipping features behind flags."
             action={
-              <Link className="oc-action oc-action-primary btn-link" to="/projects/new">
+              <Link
+                className="oc-action oc-action-primary btn-link"
+                to="/projects/new"
+              >
                 New project
               </Link>
             }

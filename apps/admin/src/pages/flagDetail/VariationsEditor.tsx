@@ -217,7 +217,11 @@ export function VariationsEditor({
         ))}
       </div>
       {!disabled && (
-        <button type="button" className="oc-action oc-action-secondary" onClick={addVariation}>
+        <button
+          type="button"
+          className="oc-action oc-action-secondary"
+          onClick={addVariation}
+        >
           Add variation
         </button>
       )}
