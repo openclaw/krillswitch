@@ -21,7 +21,7 @@ export function FlagDetailPage({ me }: { me: Me }) {
   if (detail.isPending) {
     return (
       <section>
-        <header className="page-header">
+        <header className="oc-page-header">
           <h1>Flag</h1>
         </header>
         <BlockSkeleton lines={5} />
@@ -141,7 +141,7 @@ function FlagDetailEditor({
 
   return (
     <section className={`flag-editor ${isDirty ? "is-dirty" : ""}`}>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to={`/projects/${projectKey}/${environmentKey}`}>
@@ -159,7 +159,7 @@ function FlagDetailEditor({
             <p className="muted flag-description">{detail.flag.description}</p>
           )}
         </div>
-        <div className="header-actions">
+        <div className="oc-page-header-actions">
           <div className="enable-switch">
             <Switch
               checked={draft.enabled}

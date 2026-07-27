@@ -24,7 +24,7 @@ export function MembersPage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <h1>Members</h1>
       </header>
       <p className="section-hint">Roles apply across every project.</p>

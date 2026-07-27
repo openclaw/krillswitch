@@ -80,7 +80,7 @@ export function ChangeLogPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <h1>Change log</h1>
         <div className="changelog-filters">
           <Combobox

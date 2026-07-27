@@ -43,7 +43,7 @@ export function ChangeLogEntryPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to="/changelog">Change log</Link>

@@ -53,8 +53,8 @@ export function ProjectsPage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
-        <div className="page-header-content">
+      <header className="oc-page-header">
+        <div className="oc-page-header-content">
           <div className="page-title-row">
             <h1>Projects</h1>
             {projects.isSuccess && total > 0 && (
@@ -62,30 +62,30 @@ export function ProjectsPage({ me }: { me: Me }) {
             )}
           </div>
           {projects.isSuccess && total > 0 && (
-            <div className="summary-strip page-header-summary">
-              <div className="summary-metric">
-                <span className="summary-metric-icon" aria-hidden="true">
+            <div className="oc-summary-strip oc-page-header-summary">
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
                   <FolderIcon />
                 </span>
-                <span className="summary-metric-copy">
+                <span className="oc-summary-metric-copy">
                   <strong>{total}</strong>
                   <small>Projects</small>
                 </span>
               </div>
-              <div className="summary-metric">
-                <span className="summary-metric-icon" aria-hidden="true">
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
                   <ListIcon />
                 </span>
-                <span className="summary-metric-copy">
+                <span className="oc-summary-metric-copy">
                   <strong>{visibleFlagCount}</strong>
                   <small>Flags shown</small>
                 </span>
               </div>
-              <div className="summary-metric">
-                <span className="summary-metric-icon" aria-hidden="true">
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
                   <LayersIcon />
                 </span>
-                <span className="summary-metric-copy">
+                <span className="oc-summary-metric-copy">
                   <strong>{visibleEnvironmentCount}</strong>
                   <small>Envs shown</small>
                 </span>
@@ -94,7 +94,7 @@ export function ProjectsPage({ me }: { me: Me }) {
           )}
         </div>
         {projects.isSuccess && total > 0 && (
-          <div className="header-actions">
+          <div className="oc-page-header-actions">
             <input
               className="oc-input projects-search"
               type="search"

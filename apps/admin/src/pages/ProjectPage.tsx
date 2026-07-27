@@ -27,7 +27,7 @@ export function ProjectPage({ me }: { me: Me }) {
   if (detail.isPending) {
     return (
       <section>
-        <header className="page-header">
+        <header className="oc-page-header">
           <h1>Project</h1>
         </header>
         <BlockSkeleton lines={3} />
@@ -44,9 +44,9 @@ export function ProjectPage({ me }: { me: Me }) {
     if (!firstEnvironment) {
       return (
         <section>
-          <header className="page-header">
+          <header className="oc-page-header">
             <div>
-              <Link className="page-eyebrow" to={`/projects/${projectKey}`}>
+              <Link className="oc-page-header-kicker" to={`/projects/${projectKey}`}>
                 {projectKey}
               </Link>
               <h1>{project.name}</h1>
@@ -80,14 +80,14 @@ export function ProjectPage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
-          <Link className="page-eyebrow" to={`/projects/${projectKey}`}>
+          <Link className="oc-page-header-kicker" to={`/projects/${projectKey}`}>
             {projectKey}
           </Link>
           <h1>{project.name}</h1>
         </div>
-        <div className="header-actions">
+        <div className="oc-page-header-actions">
           <Select
             value={environmentKey}
             onValueChange={(env) =>
