@@ -10,6 +10,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Security
 
+- Update React Router to 8.3.0 to resolve its RSC action CSRF bypass advisory.
 - Accept verified Cloudflare Access JWTs as production dashboard identities so
   `switch.openclaw.ai` does not require a second GitHub OAuth login after the
   Access gate.
