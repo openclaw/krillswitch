@@ -25,9 +25,13 @@ export function MembersPage({ me }: { me: Me }) {
   return (
     <section>
       <header className="oc-page-header">
-        <h1>Members</h1>
+        <div className="oc-page-header-content">
+          <h1 className="oc-page-header-title">Members</h1>
+          <p className="oc-page-header-description">
+            Roles apply across every project.
+          </p>
+        </div>
       </header>
-      <p className="section-hint">Roles apply across every project.</p>
 
       {members.isPending && (
         <TableSkeleton

@@ -40,18 +40,22 @@ export function TokensPage() {
   return (
     <section>
       <header className="oc-page-header">
-        <h1>Access tokens</h1>
-        <Link
-          className="oc-action oc-action-primary btn-link"
-          to="/access/tokens/new"
-        >
-          Mint token
-        </Link>
+        <div className="oc-page-header-content">
+          <h1 className="oc-page-header-title">Access tokens</h1>
+          <p className="oc-page-header-description">
+            Role-scoped tokens for the CLI and agents. Editor or viewer only,
+            never admin.
+          </p>
+        </div>
+        <div className="oc-page-header-actions">
+          <Link
+            className="oc-action oc-action-primary btn-link"
+            to="/access/tokens/new"
+          >
+            Mint token
+          </Link>
+        </div>
       </header>
-      <p className="section-hint">
-        Role-scoped tokens for the CLI and agents. Editor or viewer only, never
-        admin.
-      </p>
 
       {revoke.isError && (
         <p role="alert" className="save-error">

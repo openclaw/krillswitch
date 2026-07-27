@@ -277,31 +277,19 @@ input[type="radio"]:focus-visible {
 
 /* --- chips --- */
 
-.chip {
-  display: inline-block;
-  padding: 1px 9px;
-  border-radius: var(--oc-radius-control);
-  border: 1px solid var(--line);
-  background: var(--surface-muted);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--ink-muted);
-}
-
-.chip-role-admin {
+.oc-badge.chip-role-admin {
   color: var(--accent-text);
   background: var(--accent-soft);
   border-color: var(--accent-ring);
 }
 
-.chip-role-editor {
+.oc-badge.chip-role-editor {
   color: var(--ok);
   background: var(--ok-bg);
   border-color: color-mix(in oklch, var(--ok), transparent 60%);
 }
 
-.chip-role-viewer {
+.oc-badge.chip-role-viewer {
   color: var(--viewer);
   background: var(--viewer-bg);
   border-color: color-mix(in oklch, var(--viewer), transparent 60%);
@@ -727,12 +715,6 @@ input[type="radio"]:focus-visible {
 }
 
 /* --- app shell --- */
-
-.oc-app-frame {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: row;
-}
 
 /* Controls bar over the content column; the brand now lives in the rail. */
 .topbar {
@@ -1281,7 +1263,7 @@ input[type="radio"]:focus-visible {
   gap: 16px;
 }
 
-.badge-soft {
+.oc-badge.badge-soft {
   display: inline-block;
   padding: 1px 9px;
   border-radius: var(--r-pill);
@@ -1929,49 +1911,9 @@ tr.is-revoked td {
   transform: rotate(180deg);
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  padding: 48px 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: var(--shadow-panel);
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.empty-state-icon {
-  margin-bottom: 16px;
-}
-
-.empty-state-glyph {
+.oc-empty-glyph {
   width: 26px;
   height: 26px;
-}
-
-.empty-state-title {
-  margin: 0 0 5px;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: var(--ink);
-}
-
-.empty-state-desc {
-  margin: 0;
-  max-width: 46ch;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ink-muted);
-}
-
-.empty-state-actions {
-  margin-top: 18px;
-  display: flex;
-  gap: 10px;
 }
 
 /* Quiet hint for empty sub-sections inside a form (no allowlist, no rules). */
@@ -2148,9 +2090,8 @@ tr.is-revoked td {
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {
-  .oc-app-frame {
-    flex-direction: column;
-  }
+  /* Carapace already stacks the frame to a single column at this width; the
+     old flex-direction override is gone with the flex layout it belonged to. */
 
   /* In the strip the logo sits inline, not as a full-width header box. */
   .oc-app-navigation-header {
@@ -2607,8 +2548,7 @@ h1 {
   box-shadow: none;
 }
 
-.chip,
-.badge-soft,
+.oc-badge.badge-soft,
 .badge-kind {
   border-radius: var(--oc-radius-control);
 }
@@ -2703,7 +2643,7 @@ h1 {
   opacity: 0.55;
 }
 
-.empty-state,
+.oc-empty,
 .auth-card,
 .modal-content,
 .targeting-subsection,
