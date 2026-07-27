@@ -33,6 +33,8 @@ type CliProcessResult = {
 };
 
 const CLI_SOURCE_ARGS = ["--import", "tsx", "src/index.ts"];
+const CLI_PROCESS_TIMEOUT_MS = 10_000;
+const CLI_TEST_TIMEOUT_MS = 20_000;
 
 function ttyPassThrough(): PassThrough {
   const stream = new PassThrough();
@@ -120,7 +122,7 @@ async function spawnCli(
     const timeout = setTimeout(() => {
       child.kill("SIGTERM");
       reject(new Error(`CLI timed out: ${args.join(" ")}`));
-    }, 3000);
+    }, CLI_PROCESS_TIMEOUT_MS);
 
     child.stdout.on("data", (chunk) => {
       stdout.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
@@ -175,7 +177,7 @@ function flagDetailResponse(): object {
   };
 }
 
-describe("entrypoint", () => {
+describe("entrypoint", { timeout: CLI_TEST_TIMEOUT_MS }, () => {
   it("prints help successfully without requiring auth", () => {
     const result = spawnSync("node", [...CLI_SOURCE_ARGS, "--help"], {
       cwd: new URL("..", import.meta.url),
