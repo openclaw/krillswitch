@@ -772,6 +772,13 @@ input[type="radio"]:focus-visible {
 
 /* --- tables --- */
 
+/* Fixed layout keeps long flag keys wrapping inside their column instead of
+   widening it and pushing KIND/STATE off screen; Carapace leaves table-layout
+   to the product because its own specimens use short cells. */
+.oc-table {
+  table-layout: fixed;
+}
+
 .oc-table-wrap::before {
   content: "";
   position: sticky;
@@ -1043,14 +1050,14 @@ input[type="radio"]:focus-visible {
 
 /* Carapace owns the switch box (oc-switch-label + oc-switch). KrillSwitch
    adds the state word beside it, which carries the on/off color. */
-.flag-toggle.is-on .flag-toggle-copy {
-  color: var(--ok);
-}
-
 .flag-toggle .flag-toggle-copy {
   color: var(--ink-muted);
   font-size: var(--oc-font-size-sm);
   font-weight: 500;
+}
+
+.flag-toggle.is-on .flag-toggle-copy {
+  color: var(--ok);
 }
 
 /* --- flag detail --- */
@@ -1718,10 +1725,6 @@ input[type="radio"]:focus-visible {
   color: var(--ink-muted);
 }
 
-.oc-field .oc-input {
-  width: 100%;
-}
-
 .field-value {
   font-size: 14px;
 }
@@ -2374,14 +2377,6 @@ tr.is-revoked td {
   }
 }
 
-/* --- Console table deltas over Carapace ---
-   Fixed layout keeps long flag keys wrapping inside their column instead of
-   widening it and pushing KIND/STATE off screen; Carapace leaves table-layout
-   to the product because its own specimens use short cells. */
-.oc-table {
-  table-layout: fixed;
-}
-
 /* The page-header kicker is a router link here, not the static <p> Carapace
    previews, so the app's global anchor underline has to be cleared. */
 .oc-page-header-kicker {
@@ -2549,18 +2544,6 @@ h1 {
 
 .oc-table-wrap::before {
   content: none;
-}
-
-.oc-table {
-  min-width: 36rem;
-  background: var(--oc-surface-card);
-  color: var(--oc-text-secondary);
-  font-size: var(--oc-font-size-sm);
-}
-
-.oc-table :is(th, td) {
-  padding: var(--oc-space-3) var(--oc-space-4);
-  border-bottom: 1px solid var(--oc-border-subtle);
 }
 
 .oc-table th {
