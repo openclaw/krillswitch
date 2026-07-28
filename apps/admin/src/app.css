@@ -253,8 +253,7 @@ input[type="radio"]:focus-visible {
 /* --- buttons --- */
 
 .persona-button:focus-visible,
-.oc-app-navigation-item:focus-visible,
-.theme-tab:focus-visible {
+.oc-app-navigation-item:focus-visible {
   outline: 2px solid var(--oc-focus-ring);
   outline-offset: 1px;
 }
@@ -309,48 +308,9 @@ input[type="radio"]:focus-visible {
   border: 0;
 }
 
-.theme-toggle {
-  display: inline-flex;
-  gap: 1px;
-  min-inline-size: 0;
-  padding: 2px;
-  margin: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--oc-radius-control);
-  background: var(--bg);
-}
-
-.theme-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 26px;
-  width: 26px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: var(--oc-radius-control);
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-}
-
-.theme-tab svg {
+.oc-segmented-item.theme-tab svg {
   width: 14px;
   height: 14px;
-}
-
-.theme-tab:hover {
-  color: var(--ink);
-}
-
-.theme-tab[aria-pressed="true"] {
-  background: var(--surface);
-  color: var(--accent-text);
-  box-shadow: var(--shadow-sm);
 }
 
 /* --- auth + boot screens (sign-in, no-access, errors) --- */
@@ -776,11 +736,28 @@ input[type="radio"]:focus-visible {
   border-bottom: 1px solid var(--chrome-line);
 }
 
+/* The content column owns the page gutter and the vertical rhythm between
+   header, summary, and body. Carapace leaves oc-app-content unpadded because
+   its own specimens sit inside a framed pane. */
+.oc-app-content {
+  padding: var(--oc-space-5) var(--oc-space-6) var(--oc-space-7);
+}
+
 /* Cap and center the working area so tables and rows don't sprawl across
    ultra-wide monitors (keys would float far from their actions). */
 .oc-app-content > section {
+  display: grid;
   max-width: 1088px;
+  align-content: start;
+  gap: var(--oc-space-4);
   margin: 0 auto;
+}
+
+/* Carapace insets the page header for pane-flush use. Here the content column
+   already provides the gutter, so the inset would push the title 16px right of
+   the table beneath it. */
+.oc-page-header {
+  padding-inline: 0;
 }
 
 /* Form and single-record pages are a narrower centered column so the header
@@ -2265,13 +2242,7 @@ tr.is-revoked td {
     min-height: 44px;
   }
 
-  .theme-tab {
-    flex-basis: 44px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .theme-tab svg {
+  .oc-segmented-item.theme-tab svg {
     width: 16px;
     height: 16px;
   }
@@ -2383,13 +2354,13 @@ tr.is-revoked td {
 /* Touch input (any viewport width): enlarge the small segmented and pagination
    controls to a comfortable tap size. Pointer-based UIs keep the dense size. */
 @media (pointer: coarse) {
-  .theme-tab {
+  .oc-segmented-item.theme-tab {
     flex-basis: 44px;
     width: 44px;
     height: 44px;
   }
 
-  .theme-tab svg {
+  .oc-segmented-item.theme-tab svg {
     width: 16px;
     height: 16px;
   }
@@ -2488,6 +2459,64 @@ h1 {
   border-color: var(--danger-solid);
 }
 
+/* --- Dense row actions ---
+   oc-action is sized for page-level buttons (2.5rem tall, 1rem side padding).
+   Inside a table row that overflows its column and clips, so row actions get a
+   compact size while keeping the shared tone and focus behaviour. */
+.oc-table .oc-action {
+  min-height: 2rem;
+  padding: var(--oc-space-1) var(--oc-space-3);
+  font-size: var(--oc-font-size-xs);
+}
+
+/* --- Navigation footer identity ---
+   Carapace's footer is a single flex row; the console stacks the signed-in
+   user, their role and sign-out, and the theme control, because this rail is
+   the only place app-level chrome lives now (there is no topbar). */
+.oc-app-navigation-footer {
+  display: grid;
+  /* Carapace's footer is one 3-column row; the console stacks its blocks. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--oc-space-2);
+  align-items: stretch;
+  padding: var(--oc-space-3);
+}
+
+.nav-identity {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--oc-space-2);
+}
+
+.nav-identity-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oc-space-2);
+}
+
+/* Sign out is a quiet, compact affordance beside the role chip, not a
+   full-height control competing with navigation. */
+.oc-action.nav-signout {
+  min-height: 1.75rem;
+  padding: 0 var(--oc-space-2);
+  font-size: var(--oc-font-size-xs);
+}
+
+/* Three equal icon tabs filling the rail width. Carapace's segmented chrome
+   (border, card background, inner padding) is kept — it is the picker. */
+.oc-segmented.theme-toggle {
+  display: grid;
+  width: 100%;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  overflow: visible;
+  margin: 0;
+}
+
 /* Carapace lays the summary strip out with auto-fit minmax(9rem), which at
    narrow widths fits two columns and leaves a blank cell when the count is
    odd. Three metrics should stack cleanly on a phone instead. */
@@ -2508,32 +2537,6 @@ h1 {
    for the native one. Everything else about the box comes from Carapace. */
 .oc-select.select-trigger {
   padding-right: var(--oc-space-3);
-}
-
-.theme-toggle {
-  gap: var(--oc-space-1);
-  padding: var(--oc-space-1);
-  border-color: var(--oc-border-subtle);
-  border-radius: var(--oc-radius-control);
-  background: var(--oc-surface-card);
-}
-
-.theme-tab {
-  flex: 0 0 2rem;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--oc-radius-inset);
-  color: var(--oc-text-secondary);
-}
-
-.theme-tab:hover {
-  color: var(--oc-text-primary);
-}
-
-.theme-tab[aria-pressed="true"] {
-  background: var(--oc-control-bg-hover);
-  color: var(--oc-text-primary);
-  box-shadow: none;
 }
 
 .oc-badge.badge-soft,
@@ -2650,12 +2653,6 @@ h1 {
   .oc-summary-metric + .oc-summary-metric {
     border-top: 1px solid var(--oc-border-subtle);
     border-left: 0;
-  }
-
-  .theme-tab {
-    flex-basis: 2rem;
-    width: 2rem;
-    height: 2rem;
   }
 }
 

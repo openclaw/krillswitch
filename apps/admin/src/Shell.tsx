@@ -106,32 +106,29 @@ export function Shell({
           )}
         </div>
         <footer className="oc-app-navigation-footer">
-          <span className="oc-app-navigation-footer-copy">
-            <strong>{me.user.name}</strong>
-            <small>{me.user.email}</small>
-          </span>
-        </footer>
-      </nav>
-      <div className="oc-app-main">
-        <header className="topbar">
-          <div className="identity">
-            <ThemeToggle theme={theme} />
-            <div className="user-pill">
-              <span className="user-avatar" aria-hidden="true">
-                {initials(me.user.name)}
-              </span>
-              <span className="user-name">{me.user.name}</span>
-              <RoleChip role={me.role} />
-            </div>
+          <div className="nav-identity">
+            <span className="user-avatar" aria-hidden="true">
+              {initials(me.user.name)}
+            </span>
+            <span className="oc-app-navigation-footer-copy">
+              <strong>{me.user.name}</strong>
+              <small>{me.user.email}</small>
+            </span>
+          </div>
+          <div className="nav-identity-actions">
+            <RoleChip role={me.role} />
             <button
               type="button"
-              className="oc-action oc-action-ghost"
+              className="oc-action oc-action-ghost nav-signout"
               onClick={signOut}
             >
               Sign out
             </button>
           </div>
-        </header>
+          <ThemeToggle theme={theme} />
+        </footer>
+      </nav>
+      <div className="oc-app-main">
         <main className="oc-app-content">{children}</main>
       </div>
     </div>
