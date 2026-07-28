@@ -1,6 +1,5 @@
 export type {
   FeatureFlagProviderProps,
-  FlagManifest,
   KrillswitchClient,
 } from "./krillswitch";
 export {
@@ -8,3 +7,8 @@ export {
   createKrillswitch,
   flagValuesStorageKey,
 } from "./krillswitch";
+export type {
+  EvaluateFlagsOptions,
+  FlagManifest,
+  WidenManifest,
+} from "./server";

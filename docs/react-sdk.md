@@ -1,21 +1,27 @@
 ---
 title: React SDK
-description: Render typed defaults immediately, then refresh flag values safely in the background.
+description: Evaluate typed flags for SSR, hydrate without a variant flash, then refresh safely in the background.
 ---
 
 # React SDK
 
 ## Declare a manifest
 
-```tsx
-import { createKrillswitch } from "@openclaw/krillswitch-react";
-
-export const flags = createKrillswitch({
+```ts
+// flag-manifest.ts — safe to import from server or browser code
+export const flagManifest = {
   newNav: false,
   density: "comfortable",
   resultLimit: 25,
   searchTuning: { semantic: true },
-});
+};
+```
+
+```tsx
+import { createKrillswitch } from "@openclaw/krillswitch-react";
+import { flagManifest } from "./flag-manifest";
+
+export const flags = createKrillswitch(flagManifest);
 ```
 
 The manifest is both a type contract and the code-owned fallback. Literal primitives widen correctly: `false` becomes `boolean`, not the unusable literal type `false`.
@@ -40,9 +46,67 @@ const newNav = flags.useFeatureFlag("newNav");
 const allFlags = flags.useFeatureFlags();
 ```
 
+## Server rendering and hydration
+
+Evaluate flags before rendering and pass the result to `initialValues` on both
+the server render and the browser hydration render:
+
+```tsx
+import { createKrillswitchEvaluator } from "@openclaw/krillswitch-react/server";
+import { flagManifest } from "./flag-manifest";
+
+const evaluateFlags = createKrillswitchEvaluator(flagManifest);
+const contextKey = getOrSetAnonymousCookie(request, response);
+const evalKey = process.env.KRILLSWITCH_EVAL_KEY;
+if (!evalKey) {
+  throw new Error("KRILLSWITCH_EVAL_KEY is required");
+}
+
+const initialValues = await evaluateFlags({
+  evalKey,
+  baseUrl: "https://flags.openclaw.ai",
+  context: {
+    key: contextKey,
+    attributes: { plan: currentUser?.plan ?? "anonymous" },
+  },
+  signal: AbortSignal.timeout(200),
+})
+  .catch((error: unknown) => {
+    logger.warn({ error }, "KrillSwitch SSR evaluation failed");
+    return null;
+  });
+
+<flags.FeatureFlagProvider
+  evalKey={evalKey}
+  baseUrl="https://flags.openclaw.ai"
+  contextKey={contextKey}
+  attributes={{ plan: currentUser?.plan ?? "anonymous" }}
+  initialValues={initialValues}
+>
+  <App />
+</flags.FeatureFlagProvider>;
+```
+
+Use your framework's normal server-data serialization so the browser receives
+the same `initialValues`, `contextKey`, and attributes that produced the HTML.
+The provider keeps those values through hydration and while its first refresh
+is pending, so visible UI does not flash from code defaults to the evaluated
+variant. A successful refresh becomes the new value and is persisted normally.
+
+The `/server` entry point does not import React or access the DOM or browser
+storage, including under the `react-server` condition used by React Server
+Components. `evaluateFlags` returns the complete manifest-shaped value set:
+missing, undeclared, and wrong-typed remote values cannot replace code defaults.
+Network, HTTP, abort, and malformed-response failures are thrown so applications
+can log or measure them. Keep the SSR wait bounded (about 200 ms is a practical
+starting point). Pass `null` after a failed SSR evaluation to bootstrap code
+defaults on both the server and browser; omitting `initialValues` preserves the
+client-only behavior of using matching browser cache when available.
+
 ## Runtime behavior
 
 - The first render uses cached values for the exact identity and attributes, or manifest defaults.
+- Server-provided `initialValues` take priority over browser cache until refresh succeeds.
 - A background request refreshes values on mount.
 - The provider polls every 60 seconds by default and refreshes when the page becomes visible.
 - ETags turn unchanged polls into `304 Not Modified` responses.
@@ -54,7 +118,12 @@ Set `pollIntervalMs` when your application needs a different cadence. KrillSwitc
 
 ## Anonymous contexts
 
-If `contextKey` is omitted in the browser, the SDK persists an anonymous UUID. During server rendering it uses the stable placeholder `anonymous`; provide an explicit identity when hydration consistency or rollout stability across devices matters.
+If `contextKey` is omitted in the browser, the SDK persists an anonymous UUID.
+SSR evaluation requires an explicit context key. For signed-out visitors,
+persist a random identifier in a first-party cookie and use that same value for
+`evaluateFlags` and the browser provider. Browser local storage is not available
+to the server, and using different identities can produce different rollout or
+targeting results.
 
 ## Value safety
 

@@ -1,4 +1,7 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import type { FlagValue } from "@openclaw/krillswitch-core";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { startTransition, useState } from "react";
+import { renderToString } from "react-dom/server";
 import {
   afterEach,
   beforeEach,
@@ -13,12 +16,19 @@ import {
   createKrillswitch,
   flagValuesStorageKey,
 } from "./index";
+import { createKrillswitchEvaluator } from "./server";
 
-const { FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
+const { evaluateFlags, FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
   createKrillswitch({
     souls: false,
     theme: "light",
   });
+const serverEvaluator = createKrillswitchEvaluator({
+  searchTuning: { semantic: true },
+});
+const jsonClient = createKrillswitch({
+  searchTuning: { semantic: true },
+});
 
 const EVAL_KEY = "ks_clawhub_development_local";
 const BASE_URL = "https://krillswitch.test";
@@ -79,6 +89,96 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("server evaluation", () => {
+  it("posts an explicit context and returns manifest-safe values", async () => {
+    fetchMock.mockResolvedValue(
+      evalResponse({
+        souls: true,
+        theme: 42,
+        undeclared: "ignored",
+      }),
+    );
+
+    const values = await evaluateFlags({
+      evalKey: EVAL_KEY,
+      baseUrl: `${BASE_URL}/`,
+      context: {
+        key: "cookie-user-123",
+        attributes: { plan: "pro", staff: true },
+      },
+    });
+
+    expect(values).toEqual({ souls: true, theme: "light" });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${BASE_URL}/v1/eval`);
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("authorization")).toBe(
+      `Bearer ${EVAL_KEY}`,
+    );
+    expect(JSON.parse(String(init?.body))).toEqual({
+      context: {
+        key: "cookie-user-123",
+        attributes: { plan: "pro", staff: true },
+      },
+    });
+  });
+
+  it("preserves transport failures for the server caller", async () => {
+    fetchMock.mockResolvedValue(new Response("unavailable", { status: 503 }));
+
+    await expect(
+      evaluateFlags({
+        evalKey: EVAL_KEY,
+        baseUrl: BASE_URL,
+        context: { key: "cookie-user-123" },
+      }),
+    ).rejects.toThrow("503");
+  });
+
+  it("rejects malformed evaluation responses", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ flags: { souls: true } }), { status: 200 }),
+    );
+
+    await expect(
+      evaluateFlags({
+        evalKey: EVAL_KEY,
+        baseUrl: BASE_URL,
+        context: { key: "cookie-user-123" },
+      }),
+    ).rejects.toThrow("invalid flag");
+  });
+
+  it("forwards cancellation to the evaluation request", async () => {
+    const controller = new AbortController();
+    controller.abort(new DOMException("SSR budget elapsed", "TimeoutError"));
+    fetchMock.mockRejectedValue(controller.signal.reason);
+
+    await expect(
+      evaluateFlags({
+        evalKey: EVAL_KEY,
+        baseUrl: BASE_URL,
+        context: { key: "cookie-user-123" },
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "TimeoutError" });
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    expect(init?.signal).toBe(controller.signal);
+  });
+
+  it("accepts a different JSON shape for a JSON-kind flag", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ searchTuning: "disabled" }));
+
+    await expect(
+      serverEvaluator({
+        evalKey: EVAL_KEY,
+        baseUrl: BASE_URL,
+        context: { key: "cookie-user-123" },
+      }),
+    ).resolves.toEqual({ searchTuning: "disabled" });
+  });
+});
+
 describe("bootstrap render", () => {
   it("renders manifest defaults immediately on a cold profile", () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
@@ -108,6 +208,91 @@ describe("bootstrap render", () => {
     expect(screen.getByTestId("souls").textContent).toBe("false");
     expect(screen.getByTestId("theme").textContent).toBe("light");
   });
+
+  it("keeps bootstrap values through hydration while refresh is pending", async () => {
+    window.localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: false, theme: "cached" }),
+    );
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    const tree = (
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        initialValues={{ souls: true, theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(tree);
+    document.body.appendChild(container);
+
+    expect(container.querySelector('[data-testid="souls"]')?.textContent).toBe(
+      "true",
+    );
+    render(tree, { container, hydrate: true });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(container.querySelector('[data-testid="souls"]')?.textContent).toBe(
+      "true",
+    );
+    expect(container.querySelector('[data-testid="theme"]')?.textContent).toBe(
+      "bootstrapped",
+    );
+  });
+
+  it("merges partial bootstrap with defaults instead of browser cache", () => {
+    window.localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: true, theme: "cached" }),
+    );
+    fetchMock.mockReturnValue(new Promise(() => {}));
+
+    render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        initialValues={{ theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+    expect(screen.getByTestId("theme").textContent).toBe("bootstrapped");
+  });
+
+  it("keeps explicit SSR fallback defaults through hydration", async () => {
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    const tree = (
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        initialValues={null}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(tree);
+    window.localStorage.setItem(
+      VALUES_STORAGE_KEY,
+      JSON.stringify({ souls: true, theme: "cached" }),
+    );
+    document.body.appendChild(container);
+
+    render(tree, { container, hydrate: true });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(container.querySelector('[data-testid="souls"]')?.textContent).toBe(
+      "false",
+    );
+    expect(container.querySelector('[data-testid="theme"]')?.textContent).toBe(
+      "light",
+    );
+  });
 });
 
 describe("fetch lifecycle", () => {
@@ -122,6 +307,46 @@ describe("fetch lifecycle", () => {
     expect(
       JSON.parse(window.localStorage.getItem(VALUES_STORAGE_KEY) ?? "{}"),
     ).toEqual({ souls: true, theme: "dark" });
+  });
+
+  it("refreshes and persists values after starting from server bootstrap", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: false, theme: "fresh" }));
+    render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        initialValues={{ souls: true, theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+    await waitFor(() => {
+      expect(screen.getByTestId("theme").textContent).toBe("fresh");
+    });
+    expect(
+      JSON.parse(window.localStorage.getItem(VALUES_STORAGE_KEY) ?? "{}"),
+    ).toEqual({ souls: false, theme: "fresh" });
+  });
+
+  it("keeps server bootstrap when the first refresh fails", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        initialValues={{ souls: true, theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+    expect(screen.getByTestId("theme").textContent).toBe("bootstrapped");
   });
 
   it("keeps last-known values when the service is unreachable", async () => {
@@ -316,6 +541,77 @@ describe("freshness", () => {
     expect(screen.getByTestId("souls").textContent).toBe("false");
   });
 
+  it("does not reuse server bootstrap after the context changes", () => {
+    window.localStorage.setItem(
+      flagValuesStorageKey(EVAL_KEY, "user-b", "null"),
+      JSON.stringify({ souls: false, theme: "user-b-cache" }),
+    );
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    const view = render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey="user-a"
+        initialValues={{ souls: true, theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    expect(screen.getByTestId("souls").textContent).toBe("true");
+
+    view.rerender(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey="user-b"
+        initialValues={{ souls: true, theme: "bootstrapped" }}
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+    expect(screen.getByTestId("theme").textContent).toBe("user-b-cache");
+  });
+
+  it("keeps bootstrap after an interrupted scope render", async () => {
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    const suspended = new Promise<void>(() => {});
+    let move: (() => void) | undefined;
+    let bump: (() => void) | undefined;
+
+    function SuspendedProbe({ contextKey }: { contextKey: string }) {
+      const souls = useFeatureFlag("souls");
+      if (contextKey === "user-b") {
+        throw suspended;
+      }
+      return <output data-testid="concurrent-souls">{String(souls)}</output>;
+    }
+
+    function ConcurrentDemo() {
+      const [contextKey, setContextKey] = useState("user-a");
+      const [, setTick] = useState(0);
+      move = () => startTransition(() => setContextKey("user-b"));
+      bump = () => setTick((value) => value + 1);
+      return (
+        <FeatureFlagProvider
+          evalKey={EVAL_KEY}
+          baseUrl={BASE_URL}
+          contextKey={contextKey}
+          initialValues={{ souls: true, theme: "bootstrapped" }}
+        >
+          <SuspendedProbe contextKey={contextKey} />
+        </FeatureFlagProvider>
+      );
+    }
+
+    render(<ConcurrentDemo />);
+    expect(screen.getByTestId("concurrent-souls").textContent).toBe("true");
+    await act(async () => move?.());
+    expect(screen.getByTestId("concurrent-souls").textContent).toBe("true");
+    await act(async () => bump?.());
+    expect(screen.getByTestId("concurrent-souls").textContent).toBe("true");
+  });
+
   it("replaces a stalled refresh when a new one is requested", async () => {
     let resolveFirst: ((response: Response) => void) | undefined;
     fetchMock.mockImplementationOnce(
@@ -348,6 +644,16 @@ describe("manifest typing", () => {
       souls: boolean;
       theme: string;
     }>();
+    expectTypeOf(evaluateFlags).returns.resolves.toEqualTypeOf<{
+      souls: boolean;
+      theme: string;
+    }>();
+    expectTypeOf(serverEvaluator).returns.resolves.toEqualTypeOf<{
+      searchTuning: FlagValue;
+    }>();
+    expectTypeOf(
+      jsonClient.useFeatureFlag<"searchTuning">,
+    ).returns.toEqualTypeOf<FlagValue>();
 
     const neverCalled = () => {
       // @ts-expect-error undeclared flag keys must not compile

@@ -4,8 +4,12 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "imports": {
+    "#evaluation": "./src/evaluation.ts"
+  },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "test": "vitest run",
