@@ -568,6 +568,7 @@ input[type="radio"]:focus-visible {
 .persona-card:hover {
   border-color: var(--accent-ring);
   box-shadow: var(--shadow-panel);
+  transform: translateY(-1px);
 }
 
 .persona-card:active {
@@ -720,6 +721,54 @@ input[type="radio"]:focus-visible {
 
 [data-theme="light"] .oc-app-navigation .brandmark-img-light {
   display: none;
+}
+
+/* Colophon under the auth card: quiet provenance line, carapace.design's
+   "An OpenClaw project" footer in KrillSwitch clothes. */
+.auth-colophon {
+  color: var(--ink-faint);
+  font-size: var(--oc-font-size-xs);
+  text-align: center;
+}
+
+.auth-colophon p {
+  margin: 0;
+}
+
+.auth-colophon a {
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-colophon a:hover {
+  color: var(--accent-text);
+}
+
+/* --- Motion ---
+   Small, consistent movement on the carapace timing tokens. The global
+   prefers-reduced-motion rule collapses all of it. */
+.oc-app-content > section {
+  animation: page-enter 220ms var(--oc-ease-out);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.oc-app-navigation-item,
+.oc-table tr,
+.oc-summary-metric,
+.oc-badge,
+.oc-empty {
+  transition:
+    background var(--oc-duration-fast) var(--oc-ease-out),
+    border-color var(--oc-duration-fast) var(--oc-ease-out),
+    color var(--oc-duration-fast) var(--oc-ease-out),
+    box-shadow var(--oc-duration-fast) var(--oc-ease-out);
 }
 
 /* --- Surface depth (carapace.design recipe) ---
@@ -1227,7 +1276,11 @@ input[type="radio"]:focus-visible {
   position: fixed;
   inset: 0;
   z-index: var(--z-modal-backdrop);
-  background: oklch(0.2 0.02 262 / 0.5);
+  /* carapace scrim: deep ink plus blur so the console recedes as a layer
+     instead of just dimming. */
+  background: oklch(0.13 0.01 262 / 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: modal-overlay-in 150ms ease-out;
 }
 
@@ -2707,4 +2760,54 @@ h1 {
     /* biome-ignore lint/complexity/noImportantStyles: same kill switch for animations */
     animation-duration: 0.01ms !important;
   }
+}
+
+/* --- Tooltips ---
+   Token-styled tooltip for icon-only controls (Carapace ships no tooltip
+   surface yet). data-tip is the label; shown on hover and keyboard focus. */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: var(--z-dropdown);
+  padding: var(--oc-space-1) var(--oc-space-2);
+  border: 1px solid var(--oc-border-subtle);
+  border-radius: var(--oc-radius-inset);
+  background: var(--oc-bg-elevated);
+  color: var(--oc-text-primary);
+  font-size: var(--oc-font-size-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: var(--oc-shadow-md);
+  opacity: 0;
+  transform: translate(-50%, 2px);
+  transition:
+    opacity var(--oc-duration-fast) var(--oc-ease-out),
+    transform var(--oc-duration-fast) var(--oc-ease-out);
+  pointer-events: none;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Inside the navigation rail the tooltip anchors to the control's left edge:
+   the rail clips overflow, and a centered tooltip on the first tab would
+   extend past its boundary and be cut. */
+.oc-app-navigation [data-tip]::after {
+  left: 0;
+  transform: translate(0, 2px);
+}
+
+.oc-app-navigation [data-tip]:hover::after,
+.oc-app-navigation [data-tip]:focus-visible::after {
+  transform: translate(0, 0);
 }

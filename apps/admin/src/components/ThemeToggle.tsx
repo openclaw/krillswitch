@@ -68,7 +68,7 @@ export function ThemeToggle({ theme }: { theme: ThemeControl }) {
           className="oc-segmented-item theme-tab"
           aria-pressed={theme.mode === option.mode}
           aria-label={option.label}
-          title={option.label}
+          data-tip={option.label}
           onClick={() => theme.setMode(option.mode)}
         >
           {option.icon}

@@ -11,7 +11,6 @@ import {
   PencilIcon,
   ShieldIcon,
 } from "../components/brand";
-import { RoleChip } from "../components/RoleChip";
 
 type RoleKey = AdminRole | "none";
 
@@ -141,7 +140,6 @@ export function SignIn() {
                         <span className="persona-desc">{meta.description}</span>
                       </span>
                       <span className="persona-meta">
-                        <RoleChip role={persona.role} />
                         <ChevronRightIcon className="persona-chevron" />
                       </span>
                     </button>
@@ -169,6 +167,19 @@ export function SignIn() {
             </a>
           </div>
         </div>
+        <footer className="auth-colophon">
+          <p>
+            An{" "}
+            <a
+              href="https://openclaw.ai"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              OpenClaw Foundation
+            </a>{" "}
+            project — open source feature flags for agents and apps.
+          </p>
+        </footer>
       </div>
     </div>
   );
