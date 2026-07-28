@@ -72,7 +72,7 @@ export function MemberProfilePage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to="/access/members">Members</Link>
@@ -132,14 +132,14 @@ function RoleSection({
     <section className="detail-section">
       <h2>Role</h2>
       <div className="profile-role">
-        <div className="field">
-          <span className="field-label">Email</span>
+        <div className="oc-field">
+          <span className="oc-field-label">Email</span>
           <span className="field-value">
             <code>{member.email}</code>
             {member.id === me.user.id && <span className="muted"> (you)</span>}
           </span>
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="member-role">Role</label>
           <Select value={current} onValueChange={setRole}>
             <SelectTrigger id="member-role">
@@ -167,7 +167,7 @@ function RoleSection({
           <div>
             <button
               type="button"
-              className="btn btn-primary"
+              className="oc-action oc-action-primary"
               disabled={save.isPending}
               onClick={() => save.mutate()}
             >
@@ -203,7 +203,7 @@ function MintedTokensSection({ userId }: { userId: string }) {
         <TableSkeleton
           columns={5}
           rows={5}
-          frameClassName="table-frame-tokens"
+          frameClassName="oc-table-wrap-tokens"
         />
       )}
       {tokensQuery.isError && <p role="alert">Failed to load tokens.</p>}
@@ -215,8 +215,8 @@ function MintedTokensSection({ userId }: { userId: string }) {
       )}
       {tokensQuery.isSuccess && tokens.length > 0 && (
         <>
-          <TableFrame className="table-frame-tokens">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-tokens">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -274,7 +274,7 @@ function AuditHistorySection({ userId }: { userId: string }) {
         <TableSkeleton
           columns={3}
           rows={5}
-          frameClassName="table-frame-audit"
+          frameClassName="oc-table-wrap-audit"
         />
       )}
       {logQuery.isError && <p role="alert">Failed to load history.</p>}
@@ -286,8 +286,8 @@ function AuditHistorySection({ userId }: { userId: string }) {
       )}
       {logQuery.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="table-frame-audit">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-audit">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>When</th>

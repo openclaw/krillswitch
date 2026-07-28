@@ -102,7 +102,7 @@ export function NewFlagPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to={`/projects/${projectKey}/${environmentKey}`}>
@@ -120,7 +120,7 @@ export function NewFlagPage() {
           <label htmlFor="new-flag-key">Key</label>
           <input
             id="new-flag-key"
-            className="input input-mono"
+            className="oc-input input-mono"
             placeholder="my-new-flag"
             value={key}
             onChange={(event) => setKey(event.target.value)}
@@ -128,7 +128,7 @@ export function NewFlagPage() {
           <label htmlFor="new-flag-name">Name</label>
           <input
             id="new-flag-name"
-            className="input"
+            className="oc-input"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
@@ -156,7 +156,7 @@ export function NewFlagPage() {
           <label htmlFor="new-flag-description">Description</label>
           <input
             id="new-flag-description"
-            className="input"
+            className="oc-input"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
@@ -199,14 +199,14 @@ export function NewFlagPage() {
       <div className="form-actions">
         <button
           type="button"
-          className="btn btn-primary"
+          className="oc-action oc-action-primary"
           disabled={create.isPending}
           onClick={onCreate}
         >
           Create flag
         </button>
         <Link
-          className="btn btn-quiet btn-link"
+          className="oc-action oc-action-ghost btn-link"
           to={`/projects/${projectKey}/${environmentKey}`}
         >
           Cancel

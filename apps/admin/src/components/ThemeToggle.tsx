@@ -59,16 +59,16 @@ const OPTIONS: { mode: ThemeMode; label: string; icon: ReactNode }[] = [
 
 export function ThemeToggle({ theme }: { theme: ThemeControl }) {
   return (
-    <fieldset className="theme-toggle">
+    <fieldset className="oc-segmented theme-toggle">
       <legend className="visually-hidden">Theme</legend>
       {OPTIONS.map((option) => (
         <button
           key={option.mode}
           type="button"
-          className="theme-tab"
+          className="oc-segmented-item theme-tab"
           aria-pressed={theme.mode === option.mode}
           aria-label={option.label}
-          title={option.label}
+          data-tip={option.label}
           onClick={() => theme.setMode(option.mode)}
         >
           {option.icon}

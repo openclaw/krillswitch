@@ -79,7 +79,7 @@ export function AllowlistEditor({
           {!disabled && (
             <button
               type="button"
-              className="btn btn-quiet"
+              className="oc-action oc-action-secondary"
               onClick={() =>
                 onChange([
                   ...targets,
@@ -95,7 +95,7 @@ export function AllowlistEditor({
       {targets.map((target, index) => (
         <div className="targeting-row" key={target.rowId}>
           <input
-            className="input input-mono targeting-keys"
+            className="oc-input input-mono targeting-keys"
             aria-label={`Allowlist ${index + 1} user keys`}
             placeholder="user keys, comma separated"
             value={target.keysRaw}
@@ -113,7 +113,7 @@ export function AllowlistEditor({
           {!disabled && (
             <button
               type="button"
-              className="btn btn-quiet"
+              className="oc-action oc-action-secondary"
               aria-label={`Remove allowlist ${index + 1}`}
               onClick={() =>
                 onChange(targets.filter((_, position) => position !== index))
@@ -127,7 +127,7 @@ export function AllowlistEditor({
       {!disabled && targets.length > 0 && (
         <button
           type="button"
-          className="btn btn-quiet"
+          className="oc-action oc-action-secondary"
           onClick={() =>
             onChange([
               ...targets,
@@ -177,7 +177,7 @@ export function RulesEditor({
           {!disabled && (
             <button
               type="button"
-              className="btn btn-quiet"
+              className="oc-action oc-action-secondary"
               onClick={() =>
                 onChange([
                   ...rules,
@@ -199,7 +199,7 @@ export function RulesEditor({
         <div className="targeting-row" key={rule.rowId}>
           <span className="targeting-arrow muted">if</span>
           <input
-            className="input input-mono targeting-attribute"
+            className="oc-input input-mono targeting-attribute"
             aria-label={`Rule ${index + 1} attribute`}
             placeholder="attribute"
             value={rule.attribute}
@@ -210,7 +210,7 @@ export function RulesEditor({
           />
           <span className="targeting-arrow muted">in</span>
           <input
-            className="input input-mono targeting-values"
+            className="oc-input input-mono targeting-values"
             aria-label={`Rule ${index + 1} values`}
             placeholder="values, comma separated"
             value={rule.valuesRaw}
@@ -230,7 +230,7 @@ export function RulesEditor({
           {!disabled && (
             <button
               type="button"
-              className="btn btn-quiet"
+              className="oc-action oc-action-secondary"
               aria-label={`Remove rule ${index + 1}`}
               onClick={() =>
                 onChange(rules.filter((_, position) => position !== index))
@@ -244,7 +244,7 @@ export function RulesEditor({
       {!disabled && rules.length > 0 && (
         <button
           type="button"
-          className="btn btn-quiet"
+          className="oc-action oc-action-secondary"
           onClick={() =>
             onChange([
               ...rules,
@@ -336,7 +336,7 @@ export function RolloutEditor({
                   {variationLabel(variation, index)}
                 </span>
                 <input
-                  className="input input-weight"
+                  className="oc-input input-weight"
                   type="number"
                   min={0}
                   max={100}

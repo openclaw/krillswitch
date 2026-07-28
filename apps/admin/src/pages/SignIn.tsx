@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { type AdminRole, api, type DevPersonaOption } from "../api";
+import krillBanner from "../assets/krill-banner.avif";
 import {
   ArrowRightIcon,
   Brandmark,
@@ -10,7 +11,6 @@ import {
   PencilIcon,
   ShieldIcon,
 } from "../components/brand";
-import { RoleChip } from "../components/RoleChip";
 
 type RoleKey = AdminRole | "none";
 
@@ -66,6 +66,18 @@ export function SignIn() {
 
   return (
     <div className="auth-screen">
+      {/* Carapace brand banner: the krill artwork rises from the bottom of
+          the viewport behind the card, top edge dissolved by the fade. */}
+      <div
+        className="oc-brand-banner auth-banner"
+        data-anchor="bottom"
+        data-effect="fade"
+        aria-hidden="true"
+      >
+        <div className="oc-brand-banner-art">
+          <img src={krillBanner} alt="" />
+        </div>
+      </div>
       <div className="auth">
         <Brandmark />
         <div className="auth-card">
@@ -95,7 +107,7 @@ export function SignIn() {
             <>
               <button
                 type="button"
-                className="btn btn-primary btn-github"
+                className="oc-action oc-action-primary btn-github"
                 disabled={github.isPending}
                 onClick={() => github.mutate()}
               >
@@ -128,7 +140,6 @@ export function SignIn() {
                         <span className="persona-desc">{meta.description}</span>
                       </span>
                       <span className="persona-meta">
-                        <RoleChip role={persona.role} />
                         <ChevronRightIcon className="persona-chevron" />
                       </span>
                     </button>
@@ -142,7 +153,9 @@ export function SignIn() {
           )}
 
           <div className="auth-footer">
-            <span className="muted">Local development only.</span>
+            <span className="muted">
+              {hasPersonas ? "Local development only." : "Admin access only."}
+            </span>
             <a
               className="auth-learn"
               href="https://github.com/openclaw/krillswitch"
@@ -154,6 +167,19 @@ export function SignIn() {
             </a>
           </div>
         </div>
+        <footer className="auth-colophon">
+          <p>
+            An{" "}
+            <a
+              href="https://openclaw.ai"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              OpenClaw Foundation
+            </a>{" "}
+            project — open source feature flags for agents and apps.
+          </p>
+        </footer>
       </div>
     </div>
   );

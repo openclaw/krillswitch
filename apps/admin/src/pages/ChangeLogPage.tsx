@@ -80,7 +80,7 @@ export function ChangeLogPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <h1>Change log</h1>
         <div className="changelog-filters">
           <Combobox
@@ -105,7 +105,7 @@ export function ChangeLogPage() {
         <TableSkeleton
           columns={5}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-changelog"
+          frameClassName="oc-table-wrap-changelog"
         />
       )}
       {log.isError && <p role="alert">Failed to load the change log.</p>}
@@ -118,7 +118,7 @@ export function ChangeLogPage() {
             action={
               <button
                 type="button"
-                className="btn btn-quiet"
+                className="oc-action oc-action-secondary"
                 onClick={() => {
                   changeProjectFilter("");
                   changeFlagFilter("");
@@ -137,8 +137,8 @@ export function ChangeLogPage() {
         ))}
       {log.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="table-frame-changelog">
-            <table className="data-table changelog-table">
+          <TableFrame className="oc-table-wrap-changelog">
+            <table className="oc-table changelog-table">
               <thead>
                 <tr>
                   <th>When</th>

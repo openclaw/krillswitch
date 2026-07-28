@@ -3,8 +3,9 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router";
 import { api, type Me } from "./api";
 import {
-  Brandmark,
+  ChevronDownIcon,
   FolderIcon,
+  KrillMark,
   ListIcon,
   LockIcon,
   UsersIcon,
@@ -36,55 +37,99 @@ export function Shell({
   }
 
   return (
-    <div className="shell">
-      <nav className="rail" aria-label="Main">
-        <NavLink
-          to="/"
-          end
-          className="rail-header"
-          aria-label="krillswitch home"
-        >
-          <Brandmark compact />
+    <div className="oc-app-frame" data-navigation="expanded">
+      <nav className="oc-app-navigation" aria-label="Main">
+        <div className="oc-app-navigation-header">
+          <span className="oc-app-navigation-brand" aria-hidden="true">
+            <KrillMark />
+          </span>
+          <span className="oc-app-navigation-title">KrillSwitch</span>
+        </div>
+        <NavLink to="/" end className="oc-app-navigation-context">
+          <span className="oc-app-navigation-context-icon" aria-hidden="true">
+            <KrillMark />
+          </span>
+          <span className="oc-app-navigation-context-copy">
+            <strong>KrillSwitch</strong>
+            <small>Admin console</small>
+          </span>
+          <ChevronDownIcon className="oc-app-navigation-context-chevron" />
         </NavLink>
-        <NavLink to="/" end className="rail-link">
-          <FolderIcon className="rail-icon" />
-          Projects
-        </NavLink>
-        <NavLink to="/changelog" className="rail-link">
-          <ListIcon className="rail-icon" />
-          Change log
-        </NavLink>
-        {me.role === "admin" && (
-          <>
-            <div className="rail-group">Administration</div>
-            <NavLink to="/access/members" className="rail-link">
-              <UsersIcon className="rail-icon" />
-              Members
-            </NavLink>
-            <NavLink to="/access/tokens" className="rail-link">
-              <LockIcon className="rail-icon" />
-              Access tokens
-            </NavLink>
-          </>
-        )}
-      </nav>
-      <div className="main-col">
-        <header className="topbar">
-          <div className="identity">
-            <ThemeToggle theme={theme} />
-            <div className="user-pill">
-              <span className="user-avatar" aria-hidden="true">
-                {initials(me.user.name)}
-              </span>
-              <span className="user-name">{me.user.name}</span>
-              <RoleChip role={me.role} />
-            </div>
-            <button type="button" className="btn btn-quiet" onClick={signOut}>
+        <div className="oc-app-navigation-body">
+          <section className="oc-app-navigation-section">
+            <p className="oc-app-navigation-label">Workspace</p>
+            <ul className="oc-app-navigation-list">
+              <li>
+                <NavLink to="/" end className="oc-app-navigation-item">
+                  <FolderIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">Projects</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/changelog" className="oc-app-navigation-item">
+                  <ListIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">
+                    Change log
+                  </span>
+                </NavLink>
+              </li>
+            </ul>
+          </section>
+          {me.role === "admin" && (
+            <section className="oc-app-navigation-section">
+              <p className="oc-app-navigation-label">Administration</p>
+              <ul className="oc-app-navigation-list">
+                <li>
+                  <NavLink
+                    to="/access/members"
+                    className="oc-app-navigation-item"
+                  >
+                    <UsersIcon className="oc-app-navigation-icon" />
+                    <span className="oc-app-navigation-item-label">
+                      Members
+                    </span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/access/tokens"
+                    className="oc-app-navigation-item"
+                  >
+                    <LockIcon className="oc-app-navigation-icon" />
+                    <span className="oc-app-navigation-item-label">
+                      Access tokens
+                    </span>
+                  </NavLink>
+                </li>
+              </ul>
+            </section>
+          )}
+        </div>
+        <footer className="oc-app-navigation-footer">
+          <div className="nav-identity">
+            <span className="user-avatar" aria-hidden="true">
+              {initials(me.user.name)}
+            </span>
+            <span className="oc-app-navigation-footer-copy">
+              <strong>{me.user.name}</strong>
+              <small>{me.user.email}</small>
+            </span>
+          </div>
+          <div className="nav-identity-actions">
+            <RoleChip role={me.role} />
+            <button
+              type="button"
+              className="oc-action oc-action-ghost nav-signout"
+              onClick={signOut}
+            >
               Sign out
             </button>
           </div>
-        </header>
-        <main className="content">{children}</main>
+          <ThemeToggle theme={theme} />
+        </footer>
+      </nav>
+      <div className="oc-app-main">
+        <main className="oc-app-content">{children}</main>
       </div>
     </div>
   );

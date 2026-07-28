@@ -33,7 +33,7 @@ export function CreateEnvironmentPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to={projectPath}>{projectKey}</Link>
@@ -49,27 +49,27 @@ export function CreateEnvironmentPage() {
           if (canSubmit) create.mutate();
         }}
       >
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-env-name">Name</label>
           <input
             id="new-env-name"
-            className="input"
+            className="oc-input"
             placeholder="Staging"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-env-key">Key</label>
           <input
             id="new-env-key"
-            className="input input-mono"
+            className="oc-input input-mono"
             placeholder="e.g. staging"
             autoComplete="off"
             value={key}
             onChange={(event) => setKey(event.target.value)}
           />
-          <p className="field-hint">
+          <p className="oc-field-message">
             Environments hold their own flag states and targeting. Creating one
             mints its public evaluation key.
           </p>
@@ -82,12 +82,12 @@ export function CreateEnvironmentPage() {
         <div className="form-actions">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="oc-action oc-action-primary"
             disabled={!canSubmit}
           >
             Create environment
           </button>
-          <Link className="btn btn-quiet btn-link" to={projectPath}>
+          <Link className="oc-action oc-action-ghost btn-link" to={projectPath}>
             Cancel
           </Link>
         </div>

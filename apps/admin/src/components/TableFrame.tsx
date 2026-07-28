@@ -60,7 +60,7 @@ export function TableFrame({
   }, []);
 
   const classes = [
-    "table-frame",
+    "oc-table-wrap",
     className,
     scrollState.left ? "can-scroll-left" : "",
     scrollState.right ? "can-scroll-right" : "",

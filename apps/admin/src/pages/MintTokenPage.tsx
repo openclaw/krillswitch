@@ -51,7 +51,7 @@ export function MintTokenPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to="/access">Access</Link>
@@ -62,7 +62,7 @@ export function MintTokenPage() {
 
       {freshToken ? (
         <div className="form-page">
-          <p className="field-hint">
+          <p className="oc-field-message">
             Copy it now. This token is shown once and can't be retrieved later.
           </p>
           <div className="token-value-row">
@@ -71,14 +71,14 @@ export function MintTokenPage() {
             </code>
             <button
               type="button"
-              className="btn btn-primary"
+              className="oc-action oc-action-primary"
               onClick={copyToken}
             >
               Copy token
             </button>
             <button
               type="button"
-              className="btn btn-quiet"
+              className="oc-action oc-action-secondary"
               onClick={() => setRevealed((current) => !current)}
             >
               {revealed ? "Hide" : "Reveal"}
@@ -97,7 +97,7 @@ export function MintTokenPage() {
           <div className="form-actions">
             <button
               type="button"
-              className="btn btn-primary"
+              className="oc-action oc-action-primary"
               onClick={() => navigate("/access")}
             >
               Done
@@ -112,18 +112,18 @@ export function MintTokenPage() {
             if (canSubmit) mint.mutate();
           }}
         >
-          <div className="field">
+          <div className="oc-field">
             <label htmlFor="mint-name">Token name</label>
             <input
               id="mint-name"
-              className="input"
+              className="oc-input"
               placeholder="e.g. ci-deployer"
               autoComplete="off"
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          <div className="field">
+          <div className="oc-field">
             <label htmlFor="mint-role">Role</label>
             <Select
               value={role}
@@ -139,7 +139,7 @@ export function MintTokenPage() {
                 <SelectItem value="viewer">viewer</SelectItem>
               </SelectContent>
             </Select>
-            <p className="field-hint">
+            <p className="oc-field-message">
               Tokens are for the CLI and agents — editor or viewer only, never
               admin. Revocable any time; shown once at mint.
             </p>
@@ -152,12 +152,12 @@ export function MintTokenPage() {
           <div className="form-actions">
             <button
               type="submit"
-              className="btn btn-primary"
+              className="oc-action oc-action-primary"
               disabled={!canSubmit}
             >
               Mint token
             </button>
-            <Link className="btn btn-quiet btn-link" to="/access">
+            <Link className="oc-action oc-action-ghost btn-link" to="/access">
               Cancel
             </Link>
           </div>

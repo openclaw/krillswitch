@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 import { api, type Me, type ProjectSummary } from "../api";
-import { FolderIcon } from "../components/brand";
+import { FolderIcon, LayersIcon, ListIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
@@ -42,20 +42,61 @@ export function ProjectsPage({ me }: { me: Me }) {
           p.key.toLowerCase().includes(query),
       )
     : rows;
+  const visibleFlagCount = visible.reduce(
+    (sum, project) => sum + project.flagCount,
+    0,
+  );
+  const visibleEnvironmentCount = visible.reduce(
+    (sum, project) => sum + project.environmentCount,
+    0,
+  );
 
   return (
     <section>
-      <header className="page-header">
-        <div className="page-title-row">
-          <h1>Projects</h1>
+      <header className="oc-page-header">
+        <div className="oc-page-header-content">
+          <div className="page-title-row">
+            <h1>Projects</h1>
+            {projects.isSuccess && total > 0 && (
+              <span className="title-count">{total}</span>
+            )}
+          </div>
           {projects.isSuccess && total > 0 && (
-            <span className="title-count">{total}</span>
+            <div className="oc-summary-strip oc-page-header-summary">
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
+                  <FolderIcon />
+                </span>
+                <span className="oc-summary-metric-copy">
+                  <strong>{total}</strong>
+                  <small>Projects</small>
+                </span>
+              </div>
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
+                  <ListIcon />
+                </span>
+                <span className="oc-summary-metric-copy">
+                  <strong>{visibleFlagCount}</strong>
+                  <small>Flags shown</small>
+                </span>
+              </div>
+              <div className="oc-summary-metric">
+                <span className="oc-summary-metric-icon" aria-hidden="true">
+                  <LayersIcon />
+                </span>
+                <span className="oc-summary-metric-copy">
+                  <strong>{visibleEnvironmentCount}</strong>
+                  <small>Envs shown</small>
+                </span>
+              </div>
+            </div>
           )}
         </div>
         {projects.isSuccess && total > 0 && (
-          <div className="header-actions">
+          <div className="oc-page-header-actions">
             <input
-              className="input projects-search"
+              className="oc-input projects-search"
               type="search"
               aria-label="Filter projects on this page"
               placeholder="Filter this page…"
@@ -63,7 +104,10 @@ export function ProjectsPage({ me }: { me: Me }) {
               onChange={(event) => setSearch(event.target.value)}
             />
             {isAdmin && (
-              <Link className="btn btn-primary btn-link" to="/projects/new">
+              <Link
+                className="oc-action oc-action-primary btn-link"
+                to="/projects/new"
+              >
                 New project
               </Link>
             )}
@@ -75,7 +119,7 @@ export function ProjectsPage({ me }: { me: Me }) {
         <TableSkeleton
           columns={4}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-projects"
+          frameClassName="oc-table-wrap-projects"
         />
       )}
       {projects.isError && <p role="alert">Failed to load projects.</p>}
@@ -88,7 +132,10 @@ export function ProjectsPage({ me }: { me: Me }) {
             title="Create your first project"
             description="Projects group your flags, environments, and evaluation keys. Create one to start shipping features behind flags."
             action={
-              <Link className="btn btn-primary btn-link" to="/projects/new">
+              <Link
+                className="oc-action oc-action-primary btn-link"
+                to="/projects/new"
+              >
                 New project
               </Link>
             }
@@ -128,8 +175,8 @@ function ProjectsTable({
   }
 
   return (
-    <TableFrame className="table-frame-projects">
-      <table className="data-table">
+    <TableFrame className="oc-table-wrap-projects">
+      <table className="oc-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -156,7 +203,9 @@ function ProjectsTable({
                 <code>{project.key}</code>
               </td>
               <td className="col-num">
-                <span className="badge-soft">{project.flagCount}</span>
+                <span className="oc-badge oc-badge-neutral badge-soft">
+                  {project.flagCount}
+                </span>
               </td>
               <td className="cell-muted">
                 {formatLastChange(project.lastChangeAt)}

@@ -14,14 +14,14 @@ export function SelectTrigger({
 }: ComponentProps<typeof SelectPrimitive.Trigger>) {
   return (
     <SelectPrimitive.Trigger
+      // oc-select carries the control box (size, border, background, focus and
+      // disabled states); only layout and Radix-specific bits stay here,
+      // because Radix renders its own chevron rather than the native one.
       className={cn(
-        "inline-flex h-8 w-full cursor-pointer appearance-none items-center justify-between gap-2",
-        "rounded-sm border border-input bg-card px-[11px] text-sm text-foreground outline-none",
-        "transition-[border-color,box-shadow] duration-150",
+        "oc-select select-trigger",
+        "inline-flex cursor-pointer items-center justify-between gap-2",
         "data-[placeholder]:text-muted-foreground",
-        "hover:border-[var(--ink-faint)]",
-        "focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-ring",
-        "disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground",
+        "disabled:cursor-not-allowed",
         "[&>span]:truncate",
         className,
       )}

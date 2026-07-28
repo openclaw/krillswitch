@@ -15,7 +15,7 @@ export function TableSkeleton({
 }) {
   return (
     <TableFrame className={frameClassName}>
-      <table className="data-table skeleton-table" role="presentation">
+      <table className="oc-table skeleton-table" role="presentation">
         <tbody>
           {Array.from({ length: rows }).map((_, row) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder, never reordered

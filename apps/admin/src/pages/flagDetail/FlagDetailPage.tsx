@@ -21,7 +21,7 @@ export function FlagDetailPage({ me }: { me: Me }) {
   if (detail.isPending) {
     return (
       <section>
-        <header className="page-header">
+        <header className="oc-page-header">
           <h1>Flag</h1>
         </header>
         <BlockSkeleton lines={5} />
@@ -141,7 +141,7 @@ function FlagDetailEditor({
 
   return (
     <section className={`flag-editor ${isDirty ? "is-dirty" : ""}`}>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to={`/projects/${projectKey}/${environmentKey}`}>
@@ -159,7 +159,7 @@ function FlagDetailEditor({
             <p className="muted flag-description">{detail.flag.description}</p>
           )}
         </div>
-        <div className="header-actions">
+        <div className="oc-page-header-actions">
           <div className="enable-switch">
             <Switch
               checked={draft.enabled}
@@ -178,7 +178,7 @@ function FlagDetailEditor({
               pending={remove.isPending}
               onConfirm={() => remove.mutate()}
               trigger={
-                <button type="button" className="btn btn-quiet">
+                <button type="button" className="oc-action oc-action-secondary">
                   Delete flag
                 </button>
               }
@@ -203,7 +203,7 @@ function FlagDetailEditor({
             <div className="save-actions">
               <button
                 type="button"
-                className="btn btn-quiet"
+                className="oc-action oc-action-secondary"
                 aria-label="Discard changes"
                 onClick={onDiscard}
                 disabled={save.isPending}
@@ -213,7 +213,7 @@ function FlagDetailEditor({
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="oc-action oc-action-primary"
                 disabled={save.isPending}
                 onClick={onSave}
               >

@@ -24,23 +24,27 @@ export function MembersPage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
-        <h1>Members</h1>
+      <header className="oc-page-header">
+        <div className="oc-page-header-content">
+          <h1 className="oc-page-header-title">Members</h1>
+          <p className="oc-page-header-description">
+            Roles apply across every project.
+          </p>
+        </div>
       </header>
-      <p className="section-hint">Roles apply across every project.</p>
 
       {members.isPending && (
         <TableSkeleton
           columns={3}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-access"
+          frameClassName="oc-table-wrap-access"
         />
       )}
       {members.isError && <p role="alert">Failed to load members.</p>}
       {members.isSuccess && (
         <>
-          <TableFrame className="table-frame-access">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-access">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>

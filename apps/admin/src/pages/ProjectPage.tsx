@@ -27,7 +27,7 @@ export function ProjectPage({ me }: { me: Me }) {
   if (detail.isPending) {
     return (
       <section>
-        <header className="page-header">
+        <header className="oc-page-header">
           <h1>Project</h1>
         </header>
         <BlockSkeleton lines={3} />
@@ -44,9 +44,12 @@ export function ProjectPage({ me }: { me: Me }) {
     if (!firstEnvironment) {
       return (
         <section>
-          <header className="page-header">
+          <header className="oc-page-header">
             <div>
-              <Link className="page-eyebrow" to={`/projects/${projectKey}`}>
+              <Link
+                className="oc-page-header-kicker"
+                to={`/projects/${projectKey}`}
+              >
                 {projectKey}
               </Link>
               <h1>{project.name}</h1>
@@ -59,7 +62,7 @@ export function ProjectPage({ me }: { me: Me }) {
             action={
               me.role === "admin" ? (
                 <Link
-                  className="btn btn-primary btn-link"
+                  className="oc-action oc-action-primary btn-link"
                   to={`/projects/${encodeURIComponent(projectKey)}/environments/new`}
                 >
                   New environment
@@ -80,14 +83,17 @@ export function ProjectPage({ me }: { me: Me }) {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
-          <Link className="page-eyebrow" to={`/projects/${projectKey}`}>
+          <Link
+            className="oc-page-header-kicker"
+            to={`/projects/${projectKey}`}
+          >
             {projectKey}
           </Link>
           <h1>{project.name}</h1>
         </div>
-        <div className="header-actions">
+        <div className="oc-page-header-actions">
           <Select
             value={environmentKey}
             onValueChange={(env) =>
@@ -110,7 +116,7 @@ export function ProjectPage({ me }: { me: Me }) {
           </Select>
           {(me.role === "editor" || me.role === "admin") && (
             <Link
-              className="btn btn-primary btn-link"
+              className="oc-action oc-action-primary btn-link"
               to={`/projects/${projectKey}/${environmentKey}/flags/new`}
             >
               New flag
@@ -151,7 +157,7 @@ function FlagTable({
   });
 
   if (flags.isPending) {
-    return <TableSkeleton columns={4} frameClassName="table-frame-flags" />;
+    return <TableSkeleton columns={4} frameClassName="oc-table-wrap-flags" />;
   }
   if (flags.isError) {
     return <p role="alert">Failed to load flags.</p>;
@@ -164,7 +170,7 @@ function FlagTable({
         description={`Flags turn features on or off and target users without a deploy. Add the first one for ${environmentKey}.`}
         action={
           <Link
-            className="btn btn-primary btn-link"
+            className="oc-action oc-action-primary btn-link"
             to={`/projects/${projectKey}/${environmentKey}/flags/new`}
           >
             New flag
@@ -181,8 +187,8 @@ function FlagTable({
   }
 
   return (
-    <TableFrame className="table-frame-flags">
-      <table className="data-table">
+    <TableFrame className="oc-table-wrap-flags">
+      <table className="oc-table">
         <thead>
           <tr>
             <th>Name</th>

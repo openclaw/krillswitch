@@ -58,15 +58,15 @@ export function App() {
             <div className="auth-actions">
               <button
                 type="button"
-                className="btn btn-primary"
+                className="oc-action oc-action-primary"
                 disabled={me.isFetching}
                 onClick={() => me.refetch()}
               >
-                <RetryIcon className="btn-icon" />
+                <RetryIcon className="oc-action oc-action-icon" />
                 {me.isFetching ? "Retrying…" : "Retry connection"}
               </button>
               <a
-                className="btn btn-quiet"
+                className="oc-action oc-action-secondary"
                 href="https://github.com/openclaw/krillswitch"
                 target="_blank"
                 rel="noreferrer"
