@@ -747,10 +747,13 @@ input[type="radio"]:focus-visible {
    ultra-wide monitors (keys would float far from their actions). */
 .oc-app-content > section {
   display: grid;
+  width: 100%;
   max-width: 1088px;
   align-content: start;
+  /* justify-self, not `margin: 0 auto`: oc-app-content is a grid, and an auto
+     margin on a grid item cancels stretch and shrinks it to its content. */
+  justify-self: center;
   gap: var(--oc-space-4);
-  margin: 0 auto;
 }
 
 /* Carapace insets the page header for pane-flush use. Here the content column
