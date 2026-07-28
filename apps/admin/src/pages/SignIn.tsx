@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { type AdminRole, api, type DevPersonaOption } from "../api";
+import krillBanner from "../assets/krill-banner.avif";
 import {
   ArrowRightIcon,
   Brandmark,
@@ -66,6 +67,18 @@ export function SignIn() {
 
   return (
     <div className="auth-screen">
+      {/* Carapace brand banner: the krill artwork rises from the bottom of
+          the viewport behind the card, top edge dissolved by the fade. */}
+      <div
+        className="oc-brand-banner auth-banner"
+        data-anchor="bottom"
+        data-effect="fade"
+        aria-hidden="true"
+      >
+        <div className="oc-brand-banner-art">
+          <img src={krillBanner} alt="" />
+        </div>
+      </div>
       <div className="auth">
         <Brandmark />
         <div className="auth-card">

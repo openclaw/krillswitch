@@ -109,7 +109,9 @@
   --chrome-accent: #ff8d77;
 
   --shadow-sm: var(--oc-shadow-surface);
-  --shadow-panel: none;
+  /* carapace.design depth: raised panels carry the md elevation instead of
+     sitting flat on the recessed canvas. */
+  --shadow-panel: var(--oc-shadow-md);
   --shadow-pop: var(--oc-shadow-pop), 0 0 0 1px var(--line);
 
   --r-sm: var(--oc-radius-control);
@@ -337,10 +339,56 @@ input[type="radio"]:focus-visible {
 }
 
 .auth-screen {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
+  overflow: hidden;
   padding: 24px;
+}
+
+/* The Carapace banner becomes a full-viewport backdrop: krill artwork rising
+   from the bottom edge, dissolved upward so the card floats above it. It is
+   decorative chrome — no border, no min-height, no content slot. */
+.oc-brand-banner.auth-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Ground the artwork on its own near-black band, rising from the bottom
+   like the sea floor. In dark mode it deepens the canvas; in light mode it
+   makes the band a deliberate dark hero strip instead of gray mush under a
+   dark image. */
+.oc-brand-banner.auth-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(10 10 12 / 0.9),
+    rgb(10 10 12 / 0.5) 45%,
+    transparent 78%
+  );
+}
+
+.auth-banner .oc-brand-banner-art img {
+  opacity: 0.55;
+}
+
+[data-theme="light"] .auth-banner .oc-brand-banner-art img {
+  opacity: 0.7;
+}
+
+.auth {
+  position: relative;
+  z-index: 1;
 }
 
 /* centered brand lockup + card column */
@@ -672,6 +720,16 @@ input[type="radio"]:focus-visible {
 
 [data-theme="light"] .oc-app-navigation .brandmark-img-light {
   display: none;
+}
+
+/* --- Surface depth (carapace.design recipe) ---
+   Elevated bordered surfaces lift off the recessed canvas with the package
+   shadow scale: sm for resting cards and tables, md for panels and the auth
+   card, lg for popovers. */
+.oc-table-wrap,
+.oc-summary-strip,
+.oc-empty {
+  box-shadow: var(--oc-shadow-sm);
 }
 
 /* --- app shell --- */
