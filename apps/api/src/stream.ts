@@ -84,7 +84,7 @@ streamRoutes.get("/v1/stream", async (c) => {
         });
       } else {
         // Comment frame keeps proxies from idling the connection out.
-        await stream.writeSSE({ comment: "keepalive" });
+        await stream.write(": keepalive\n\n");
       }
     }
   });

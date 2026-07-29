@@ -21,6 +21,9 @@ export default defineConfig(async () => {
             BETTER_AUTH_SECRET: "krillswitch-test-secret",
             BETTER_AUTH_URL: "http://localhost",
             DEV_AUTH_ENABLED: "1",
+            // Fast SSE ticks so stream tests finish in milliseconds.
+            STREAM_POLL_MS: "40",
+            STREAM_MAX_MS: "2000",
             // Pin auth-provider env: the pool also loads the developer's
             // .dev.vars, and real GitHub credentials there must not flip
             // test behavior.
