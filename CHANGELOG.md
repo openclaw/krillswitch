@@ -4,6 +4,21 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-07-29
+
+### Added
+
+- Production guardrail: saves and toggles in production require a confirm dialog with an audit comment; change-log entries carry optional operator comments end to end.
+- Segments: reusable project-scoped audiences (pinned context keys plus attribute rules) referenced from any flag's targeting rules, with typed `segment` evaluation reasons.
+- Flag archive lifecycle: archived flags leave the admin list but keep serving evaluations, with restore and full audit coverage.
+- Usage analytics: per-environment eval counters and daily request series power SDK-freshness badges, a home usage chart, and per-project and per-flag sparklines.
+- Webhooks: admin-managed URLs receive every change-log entry as JSON through a cursor-driven outbox drained after each mutation.
+- Command palette (⌘K) over pages, projects, and flags; a Connect page with copyable curl/JavaScript eval snippets and a live first-request status; scoped log-stream viewers on project and flag pages; a tabbed Settings page.
+
+### Changed
+
+- The admin console now consumes the Carapace design system (`@openclaw/carapace`) as a dependency — tokens, themes, and components — with a collapsible navigation rail, the krillswitch brand mark, environment and variation color identity, inline flag toggles, copy-first keys, and a LaunchDarkly-density visual pass across every page.
+
 ## [v0.1.2] - 2026-07-27
 
 ### Fixed
