@@ -8,6 +8,7 @@ import {
 import type { FlagKind } from "../../api";
 import { TableFrame } from "../../components/TableFrame";
 import type { VariationDraft } from "./draft";
+import { VariationDot } from "./VariationDot";
 
 export function VariationsEditor({
   kind,
@@ -77,7 +78,8 @@ export function VariationsEditor({
           <tbody>
             {variations.map((variation, index) => (
               <tr key={variation.id ?? `new-${index}`}>
-                <td>
+                <td className="td-variation-name">
+                  <VariationDot index={index} />
                   <input
                     className="oc-input"
                     aria-label={`Variation ${index + 1} name`}

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/select";
 import type { RuleDraft, TargetDraft, VariationDraft } from "./draft";
 import { newRowId, variationLabel } from "./draft";
+import { VariationDot, variationColor } from "./VariationDot";
 
 function VariationSelect({
   variations,
@@ -36,6 +37,7 @@ function VariationSelect({
             key={variation.id ?? `new-${index}`}
             value={String(index)}
           >
+            <VariationDot index={index} />
             {variationLabel(variation, index)}
           </SelectItem>
         ))}
@@ -319,7 +321,10 @@ export function RolloutEditor({
                   <span
                     key={variation.id ?? `new-${index}`}
                     className="rollout-bar-seg"
-                    style={{ flexGrow: weight }}
+                    style={{
+                      flexGrow: weight,
+                      backgroundColor: variationColor(index),
+                    }}
                     title={`${variationLabel(variation, index)}: ${weight}%`}
                   />
                 );
@@ -333,6 +338,7 @@ export function RolloutEditor({
                 key={variation.id ?? `new-${index}`}
               >
                 <span className="rollout-weight-name">
+                  <VariationDot index={index} />
                   {variationLabel(variation, index)}
                 </span>
                 <input

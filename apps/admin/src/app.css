@@ -1719,10 +1719,32 @@ input[type="radio"]:focus-visible {
   flex: 1 1 120px;
 }
 
+/* Rule rows read as a sentence: IF attribute IN values SERVES variation.
+   The connectives are set as small caps so the operands carry the weight. */
 .targeting-arrow {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-faint);
   flex-shrink: 0;
+}
+
+/* Deterministic variation color dot (VariationDot.tsx supplies the color). */
+.variation-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: baseline;
+}
+
+.td-variation-name {
+  /* Dot + name input on one line. */
+  display: flex;
+  align-items: center;
 }
 
 .rollout-enable {
@@ -1746,26 +1768,10 @@ input[type="radio"]:focus-visible {
   background: var(--surface-muted);
 }
 
+/* Segment colors come inline from variationColor() so they match the dots. */
 .rollout-bar-seg {
   min-width: 3px;
-  background: var(--accent);
   transition: flex-grow 150ms ease-out;
-}
-
-.rollout-bar-seg:nth-child(2) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 45%);
-}
-
-.rollout-bar-seg:nth-child(3) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 65%);
-}
-
-.rollout-bar-seg:nth-child(4) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 80%);
-}
-
-.rollout-bar-seg:nth-child(n + 5) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 88%);
 }
 
 .rollout-weights {
