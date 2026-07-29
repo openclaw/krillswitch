@@ -691,7 +691,13 @@ adminRoutes.get(
     if (!environment) {
       return c.json({ error: "not_found" }, 404);
     }
-    return c.json({ flags: await loadFlagList(db, environment.environmentId) });
+    return c.json({
+      flags: await loadFlagList(
+        db,
+        environment.environmentId,
+        c.req.param("projectKey"),
+      ),
+    });
   },
 );
 

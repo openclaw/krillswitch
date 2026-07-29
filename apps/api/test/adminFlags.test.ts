@@ -108,6 +108,30 @@ describe("environment flag list", () => {
     const souls = body.flags.find((flag) => flag.key === "souls");
     expect(souls).toMatchObject({ kind: "boolean", enabled: true });
   });
+
+  it("carries the off variation and last-change time on each row", async () => {
+    const cookie = await devLogin("editor");
+    // Any change stamps the flag's lastChangedAt via the change log.
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({ enabled: true }),
+      },
+    );
+    const response = await fetchFlags(cookie);
+    const body = await response.json<{
+      flags: (FlagListEntry & {
+        offVariation: string | null;
+        lastChangedAt: string | null;
+      })[];
+    }>();
+    const souls = body.flags.find((flag) => flag.key === "souls");
+    expect(typeof souls?.offVariation).toBe("string");
+    expect(souls?.lastChangedAt).toBeTruthy();
+    expect(new Date(souls?.lastChangedAt ?? 0).getTime()).toBeGreaterThan(0);
+  });
 });
 
 describe("flag toggle", () => {

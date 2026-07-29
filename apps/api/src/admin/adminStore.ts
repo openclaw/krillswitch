@@ -1,6 +1,13 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, max } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import { environments, flagEnvironments, flags, projects } from "../db/schema";
+import {
+  changeLog,
+  environments,
+  flagEnvironments,
+  flags,
+  projects,
+  variations,
+} from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
 
 export type ProjectDetail = {
@@ -15,6 +22,15 @@ export type FlagListEntry = {
   kind: string;
   description: string | null;
   enabled: boolean;
+};
+
+/** List rows carry extra operational context the toggle response does not:
+ *  what serves while off, and when the flag last changed (change-log time,
+ *  environment-agnostic). The client merges toggle responses into rows, so
+ *  these stay stable across a PATCH. */
+export type FlagListRow = FlagListEntry & {
+  offVariation: string | null;
+  lastChangedAt: Date | null;
 };
 
 export async function loadProjectDetail(
@@ -72,7 +88,8 @@ export async function resolveEnvironment(
 export async function loadFlagList(
   db: DrizzleD1Database,
   environmentId: string,
-): Promise<FlagListEntry[]> {
+  projectKey: string,
+): Promise<FlagListRow[]> {
   const rows = await db
     .select({
       id: flags.id,
@@ -81,12 +98,51 @@ export async function loadFlagList(
       kind: flags.kind,
       description: flags.description,
       enabled: flagEnvironments.enabled,
+      offVariationId: flagEnvironments.offVariationId,
     })
     .from(flagEnvironments)
     .innerJoin(flags, eq(flagEnvironments.flagId, flags.id))
     .where(eq(flagEnvironments.environmentId, environmentId))
     .all();
-  return rows.sort((a, b) => a.key.localeCompare(b.key));
+
+  const offVariationIds = rows.map((row) => row.offVariationId);
+  const variationRows = offVariationIds.length
+    ? await db
+        .select({
+          id: variations.id,
+          name: variations.name,
+          value: variations.value,
+        })
+        .from(variations)
+        .where(inArray(variations.id, offVariationIds))
+        .all()
+    : [];
+  const offNames = new Map(
+    variationRows.map((row) => [row.id, row.name ?? JSON.stringify(row.value)]),
+  );
+
+  const lastChanges = await db
+    .select({
+      flagKey: changeLog.flagKey,
+      lastChangedAt: max(changeLog.createdAt),
+    })
+    .from(changeLog)
+    .where(eq(changeLog.projectKey, projectKey))
+    .groupBy(changeLog.flagKey)
+    .all();
+  const lastChangedByKey = new Map(
+    lastChanges
+      .filter((row) => row.flagKey !== null && row.lastChangedAt !== null)
+      .map((row) => [row.flagKey, row.lastChangedAt as Date]),
+  );
+
+  return rows
+    .map(({ offVariationId, ...row }) => ({
+      ...row,
+      offVariation: offNames.get(offVariationId) ?? null,
+      lastChangedAt: lastChangedByKey.get(row.key) ?? null,
+    }))
+    .sort((a, b) => a.key.localeCompare(b.key));
 }
 
 // Project-level flag keys (env-independent) for filter UIs like the change
