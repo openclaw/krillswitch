@@ -4,13 +4,14 @@ import { NavLink } from "react-router";
 import { api, type Me } from "./api";
 import {
   ChevronDownIcon,
+  ExitIcon,
   FolderIcon,
+  GearIcon,
   KrillMark,
   ListIcon,
   LockIcon,
   UsersIcon,
 } from "./components/brand";
-import { RoleChip } from "./components/RoleChip";
 import { ThemeToggle } from "./components/ThemeToggle";
 import type { ThemeControl } from "./useThemeMode";
 
@@ -73,6 +74,12 @@ export function Shell({
                   </span>
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/settings" className="oc-app-navigation-item">
+                  <GearIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">Settings</span>
+                </NavLink>
+              </li>
             </ul>
           </section>
           {me.role === "admin" && (
@@ -115,17 +122,16 @@ export function Shell({
               <small>{me.user.email}</small>
             </span>
           </div>
-          <div className="nav-identity-actions">
-            <RoleChip role={me.role} />
-            <button
-              type="button"
-              className="oc-action oc-action-ghost nav-signout"
-              onClick={signOut}
-            >
-              Sign out
-            </button>
-          </div>
           <ThemeToggle theme={theme} />
+          <button
+            type="button"
+            className="theme-control nav-signout"
+            aria-label="Sign out"
+            data-tip="Sign out"
+            onClick={signOut}
+          >
+            <ExitIcon className="nav-signout-glyph" />
+          </button>
         </footer>
       </nav>
       <div className="oc-app-main">

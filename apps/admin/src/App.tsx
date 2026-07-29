@@ -19,6 +19,7 @@ import { MintTokenPage } from "./pages/MintTokenPage";
 import { NoAccess } from "./pages/NoAccess";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { SignIn } from "./pages/SignIn";
 import { TokensPage } from "./pages/TokensPage";
 import { Shell } from "./Shell";
@@ -97,6 +98,10 @@ export function App() {
     <Shell me={me.data} theme={theme}>
       <Routes>
         <Route path="/" element={<ProjectsPage me={me.data} />} />
+        <Route
+          path="/settings"
+          element={<SettingsPage me={me.data} theme={theme} />}
+        />
         <Route path="/changelog" element={<ChangeLogPage />} />
         <Route path="/changelog/:id" element={<ChangeLogEntryPage />} />
         <Route

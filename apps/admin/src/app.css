@@ -310,11 +310,6 @@ input[type="radio"]:focus-visible {
   border: 0;
 }
 
-.oc-segmented-item.theme-tab svg {
-  width: 14px;
-  height: 14px;
-}
-
 /* --- auth + boot screens (sign-in, no-access, errors) --- */
 
 .boot {
@@ -1697,17 +1692,24 @@ input[type="radio"]:focus-visible {
   font-size: 13px;
 }
 
-/* Detail-header enable: a deliberate, weighted control for the loudest
-   action on the page, not a stray checkbox. The switch label turns green
-   when on (state earns color). */
+/* Detail-header enable: the switch itself carries the weight; the state
+   word turns green when on (state earns color). No box — a bordered pill
+   next to a bordered button read as two competing buttons. */
 .enable-switch {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px 5px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+}
+
+/* Destructive-but-guarded header action: quiet until hovered. */
+.oc-action.danger-ghost {
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+
+.oc-action.danger-ghost:hover {
+  background: var(--danger-bg);
+  border-color: color-mix(in oklch, var(--danger), transparent 60%);
 }
 
 .targeting-keys,
@@ -1741,8 +1743,8 @@ input[type="radio"]:focus-visible {
   vertical-align: baseline;
 }
 
-.td-variation-name {
-  /* Dot + name input on one line. */
+.variation-name-wrap {
+  /* Dot + name input on one line (inside the cell, never on the <td>). */
   display: flex;
   align-items: center;
 }
@@ -2488,11 +2490,6 @@ tr.is-revoked td {
     min-height: 44px;
   }
 
-  .oc-segmented-item.theme-tab svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .disclosure {
     min-height: 44px;
   }
@@ -2600,17 +2597,6 @@ tr.is-revoked td {
 /* Touch input (any viewport width): enlarge the small segmented and pagination
    controls to a comfortable tap size. Pointer-based UIs keep the dense size. */
 @media (pointer: coarse) {
-  .oc-segmented-item.theme-tab {
-    flex-basis: 44px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .oc-segmented-item.theme-tab svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .page-btn {
     min-width: 40px;
     height: 40px;
@@ -2726,51 +2712,102 @@ h1 {
 }
 
 /* --- Navigation footer identity ---
-   Carapace's footer is a single flex row; the console stacks the signed-in
-   user, their role and sign-out, and the theme control, because this rail is
-   the only place app-level chrome lives now (there is no topbar). */
+   One flex row like Carapace's own footer: identity fills, then the theme
+   cycle control and sign-out sit as quiet icon buttons. Role and theme
+   choices live on the Settings page, not in the rail. */
 .oc-app-navigation-footer {
-  display: grid;
-  /* Carapace's footer is one 3-column row; the console stacks its blocks. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--oc-space-2);
-  align-items: stretch;
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
   padding: var(--oc-space-3);
 }
 
 .nav-identity {
   display: grid;
+  flex: 1;
   min-width: 0;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--oc-space-2);
 }
 
-.nav-identity-actions {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--oc-space-2);
-}
-
-/* Sign out is a quiet, compact affordance beside the role chip, not a
-   full-height control competing with navigation. */
-.oc-action.nav-signout {
-  min-height: 1.75rem;
-  padding: 0 var(--oc-space-2);
-  font-size: var(--oc-font-size-xs);
-}
-
-/* Three equal icon tabs filling the rail width. Carapace's segmented chrome
-   (border, card background, inner padding) is kept — it is the picker. */
-.oc-segmented.theme-toggle {
+/* Icon control transcribed from the carapace.design site shell (theme
+   cycle + sign-out share it); upstreaming it into Carapace is the plan. */
+.theme-control {
   display: grid;
-  width: 100%;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  overflow: visible;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.theme-control:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.theme-control-icon {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  line-height: 0;
+}
+
+.theme-control-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-signout-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+/* Settings → Appearance: the explicit three-way choice (the rail control
+   only cycles the same setting). */
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Keyboard focus lands on the hidden radio; ring the visible label. */
+.theme-picker-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-picker-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.theme-picker-option:hover {
+  color: var(--ink);
+}
+
+.theme-picker-option.is-active {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* Carapace lays the summary strip out with auto-fit minmax(9rem), which at
@@ -2957,4 +2994,11 @@ h1 {
 .oc-app-navigation [data-tip]:hover::after,
 .oc-app-navigation [data-tip]:focus-visible::after {
   transform: translate(0, 0);
+}
+
+/* Footer icons sit at the rail's right edge; anchor their tooltips right so
+   they stay inside the clipped rail. */
+.oc-app-navigation-footer [data-tip]::after {
+  left: auto;
+  right: 0;
 }

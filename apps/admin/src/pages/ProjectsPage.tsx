@@ -54,43 +54,10 @@ export function ProjectsPage({ me }: { me: Me }) {
   return (
     <section>
       <header className="oc-page-header">
-        <div className="oc-page-header-content">
-          <div className="page-title-row">
-            <h1>Projects</h1>
-            {projects.isSuccess && total > 0 && (
-              <span className="title-count">{total}</span>
-            )}
-          </div>
+        <div className="page-title-row">
+          <h1>Projects</h1>
           {projects.isSuccess && total > 0 && (
-            <div className="oc-summary-strip oc-page-header-summary">
-              <div className="oc-summary-metric">
-                <span className="oc-summary-metric-icon" aria-hidden="true">
-                  <FolderIcon />
-                </span>
-                <span className="oc-summary-metric-copy">
-                  <strong>{total}</strong>
-                  <small>Projects</small>
-                </span>
-              </div>
-              <div className="oc-summary-metric">
-                <span className="oc-summary-metric-icon" aria-hidden="true">
-                  <ListIcon />
-                </span>
-                <span className="oc-summary-metric-copy">
-                  <strong>{visibleFlagCount}</strong>
-                  <small>Flags shown</small>
-                </span>
-              </div>
-              <div className="oc-summary-metric">
-                <span className="oc-summary-metric-icon" aria-hidden="true">
-                  <LayersIcon />
-                </span>
-                <span className="oc-summary-metric-copy">
-                  <strong>{visibleEnvironmentCount}</strong>
-                  <small>Envs shown</small>
-                </span>
-              </div>
-            </div>
+            <span className="title-count">{total}</span>
           )}
         </div>
         {projects.isSuccess && total > 0 && (
@@ -114,6 +81,38 @@ export function ProjectsPage({ me }: { me: Me }) {
           </div>
         )}
       </header>
+
+      {projects.isSuccess && total > 0 && (
+        <div className="oc-summary-strip">
+          <div className="oc-summary-metric">
+            <span className="oc-summary-metric-icon" aria-hidden="true">
+              <FolderIcon />
+            </span>
+            <span className="oc-summary-metric-copy">
+              <strong>{total}</strong>
+              <small>Projects</small>
+            </span>
+          </div>
+          <div className="oc-summary-metric">
+            <span className="oc-summary-metric-icon" aria-hidden="true">
+              <ListIcon />
+            </span>
+            <span className="oc-summary-metric-copy">
+              <strong>{visibleFlagCount}</strong>
+              <small>Flags shown</small>
+            </span>
+          </div>
+          <div className="oc-summary-metric">
+            <span className="oc-summary-metric-icon" aria-hidden="true">
+              <LayersIcon />
+            </span>
+            <span className="oc-summary-metric-copy">
+              <strong>{visibleEnvironmentCount}</strong>
+              <small>Envs shown</small>
+            </span>
+          </div>
+        </div>
+      )}
 
       {projects.isPending && (
         <TableSkeleton

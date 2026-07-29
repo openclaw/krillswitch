@@ -78,17 +78,21 @@ export function VariationsEditor({
           <tbody>
             {variations.map((variation, index) => (
               <tr key={variation.id ?? `new-${index}`}>
-                <td className="td-variation-name">
-                  <VariationDot index={index} />
-                  <input
-                    className="oc-input"
-                    aria-label={`Variation ${index + 1} name`}
-                    value={variation.name}
-                    disabled={disabled}
-                    onChange={(event) =>
-                      patchVariation(index, { name: event.target.value })
-                    }
-                  />
+                <td>
+                  {/* Inner flex wrapper: a display:flex <td> leaves table
+                      layout and misaligns the whole row. */}
+                  <span className="variation-name-wrap">
+                    <VariationDot index={index} />
+                    <input
+                      className="oc-input"
+                      aria-label={`Variation ${index + 1} name`}
+                      value={variation.name}
+                      disabled={disabled}
+                      onChange={(event) =>
+                        patchVariation(index, { name: event.target.value })
+                      }
+                    />
+                  </span>
                 </td>
                 <td>
                   <VariationValueInput

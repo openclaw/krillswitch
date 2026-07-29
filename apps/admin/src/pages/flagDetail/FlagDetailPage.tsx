@@ -209,7 +209,10 @@ function FlagDetailEditor({
               pending={remove.isPending}
               onConfirm={() => remove.mutate()}
               trigger={
-                <button type="button" className="oc-action oc-action-secondary">
+                <button
+                  type="button"
+                  className="oc-action oc-action-ghost danger-ghost"
+                >
                   Delete flag
                 </button>
               }
