@@ -20,10 +20,7 @@ export function bearerToken(
   return token && token.length > 0 ? token : undefined;
 }
 
-export function matchesEtag(
-  header: string | undefined,
-  etag: string,
-): boolean {
+export function matchesEtag(header: string | undefined, etag: string): boolean {
   return (
     header
       ?.split(",")

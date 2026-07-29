@@ -139,10 +139,7 @@ ofrepRoutes.post("/v1/evaluate/flags/:key?", async (c) => {
   }
 
   const flags = config.flags.map((flagConfig) =>
-    toOfrep(
-      flagConfig.key,
-      evaluateFlag(flagConfig, context, config.segments),
-    ),
+    toOfrep(flagConfig.key, evaluateFlag(flagConfig, context, config.segments)),
   );
   const serialized = JSON.stringify({ flags });
   const etag = evalBodyEtag(serialized);

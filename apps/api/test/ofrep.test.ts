@@ -73,12 +73,9 @@ describe("POST /ofrep/v1/evaluate/flags (bulk)", () => {
     expect(souls?.reason).toBe("DEFAULT");
     expect(typeof souls?.variant).toBe("string");
     for (const flag of body.flags) {
-      expect([
-        "DISABLED",
-        "TARGETING_MATCH",
-        "SPLIT",
-        "DEFAULT",
-      ]).toContain(flag.reason);
+      expect(["DISABLED", "TARGETING_MATCH", "SPLIT", "DEFAULT"]).toContain(
+        flag.reason,
+      );
     }
   });
 
@@ -135,13 +132,10 @@ describe("POST /ofrep/v1/evaluate/flags (bulk)", () => {
   });
 
   it("rejects a bodyless request with INVALID_CONTEXT", async () => {
-    const response = await SELF.fetch(
-      `https://krillswitch.test${BULK_PATH}`,
-      {
-        method: "POST",
-        headers: { authorization: `Bearer ${DEV_EVAL_KEY}` },
-      },
-    );
+    const response = await SELF.fetch(`https://krillswitch.test${BULK_PATH}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${DEV_EVAL_KEY}` },
+    });
     expect(response.status).toBe(400);
     const body = (await response.json()) as { errorCode: string };
     expect(body.errorCode).toBe("INVALID_CONTEXT");
@@ -191,10 +185,9 @@ describe("OFREP hostname trust boundary", () => {
   });
 
   it("keeps non-eval paths blocked on the public eval hostname", async () => {
-    const response = await SELF.fetch(
-      "https://flags.openclaw.ai/admin/me",
-      { method: "GET" },
-    );
+    const response = await SELF.fetch("https://flags.openclaw.ai/admin/me", {
+      method: "GET",
+    });
     expect(response.status).toBe(404);
   });
 });
