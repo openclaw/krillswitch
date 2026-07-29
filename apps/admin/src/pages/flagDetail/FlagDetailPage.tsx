@@ -10,6 +10,7 @@ import { GuardrailDialog } from "../../components/GuardrailDialog";
 import { BlockSkeleton } from "../../components/Skeleton";
 import { Switch } from "../../components/Switch";
 import { type Draft, fromDraft, toDraft } from "./draft";
+import { FlagHistory } from "./FlagHistory";
 import { AllowlistEditor, RolloutEditor, RulesEditor } from "./TargetingEditor";
 import { VariationsEditor } from "./VariationsEditor";
 
@@ -110,6 +111,9 @@ function FlagDetailEditor({
       );
       queryClient.invalidateQueries({
         queryKey: ["flags", projectKey, environmentKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flag-history", projectKey, flagKey],
       });
     },
   });
@@ -365,6 +369,8 @@ function FlagDetailEditor({
           </div>
         )}
       </section>
+
+      <FlagHistory projectKey={projectKey} flagKey={flagKey} />
     </section>
   );
 }

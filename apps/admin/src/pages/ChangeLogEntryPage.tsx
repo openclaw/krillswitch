@@ -64,6 +64,12 @@ export function ChangeLogEntryPage() {
             <span className="oc-field-label">Actor</span>
             <span className="field-value">{entry.actorName}</span>
           </div>
+          {entry.comment && (
+            <div className="oc-field">
+              <span className="oc-field-label">Comment</span>
+              <span className="field-value">{entry.comment}</span>
+            </div>
+          )}
           {entry.projectKey && (
             <div className="oc-field">
               <span className="oc-field-label">Project</span>

@@ -1,6 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { api, type ChangeLogEntry } from "../api";
 import { actionLabel } from "../changeLogActions";
 import { ListIcon } from "../components/brand";
@@ -13,19 +12,34 @@ import { TableFrame } from "../components/TableFrame";
 const PAGE_SIZE = 15;
 
 export function ChangeLogPage() {
-  const [flagFilter, setFlagFilter] = useState("");
-  const [projectFilter, setProjectFilter] = useState("");
-  const [page, setPage] = useState(1);
+  // Filters live in the URL so other pages (flag History) can deep-link here.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectFilter = searchParams.get("project") ?? "";
+  const flagFilter = searchParams.get("flag") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
-  // A filter change resets to the first page.
+  // A filter change resets to the first page (page is set only when passed).
+  function updateParams(next: {
+    project?: string;
+    flag?: string;
+    page?: number;
+  }) {
+    const params = new URLSearchParams(searchParams);
+    const write = (key: string, value: string) =>
+      value ? params.set(key, value) : params.delete(key);
+    if (next.project !== undefined) write("project", next.project);
+    if (next.flag !== undefined) write("flag", next.flag);
+    const nextPage = next.page ?? 1;
+    write("page", nextPage > 1 ? String(nextPage) : "");
+    setSearchParams(params, { replace: true });
+  }
   function changeProjectFilter(value: string) {
-    setProjectFilter(value);
-    setPage(1);
+    updateParams({ project: value });
   }
   function changeFlagFilter(value: string) {
-    setFlagFilter(value);
-    setPage(1);
+    updateParams({ flag: value });
   }
+  const setPage = (nextPage: number) => updateParams({ page: nextPage });
 
   // Distinct key from the paginated Projects list (different cache shape).
   // First page of projects is plenty for the filter combobox.
@@ -198,6 +212,9 @@ function ChangeRow({ entry }: { entry: ChangeLogEntry }) {
         )}
         {entry.after !== null && (
           <code className="change-after">{JSON.stringify(entry.after)}</code>
+        )}
+        {entry.comment && (
+          <div className="change-comment muted">“{entry.comment}”</div>
         )}
       </td>
     </tr>

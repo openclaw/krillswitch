@@ -1844,6 +1844,70 @@ input[type="radio"]:focus-visible {
   margin: 10px 0 4px;
 }
 
+/* --- Flag history (FlagHistory.tsx) ---
+   Compact audit trail on the flag page; each line links to the full entry. */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-item:last-child {
+  border-bottom: 0;
+}
+
+.history-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.history-action {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.history-line:hover .history-action {
+  text-decoration: underline;
+}
+
+.history-actor {
+  font-size: 12px;
+}
+
+.history-when {
+  margin-left: auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.history-comment,
+.change-comment {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+.history-more {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.history-more:hover {
+  text-decoration: underline;
+}
+
 .save-label-short {
   display: none;
 }

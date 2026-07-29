@@ -274,6 +274,9 @@ function FlagRow({
       queryClient.invalidateQueries({
         queryKey: ["flag", projectKey, environmentKey, flag.key],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["flag-history", projectKey, flag.key],
+      });
       setGuardNext(null);
       setComment("");
     },
