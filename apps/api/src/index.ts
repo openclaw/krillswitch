@@ -17,6 +17,7 @@ import {
   recordEvalStats,
 } from "./evalShared";
 import { ofrepRoutes } from "./ofrep";
+import { streamRoutes } from "./stream";
 
 type Bindings = {
   DB: D1Database;
@@ -33,6 +34,8 @@ const PUBLIC_EVAL_PATH = "/v1/eval";
 // OpenFeature Remote Evaluation Protocol lives on the same public
 // evaluation trust boundary as /v1/eval.
 const OFREP_PREFIX = "/ofrep/";
+// SSE change signal; GET because EventSource cannot POST.
+const PUBLIC_STREAM_PATH = "/v1/stream";
 
 const evalRequestSchema = z.object({
   context: z.object({
@@ -50,10 +53,15 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Access has a chance to protect the dashboard hostname.
 app.use("*", async (c, next) => {
   const hostname = new URL(c.req.url).hostname;
+  const isStreamPath = c.req.path === PUBLIC_STREAM_PATH;
   const isEvalPath =
-    c.req.path === PUBLIC_EVAL_PATH || c.req.path.startsWith(OFREP_PREFIX);
+    c.req.path === PUBLIC_EVAL_PATH ||
+    c.req.path.startsWith(OFREP_PREFIX) ||
+    isStreamPath;
   const isPublicEvalRequest =
-    isEvalPath && (c.req.method === "POST" || c.req.method === "OPTIONS");
+    isEvalPath &&
+    (c.req.method === "OPTIONS" ||
+      c.req.method === (isStreamPath ? "GET" : "POST"));
   if (
     (hostname === PUBLIC_EVAL_HOST && !isPublicEvalRequest) ||
     (hostname === ADMIN_HOST && isEvalPath)
@@ -104,6 +112,7 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => {
 
 app.route("/admin", adminRoutes);
 app.route("/ofrep", ofrepRoutes);
+app.route("/", streamRoutes);
 
 app.post("/v1/eval", async (c) => {
   const requestStart = performance.now();
