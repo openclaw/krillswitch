@@ -64,7 +64,11 @@ export function SettingsPage({ me, theme }: { me: Me; theme: ThemeControl }) {
 function ProfileSection({ me }: { me: Me }) {
   const queryClient = useQueryClient();
   async function signOut() {
-    await api.signOut();
+    await api.signOut().catch(() => {});
+    if (me.signOutUrl) {
+      window.location.href = me.signOutUrl;
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ["me"] });
   }
   return (
@@ -73,7 +77,7 @@ function ProfileSection({ me }: { me: Me }) {
       <p className="muted section-hint">
         Accounts and roles are managed by an admin under Members.
       </p>
-      <div className="form-page">
+      <div className="settings-fields">
         <div className="oc-field">
           <span className="oc-field-label">Name</span>
           <span className="field-value">{me.user.name}</span>
