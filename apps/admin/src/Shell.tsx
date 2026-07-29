@@ -2,13 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router";
 import { api, type Me } from "./api";
+import krillIcon from "./assets/brand/krillswitch_icon.svg";
 import {
   Brandmark,
   ChevronsLeftIcon,
   ExitIcon,
   FolderIcon,
   GearIcon,
-  KrillMark,
   ListIcon,
   LockIcon,
   PlugIcon,
@@ -56,11 +56,11 @@ export function Shell({
     >
       <nav className="oc-app-navigation" aria-label="Main">
         <div className="oc-app-navigation-header">
-          {/* Compact rail shows the krill glyph; expanded shows the full
+          {/* Compact rail shows the krill mark; expanded shows the full
               wordmark (Carapace hides -title in compact, we hide -brand
               in expanded). */}
           <span className="oc-app-navigation-brand" aria-hidden="true">
-            <KrillMark />
+            <img src={krillIcon} alt="" />
           </span>
           <span className="oc-app-navigation-title">
             <Brandmark compact />

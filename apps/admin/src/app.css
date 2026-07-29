@@ -2838,9 +2838,17 @@ h1 {
   height: 16px;
 }
 
-/* Rail header logo: wordmark when expanded, krill glyph when compact
-   (Carapace already hides -title in compact; we hide the glyph when the
-   wordmark is showing so the krill doesn't render twice). */
+/* Rail header logo: wordmark when expanded, krill mark when compact
+   (Carapace already hides -title in compact; we hide the mark when the
+   wordmark is showing so the krill doesn't render twice). The mark is the
+   real brand artwork — wide pill — so it sizes by width, not the 1.5rem
+   glyph height Carapace assumes. */
+.oc-app-navigation-brand img {
+  width: 34px;
+  height: auto;
+}
+
+
 .oc-app-frame[data-navigation="expanded"]
   .oc-app-navigation-header
   .oc-app-navigation-brand {
