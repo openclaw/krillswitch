@@ -2894,6 +2894,13 @@ h1 {
 /* --- ⌘K search (CommandPalette.tsx) ---
    Rail trigger styled like the carapace.design search field, palette as a
    top-anchored dialog over the standard modal overlay. */
+/* Carapace's rail grid is header/context/body/footer (auto auto 1fr auto);
+   the search trigger adds a row, so restate the template or the trigger
+   swallows the 1fr body row. */
+.oc-app-navigation {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
+
 .nav-search {
   display: flex;
   align-items: center;
@@ -3035,6 +3042,47 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Connect page: copyable snippets in a recessed mono block. */
+.connect-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.snippet {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.snippet-label {
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.snippet-code {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
 }
 
 /* Segments page: each segment is a disclosure card. */

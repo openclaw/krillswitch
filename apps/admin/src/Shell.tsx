@@ -12,6 +12,7 @@ import {
   KrillMark,
   ListIcon,
   LockIcon,
+  PlugIcon,
   SearchIcon,
   UsersIcon,
 } from "./components/brand";
@@ -110,6 +111,14 @@ export function Shell({
                   <ListIcon className="oc-app-navigation-icon" />
                   <span className="oc-app-navigation-item-label">
                     Change log
+                  </span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/connect" className="oc-app-navigation-item">
+                  <PlugIcon className="oc-app-navigation-icon" />
+                  <span className="oc-app-navigation-item-label">
+                    Connect app
                   </span>
                 </NavLink>
               </li>

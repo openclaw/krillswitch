@@ -10,6 +10,7 @@ import {
 import { BlockSkeleton } from "./components/Skeleton";
 import { ChangeLogEntryPage } from "./pages/ChangeLogEntryPage";
 import { ChangeLogPage } from "./pages/ChangeLogPage";
+import { ConnectPage } from "./pages/ConnectPage";
 import { CreateEnvironmentPage } from "./pages/CreateEnvironmentPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { FlagDetailPage } from "./pages/flagDetail/FlagDetailPage";
@@ -112,6 +113,7 @@ export function App() {
           path="/projects/:projectKey/segments"
           element={<SegmentsPage me={me.data} />}
         />
+        <Route path="/connect" element={<ConnectPage me={me.data} />} />
         <Route path="/changelog" element={<ChangeLogPage />} />
         <Route path="/changelog/:id" element={<ChangeLogEntryPage />} />
         <Route

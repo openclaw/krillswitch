@@ -109,6 +109,16 @@ export function CheckIcon({ className }: IconProps) {
   );
 }
 
+export function PlugIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M12 22v-5" />
+      <path d="M9 8V2M15 8V2" />
+      <path d="M6 8h12v4a6 6 0 0 1-12 0V8Z" />
+    </svg>
+  );
+}
+
 export function SearchIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">

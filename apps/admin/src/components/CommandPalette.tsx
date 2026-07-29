@@ -25,6 +25,12 @@ function pageCommands(me: Me): Command[] {
       to: "/changelog",
     },
     {
+      id: "page-connect",
+      label: "Connect your app",
+      keywords: "sdk eval key snippet api",
+      to: "/connect",
+    },
+    {
       id: "page-settings",
       label: "Settings",
       keywords: "theme profile",
