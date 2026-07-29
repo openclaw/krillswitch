@@ -3,7 +3,12 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api, type EvalStatRow, type Me, type ProjectSummary } from "../api";
 import krillBanner from "../assets/krill-banner.avif";
-import { FolderIcon, LayersIcon, ListIcon, PlugIcon } from "../components/brand";
+import {
+  FolderIcon,
+  LayersIcon,
+  ListIcon,
+  PlugIcon,
+} from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";

@@ -107,8 +107,8 @@ function AppearanceSection({ theme }: { theme: ThemeControl }) {
     <section className="detail-section">
       <h2>Appearance</h2>
       <p className="muted section-hint">
-        Applies to this browser only. The control in the sidebar cycles the
-        same setting.
+        Applies to this browser only. The control in the sidebar cycles the same
+        setting.
       </p>
       <fieldset className="theme-picker">
         <legend className="visually-hidden">Color theme</legend>
