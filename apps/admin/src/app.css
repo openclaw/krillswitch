@@ -1887,22 +1887,11 @@ input[type="radio"]:focus-visible {
   margin-bottom: 10px;
 }
 
-/* Proportional split bar: see the distribution, not just read numbers. */
-.rollout-bar {
-  display: flex;
-  gap: 2px;
-  height: 10px;
+/* Proportional split bar: carapace oc-split with segment colors driven by
+   variationColor() so the bar matches the variation dots. */
+.oc-split.rollout-split {
   max-width: 480px;
   margin-bottom: 14px;
-  border-radius: var(--r-pill);
-  overflow: hidden;
-  background: var(--surface-muted);
-}
-
-/* Segment colors come inline from variationColor() so they match the dots. */
-.rollout-bar-seg {
-  min-width: 3px;
-  transition: flex-grow 150ms ease-out;
 }
 
 .rollout-weights {
