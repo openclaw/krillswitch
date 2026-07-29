@@ -938,12 +938,16 @@ input[type="radio"]:focus-visible {
   transition: background-color 120ms ease-out;
 }
 
-.oc-table tbody tr:hover td {
-  background: var(--row-hover);
-}
+/* Hover tint only where hover exists: touch browsers stick :hover after a
+   tap, which left every td in the tapped card banded grey. */
+@media (hover: hover) {
+  .oc-table tbody tr:hover td {
+    background: var(--row-hover);
+  }
 
-.oc-table tbody tr:hover td:first-child {
-  box-shadow: inset 2px 0 0 var(--accent);
+  .oc-table tbody tr:hover td:first-child {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
 }
 
 .oc-table tbody tr:last-child td {
@@ -3312,12 +3316,14 @@ h1 {
   height: auto;
 }
 
-.oc-table tbody tr:hover td {
-  background: var(--oc-surface-interactive);
-}
+@media (hover: hover) {
+  .oc-table tbody tr:hover td {
+    background: var(--oc-surface-interactive);
+  }
 
-.oc-table tbody tr:hover td:first-child {
-  box-shadow: none;
+  .oc-table tbody tr:hover td:first-child {
+    box-shadow: none;
+  }
 }
 
 .table-link {
