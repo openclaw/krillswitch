@@ -841,7 +841,7 @@ input[type="radio"]:focus-visible {
    header, summary, and body. Carapace leaves oc-app-content unpadded because
    its own specimens sit inside a framed pane. */
 .oc-app-content {
-  padding: var(--oc-space-5) var(--oc-space-6) var(--oc-space-7);
+  padding: var(--oc-space-4) var(--oc-space-5) var(--oc-space-6);
 }
 
 /* Cap and center the working area so tables and rows don't sprawl across
@@ -854,7 +854,13 @@ input[type="radio"]:focus-visible {
   /* justify-self, not `margin: 0 auto`: oc-app-content is a grid, and an auto
      margin on a grid item cancels stretch and shrinks it to its content. */
   justify-self: center;
-  gap: var(--oc-space-4);
+  gap: var(--oc-space-3);
+}
+
+/* LD-density type scale: the console is an operations surface, so titles,
+   section headings, and table type sit under Carapace's document scale. */
+.oc-app-content h1 {
+  font-size: 22px;
 }
 
 /* Carapace insets the page header for pane-flush use. Here the content column
@@ -878,6 +884,7 @@ input[type="radio"]:focus-visible {
    to the product because its own specimens use short cells. */
 .oc-table {
   table-layout: fixed;
+  font-size: 13px;
 }
 
 .oc-table-wrap::before {
@@ -928,13 +935,13 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding: 9px 14px;
+  padding: 7px 12px;
   border-bottom: 1px solid var(--line-strong);
 }
 
 .oc-table td {
-  height: 48px;
-  padding: 8px 14px;
+  height: 40px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   transition: background-color 120ms ease-out;
@@ -1103,7 +1110,21 @@ input[type="radio"]:focus-visible {
 .td-last-change {
   width: 118px;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11px;
+}
+
+.th-activity,
+.td-activity {
+  width: 104px;
+}
+
+/* Inline per-row step chart (projects and flag tables). */
+.cell-spark {
+  display: block;
+  width: 90px;
+  height: 16px;
+  margin-bottom: 2px;
+  color: var(--ink-faint);
 }
 
 /* Key + copy button as one inline unit; the copy control lifts above the
@@ -1250,7 +1271,7 @@ input[type="radio"]:focus-visible {
 .page-hero {
   position: relative;
   overflow: hidden;
-  padding: 30px 32px 26px;
+  padding: 22px 24px 20px;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: #0d0d10;
@@ -1511,7 +1532,7 @@ input[type="radio"]:focus-visible {
 
 .detail-section h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -1961,58 +1982,7 @@ input[type="radio"]:focus-visible {
   margin: 10px 0 4px;
 }
 
-/* --- Flag history (FlagHistory.tsx) ---
-   Compact audit trail on the flag page; each line links to the full entry. */
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.history-item {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.history-item:last-child {
-  border-bottom: 0;
-}
-
-.history-line {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.history-action {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.history-line:hover .history-action {
-  text-decoration: underline;
-}
-
-.history-actor {
-  font-size: 12px;
-}
-
-.history-when {
-  margin-left: auto;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.history-comment,
-.change-comment {
-  margin: 2px 0 0;
-  font-size: 12px;
-  font-style: italic;
-  color: var(--ink-muted);
-}
-
+/* "View all" link under scoped log streams. */
 .history-more {
   display: inline-block;
   margin-top: 8px;
@@ -2333,8 +2303,16 @@ tr.is-revoked td {
 .changelog-stream .oc-log-row {
   /* Carapace's 7rem subsystem truncates project/flag pairs. */
   grid-template-columns: auto 4.5rem 12rem minmax(0, 1fr);
+  padding-block: 1px;
   color: inherit;
+  font-size: 12px;
+  line-height: 1.7;
   text-decoration: none;
+}
+
+/* Project- and flag-scoped streams drop the subsystem column. */
+.changelog-stream-scoped .oc-log-row {
+  grid-template-columns: auto 4.5rem minmax(0, 1fr);
 }
 
 .changelog-stream .oc-log-message {
@@ -3085,6 +3063,99 @@ h1 {
   line-height: 1.6;
 }
 
+/* Connect steps: numbered cards with a live status loader. */
+.step-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--oc-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.step-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.step-body h2 {
+  margin: 0;
+}
+
+.step-hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot {
+    animation: none;
+  }
+}
+
+.connect-docs summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
+.connect-docs[open] summary {
+  margin-bottom: 8px;
+}
+
+.connect-notes {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
 /* Segments page: each segment is a disclosure card. */
 .segment-summary {
   display: flex;
@@ -3212,6 +3283,15 @@ h1 {
    the sibling button onto the next row. */
 .oc-page-header-actions .oc-select {
   width: auto;
+}
+
+/* LD-density controls: selects and filter inputs sit at 2rem, not the
+   2.5rem form scale, everywhere in the console. */
+.oc-select.select-trigger,
+.combobox-input {
+  min-height: 2rem;
+  padding-block: 2px;
+  font-size: 13px;
 }
 
 /* Radix draws its own chevron, so drop the right padding oc-select reserves

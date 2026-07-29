@@ -7,6 +7,7 @@ import { FolderIcon, LayersIcon, ListIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
+import { DAY_MS, dailyCounts, Sparkline } from "../components/Sparkline";
 import { TableFrame } from "../components/TableFrame";
 
 const PAGE_SIZE = 10;
@@ -14,42 +15,10 @@ const PAGE_SIZE = 10;
 // Dateline chart: recent change-log activity bucketed per day, drawn as a
 // step line like the carapace.design/maintainer report datelines.
 const DATELINE_DAYS = 30;
-const DAY_MS = 86_400_000;
-
-function dailyCounts(entries: ChangeLogEntry[]): number[] {
-  const counts: number[] = new Array(DATELINE_DAYS).fill(0);
-  const today = new Date().setHours(0, 0, 0, 0);
-  for (const entry of entries) {
-    const day = new Date(entry.createdAt).setHours(0, 0, 0, 0);
-    const age = Math.floor((today - day) / DAY_MS);
-    if (age >= 0 && age < DATELINE_DAYS) {
-      const index = DATELINE_DAYS - 1 - age;
-      counts[index] = (counts[index] ?? 0) + 1;
-    }
-  }
-  return counts;
-}
-
-function stepPath(counts: number[], width: number, height: number): string {
-  const max = Math.max(1, ...counts);
-  const dx = width / counts.length;
-  const y = (count: number) => height - 2 - (count / max) * (height - 6);
-  return counts
-    .map(
-      (count, index) =>
-        `${index === 0 ? `M0 ${y(count)}` : `V${y(count)}`} H${(index + 1) * dx}`,
-    )
-    .join(" ");
-}
 
 function Dateline({ entries }: { entries: ChangeLogEntry[] }) {
-  const counts = dailyCounts(entries);
+  const counts = dailyCounts(entries, DATELINE_DAYS);
   const totalChanges = counts.reduce((sum, count) => sum + count, 0);
-  const width = 640;
-  const height = 44;
-  const max = Math.max(1, ...counts);
-  const last = counts[counts.length - 1] ?? 0;
-  const lastY = height - 2 - (last / max) * (height - 6);
   const startLabel = new Date(
     Date.now() - (DATELINE_DAYS - 1) * DAY_MS,
   ).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -60,28 +29,11 @@ function Dateline({ entries }: { entries: ChangeLogEntry[] }) {
   return (
     <section className="dateline" aria-label="Change activity">
       <p className="dateline-label">Dateline</p>
-      <svg
+      <Sparkline
+        counts={counts}
         className="dateline-chart"
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={`${totalChanges} changes in the last ${DATELINE_DAYS} days`}
-      >
-        <path
-          d={stepPath(counts, width, height)}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          vectorEffect="non-scaling-stroke"
-        />
-        <rect
-          x={width - 7}
-          y={Math.min(lastY - 2, height - 4)}
-          width="7"
-          height="4"
-          fill="var(--accent)"
-        />
-      </svg>
+        label={`${totalChanges} changes in the last ${DATELINE_DAYS} days`}
+      />
       <div className="dateline-meta">
         <span>{startLabel}</span>
         <span>
@@ -248,7 +200,11 @@ export function ProjectsPage({ me }: { me: Me }) {
 
       {projects.isSuccess && total > 0 && (
         <>
-          <ProjectsTable projects={visible} query={query} />
+          <ProjectsTable
+            projects={visible}
+            query={query}
+            activityEntries={activity.data?.entries ?? []}
+          />
           <Pagination page={page} pageCount={pageCount} onPage={setPage} />
         </>
       )}
@@ -259,9 +215,11 @@ export function ProjectsPage({ me }: { me: Me }) {
 function ProjectsTable({
   projects,
   query,
+  activityEntries,
 }: {
   projects: ProjectSummary[];
   query: string;
+  activityEntries: ChangeLogEntry[];
 }) {
   if (projects.length === 0) {
     return (
@@ -280,6 +238,7 @@ function ProjectsTable({
             <th>Name</th>
             <th>Key</th>
             <th className="col-num">Flags</th>
+            <th className="th-activity">Activity</th>
             <th>Last change</th>
           </tr>
         </thead>
@@ -304,6 +263,19 @@ function ProjectsTable({
                 <span className="oc-badge oc-badge-neutral badge-soft">
                   {project.flagCount}
                 </span>
+              </td>
+              <td className="td-activity">
+                <Sparkline
+                  counts={dailyCounts(
+                    activityEntries,
+                    14,
+                    (entry) => entry.projectKey === project.key,
+                  )}
+                  width={90}
+                  height={18}
+                  className="cell-spark"
+                  label={`${project.key} changes, last 14 days`}
+                />
               </td>
               <td className="cell-muted">
                 {formatLastChange(project.lastChangeAt)}

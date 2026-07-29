@@ -1,8 +1,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router";
-import { api, type ChangeLogEntry } from "../api";
-import { actionLabel } from "../changeLogActions";
+import { useSearchParams } from "react-router";
+import { api } from "../api";
 import { ListIcon } from "../components/brand";
+import { ChangeStream } from "../components/ChangeStream";
 import { Combobox, type ComboboxOption } from "../components/Combobox";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
@@ -144,66 +144,10 @@ export function ChangeLogPage() {
         ))}
       {log.isSuccess && entries.length > 0 && (
         <>
-          <div className="oc-log-stream changelog-stream">
-            {entries.map((entry) => (
-              <ChangeRow key={entry.id} entry={entry} />
-            ))}
-          </div>
+          <ChangeStream entries={entries} />
           <Pagination page={page} pageCount={pageCount} onPage={setPage} />
         </>
       )}
     </section>
-  );
-}
-
-function formatWhen(timestamp: string): string {
-  return new Date(timestamp).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-// The level chip is the action verb; destructive actions read as warnings.
-function logLevel(action: string): "warn" | "info" {
-  return /delete|revoke|rotate/.test(action) ? "warn" : "info";
-}
-
-function actionVerb(action: string): string {
-  return action.split(".").pop() ?? action;
-}
-
-function ChangeRow({ entry }: { entry: ChangeLogEntry }) {
-  const subsystem =
-    entry.projectKey && entry.flagKey
-      ? `${entry.projectKey}/${entry.flagKey}`
-      : (entry.projectKey ?? entry.target);
-  return (
-    <Link
-      className="oc-log-row"
-      data-level={logLevel(entry.action)}
-      to={`/changelog/${encodeURIComponent(entry.id)}`}
-      aria-label={`View details: ${actionLabel(entry.action)} on ${entry.target}`}
-    >
-      <time className="oc-log-time">{formatWhen(entry.createdAt)}</time>
-      <span className="oc-log-level">{actionVerb(entry.action)}</span>
-      <span className="oc-log-subsystem" title={entry.target}>
-        {subsystem}
-      </span>
-      <span className="oc-log-message">
-        {actionLabel(entry.action)} — {entry.actorName}
-        {entry.before !== null && (
-          <code className="change-before">{JSON.stringify(entry.before)}</code>
-        )}
-        {entry.after !== null && (
-          <code className="change-after">{JSON.stringify(entry.after)}</code>
-        )}
-        {entry.comment && (
-          <span className="change-comment">“{entry.comment}”</span>
-        )}
-      </span>
-    </Link>
   );
 }

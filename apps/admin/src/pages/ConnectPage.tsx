@@ -42,6 +42,18 @@ function jsSnippet(origin: string, evalKey: string): string {
   ].join("\n");
 }
 
+const RESPONSE_SHAPE = [
+  `{`,
+  `  "flags": {`,
+  `    "my-flag": {`,
+  `      "value": true,`,
+  `      "variationId": "var_…",`,
+  `      "reason": { "kind": "rule", "attribute": "role" }`,
+  `    }`,
+  `  }`,
+  `}`,
+].join("\n");
+
 function Snippet({ label, code }: { label: string; code: string }) {
   return (
     <div className="snippet">
@@ -56,9 +68,31 @@ function Snippet({ label, code }: { label: string; code: string }) {
   );
 }
 
+function Step({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="step-card">
+      <span className="step-num" aria-hidden="true">
+        {number}
+      </span>
+      <div className="step-body">
+        <h2>{title}</h2>
+        {children}
+      </div>
+    </li>
+  );
+}
+
 /** Time-to-first-flag: pick a project + environment, copy a working call.
  *  Admins get the real eval key inlined; other roles get a placeholder
- *  (keys are admin-scoped). The freshness line polls so the page flips to
+ *  (keys are admin-scoped). The status step polls so the page flips to
  *  "connected" the moment the first request lands. */
 export function ConnectPage({ me }: { me: Me }) {
   const isAdmin = me.role === "admin";
@@ -109,10 +143,7 @@ export function ConnectPage({ me }: { me: Me }) {
               setEnvironmentKey(undefined);
             }}
           >
-            <SelectTrigger
-              aria-label="Project"
-              className="w-auto min-w-[160px]"
-            >
+            <SelectTrigger aria-label="Project" className="w-auto">
               <SelectValue placeholder="Project" />
             </SelectTrigger>
             <SelectContent>
@@ -127,10 +158,7 @@ export function ConnectPage({ me }: { me: Me }) {
             value={activeEnvironment?.key}
             onValueChange={setEnvironmentKey}
           >
-            <SelectTrigger
-              aria-label="Environment"
-              className="w-auto min-w-[160px]"
-            >
+            <SelectTrigger aria-label="Environment" className="w-auto">
               <SelectValue placeholder="Environment" />
             </SelectTrigger>
             <SelectContent>
@@ -152,47 +180,83 @@ export function ConnectPage({ me }: { me: Me }) {
       )}
 
       {activeEnvironment && (
-        <>
-          <p className="connect-status">
-            <EnvBadge
-              envKey={activeEnvironment.key}
-              name={activeEnvironment.name}
-            />
-            {activeEnvironment.lastEvalAt ? (
-              <span className="oc-badge oc-badge-success">
-                Connected — {activeEnvironment.evalCount.toLocaleString()}{" "}
-                requests
-              </span>
-            ) : (
-              <span className="oc-badge oc-badge-neutral">
-                Waiting for the first request…
-              </span>
-            )}
-          </p>
-          <section className="detail-section">
-            <h2>1 · Grab the eval key</h2>
-            <p className="muted section-hint">
+        <ol className="step-list">
+          <Step number={1} title="Grab the eval key">
+            <p className="muted step-hint">
+              Each environment has one public flag-set key.{" "}
               {isAdmin
-                ? "This environment's key is inlined below."
-                : "Ask an admin for this environment's eval key, then replace the placeholder below."}
+                ? "This environment's key is inlined below and in the snippets."
+                : "Keys are admin-scoped — ask an admin for it, then replace the placeholder."}
             </p>
             <p className="flag-meta">
+              <EnvBadge
+                envKey={activeEnvironment.key}
+                name={activeEnvironment.name}
+              />
               <code>{evalKey}</code>
               {evalKey !== PLACEHOLDER_KEY && (
                 <CopyButton value={evalKey} label="eval key" />
               )}
             </p>
-          </section>
-          <section className="detail-section">
-            <h2>2 · Evaluate flags</h2>
-            <p className="muted section-hint">
-              One POST returns every flag for the environment, evaluated for the
-              given context. Responses carry an ETag for cheap re-polls.
+          </Step>
+
+          <Step number={2} title="Call the eval endpoint">
+            <p className="muted step-hint">
+              One POST returns every flag in the environment, evaluated for the
+              context you send. Run either snippet as-is.
             </p>
             <Snippet label="curl" code={curlSnippet(origin, evalKey)} />
             <Snippet label="JavaScript" code={jsSnippet(origin, evalKey)} />
-          </section>
-        </>
+          </Step>
+
+          <Step number={3} title="Watch it connect">
+            {activeEnvironment.lastEvalAt ? (
+              <p className="connect-status">
+                <span className="oc-badge oc-badge-success">Connected</span>
+                <span className="muted">
+                  {activeEnvironment.evalCount.toLocaleString()} request
+                  {activeEnvironment.evalCount === 1 ? "" : "s"} from{" "}
+                  {activeEnvironment.name} so far.
+                </span>
+              </p>
+            ) : (
+              <p className="connect-status">
+                <span className="pulse-dot" aria-hidden="true" />
+                <span className="muted">
+                  Waiting for the first request — this updates by itself the
+                  moment your snippet runs.
+                </span>
+              </p>
+            )}
+            <details className="connect-docs">
+              <summary>Response shape and caching notes</summary>
+              <Snippet label="Response" code={RESPONSE_SHAPE} />
+              <ul className="connect-notes">
+                <li>
+                  <code>reason.kind</code> tells you why a value was served:
+                  <code>off</code>, <code>target</code>, <code>rule</code>,{" "}
+                  <code>segment</code>, <code>rollout</code>, or{" "}
+                  <code>default</code>.
+                </li>
+                <li>
+                  Responses carry an <code>ETag</code>; send{" "}
+                  <code>if-none-match</code> on re-polls and a <code>304</code>{" "}
+                  means nothing changed.
+                </li>
+                <li>
+                  Bodies are personalized per context and marked{" "}
+                  <code>private, no-store</code> — never cache them in a shared
+                  cache.
+                </li>
+                <li>
+                  <code>context.key</code> identifies the user (stable rollout
+                  bucketing); <code>attributes</code> are what rules and
+                  segments match on.
+                </li>
+              </ul>
+            </details>
+          </Step>
+        </ol>
       )}
     </section>
   );

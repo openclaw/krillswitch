@@ -13,15 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Environment } from "../api";
+import type { ChangeLogEntry, Environment } from "../api";
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
+import { ChangeStream } from "../components/ChangeStream";
 import { CopyButton } from "../components/CopyButton";
 import { EmptyState } from "../components/EmptyState";
 import { EnvBadge, isProductionEnv } from "../components/EnvBadge";
 import { GuardrailDialog } from "../components/GuardrailDialog";
 import { KeysSection } from "../components/KeysSection";
 import { BlockSkeleton, TableSkeleton } from "../components/Skeleton";
+import { dailyCounts, Sparkline } from "../components/Sparkline";
 import { Switch } from "../components/Switch";
 import { TableFrame } from "../components/TableFrame";
 
@@ -33,6 +35,11 @@ export function ProjectPage({ me }: { me: Me }) {
     queryKey: ["project", projectKey],
     queryFn: () => api.projectDetail(projectKey),
     placeholderData: keepPreviousData,
+  });
+  // Feeds the per-flag sparklines and the recent-activity stream.
+  const activity = useQuery({
+    queryKey: ["changelog-activity", projectKey],
+    queryFn: () => api.changeLog({ projectKey }, { limit: 200 }),
   });
 
   if (detail.isPending) {
@@ -158,10 +165,26 @@ export function ProjectPage({ me }: { me: Me }) {
         projectKey={projectKey}
         environmentKey={environmentKey}
         canEdit={me.role === "editor" || me.role === "admin"}
+        activityEntries={activity.data?.entries ?? []}
         detailPath={(flagKey) =>
           `/projects/${projectKey}/${environmentKey}/flags/${flagKey}`
         }
       />
+      {activity.isSuccess && activity.data.entries.length > 0 && (
+        <section className="detail-section">
+          <h2>Recent activity</h2>
+          <ChangeStream
+            entries={activity.data.entries.slice(0, 8)}
+            showSubsystem={false}
+          />
+          <Link
+            className="history-more"
+            to={`/changelog?project=${encodeURIComponent(projectKey)}`}
+          >
+            View all {activity.data.total} changes
+          </Link>
+        </section>
+      )}
       {me.role === "admin" && <KeysSection projectKey={projectKey} />}
     </section>
   );
@@ -213,11 +236,13 @@ function FlagTable({
   projectKey,
   environmentKey,
   canEdit,
+  activityEntries,
   detailPath,
 }: {
   projectKey: string;
   environmentKey: string;
   canEdit: boolean;
+  activityEntries: ChangeLogEntry[];
   detailPath: (flagKey: string) => string;
 }) {
   const [showArchived, setShowArchived] = useState(false);
@@ -286,6 +311,7 @@ function FlagTable({
                 projectKey={projectKey}
                 environmentKey={environmentKey}
                 canEdit={canEdit}
+                activityEntries={activityEntries}
                 detailPath={detailPath(flag.key)}
               />
             ),
@@ -323,12 +349,14 @@ function FlagRow({
   projectKey,
   environmentKey,
   canEdit,
+  activityEntries,
   detailPath,
 }: {
   flag: FlagListEntry;
   projectKey: string;
   environmentKey: string;
   canEdit: boolean;
+  activityEntries: ChangeLogEntry[];
   detailPath: string;
 }) {
   const queryClient = useQueryClient();
@@ -409,6 +437,17 @@ function FlagRow({
         <span className="badge-kind">{flag.kind}</span>
       </td>
       <td className="td-last-change muted">
+        <Sparkline
+          counts={dailyCounts(
+            activityEntries,
+            14,
+            (entry) => entry.flagKey === flag.key,
+          )}
+          width={90}
+          height={16}
+          className="cell-spark"
+          label={`${flag.key} changes, last 14 days`}
+        />
         {formatFlagChange(flag.lastChangedAt)}
       </td>
       <td className="td-state">
