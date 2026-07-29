@@ -26,6 +26,7 @@ import {
   flagsToggle,
 } from "./commands/flags";
 import { logTail } from "./commands/log";
+import { flagsRefs } from "./commands/refs";
 import { onboard } from "./commands/onboard";
 import { projectsList } from "./commands/projects";
 import { resolveConfig } from "./config";
@@ -56,6 +57,9 @@ const HELP_LINES = [
   "      List flags in an environment. Alias for flags list.",
   "  krillswitch flags list <project> <env>",
   "      List flags in an environment. Also accepts -p <project> -e <env>.",
+  "  krillswitch refs [dir] -p <project> -e <env>",
+  "      Scan a source tree for flag references; unreferenced",
+  "      temporary flags are cleanup candidates.",
   "  krillswitch flags get <key> -p <project> -e <env>",
   "      Show one flag.",
   "  krillswitch flags toggle <key> -p <project> -e <env>",
@@ -464,6 +468,24 @@ class FlagsListCommand extends ProjectEnvCommand {
   }
 }
 
+class RefsCommand extends ProjectEnvCommand {
+  static paths = [["refs"]];
+  static usage = Command.Usage({
+    description: "Scan a source tree for flag references",
+  });
+
+  dirArg = Option.String({ name: "dir", required: false });
+
+  async execute(): Promise<number> {
+    const dir = this.dirArg ?? ".";
+    return this.runWithProjectEnv(
+      "refs",
+      "krillswitch refs [dir] -p <project> -e <env>",
+      (client, options) => flagsRefs(client, options, dir),
+    );
+  }
+}
+
 class FlagsGetCommand extends ProjectEnvCommand {
   static paths = [["flags", "get"]];
   static usage = Command.Usage({
@@ -796,6 +818,7 @@ const COMMANDS: CommandClass[] = [
   FlagsToggleCommand,
   FlagsCreateCommand,
   FlagsTargetingSetCommand,
+  RefsCommand,
   EvalCommand,
   LogTailCommand,
 ];
