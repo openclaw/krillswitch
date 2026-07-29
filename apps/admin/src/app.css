@@ -1805,6 +1805,15 @@ input[type="radio"]:focus-visible {
   max-width: 780px;
 }
 
+/* Sentence layout: row selects size to their content. Carapace's unlayered
+   `.oc-select { width: 100% }` outranks the Tailwind width utilities the
+   triggers carry (layered), which flattened every rule into a full-width
+   stack. */
+.targeting-row .oc-select.select-trigger {
+  width: auto;
+  min-width: 120px;
+}
+
 .targeting-subsection {
   padding: 12px;
   border: 1px solid var(--line);
@@ -2640,7 +2649,8 @@ tr.is-revoked td {
   }
 
   .targeting-row .oc-action,
-  .targeting-row [role="combobox"] {
+  .targeting-row [role="combobox"],
+  .targeting-row .oc-select.select-trigger {
     width: 100%;
   }
 
