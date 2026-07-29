@@ -3666,25 +3666,47 @@ h1 {
   }
 
   /* Inside the slide-over the nav sections keep their vertical rail layout;
-     Carapace's stacked-strip rules would otherwise flow them horizontally. */
-  .mobile-menu .oc-app-navigation-section {
+     Carapace's stacked-strip rules would otherwise flow them horizontally.
+     Frame-qualified so these outrank the compact-rail hiding rules, which
+     also match inside the dialog. */
+  .oc-app-frame .mobile-menu .oc-app-navigation-section {
     display: block;
   }
 
-  .mobile-menu .oc-app-navigation-label {
+  .oc-app-frame .mobile-menu .oc-app-navigation-label {
     display: block;
     margin: 0 0 6px;
   }
 
-  .mobile-menu .oc-app-navigation-list {
+  .oc-app-frame .mobile-menu .oc-app-navigation-list {
     display: grid;
     width: auto;
     min-width: 0;
     gap: 2px;
   }
 
-  .mobile-menu .oc-app-navigation-item {
+  .oc-app-frame .mobile-menu .oc-app-navigation-item {
     min-height: 44px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-item-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-footer-copy {
+    display: grid;
+  }
+
+  .oc-app-frame .mobile-menu .nav-identity {
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   /* Eval-key and token tables keep their columns and scroll sideways;
