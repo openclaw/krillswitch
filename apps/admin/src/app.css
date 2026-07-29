@@ -1115,8 +1115,12 @@ input[type="radio"]:focus-visible {
 }
 
 @media (max-width: 720px) {
+  /* Shares the row with the New-project button; flex-none + width:100%
+     overflowed the row and pushed the input off the left edge. */
   .projects-search {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 }
 
@@ -3635,6 +3639,12 @@ h1 {
   .oc-app-navigation-body,
   .oc-app-navigation-footer {
     display: none;
+  }
+
+  /* Carapace only guarantees 32rem; short pages otherwise end in a band of
+     frame background under the content surface. */
+  .oc-app-frame {
+    min-height: 100dvh;
   }
 
   .oc-app-navigation {
