@@ -254,11 +254,15 @@ export async function updateFlagDetail(
       variationId: indexToId(target.variationIndex),
       contextKeys: target.contextKeys,
     })),
-    rules: draft.rules.map((rule) => ({
-      variationId: indexToId(rule.variationIndex),
-      attribute: rule.attribute,
-      values: rule.values,
-    })),
+    rules: draft.rules.map((rule) =>
+      "segment" in rule
+        ? { variationId: indexToId(rule.variationIndex), segment: rule.segment }
+        : {
+            variationId: indexToId(rule.variationIndex),
+            attribute: rule.attribute,
+            values: rule.values,
+          },
+    ),
     rollout: draft.rollout
       ? {
           variations: draft.rollout.variations.map((rolloutVariation) => ({

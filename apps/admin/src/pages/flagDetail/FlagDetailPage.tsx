@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ApiError, api, type FlagDetail, type Me } from "../../api";
+import {
+  ApiError,
+  api,
+  type FlagDetail,
+  type Me,
+  type Segment,
+} from "../../api";
 import { ChevronDownIcon } from "../../components/brand";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { CopyButton } from "../../components/CopyButton";
@@ -20,6 +26,10 @@ export function FlagDetailPage({ me }: { me: Me }) {
   const detail = useQuery({
     queryKey: ["flag", projectKey, environmentKey, flagKey],
     queryFn: () => api.flagDetail(projectKey, environmentKey, flagKey),
+  });
+  const segments = useQuery({
+    queryKey: ["segments", projectKey],
+    queryFn: () => api.segments(projectKey),
   });
 
   if (detail.isPending) {
@@ -42,6 +52,7 @@ export function FlagDetailPage({ me }: { me: Me }) {
       key={`${projectKey}/${environmentKey}/${flagKey}`}
       me={me}
       detail={detail.data}
+      segments={segments.data?.segments ?? []}
       projectKey={projectKey}
       environmentKey={environmentKey}
     />
@@ -51,11 +62,13 @@ export function FlagDetailPage({ me }: { me: Me }) {
 function FlagDetailEditor({
   me,
   detail,
+  segments,
   projectKey,
   environmentKey,
 }: {
   me: Me;
   detail: FlagDetail;
+  segments: Segment[];
   projectKey: string;
   environmentKey: string;
 }) {
@@ -391,6 +404,7 @@ function FlagDetailEditor({
             <RulesEditor
               rules={draft.rules}
               variations={draft.variations}
+              segments={segments}
               disabled={draftDisabled}
               onChange={(rules) => setDraft({ ...draft, rules })}
             />

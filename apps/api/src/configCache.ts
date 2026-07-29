@@ -1,13 +1,19 @@
 import {
   CONFIG_CACHE_TTL_MS,
   type FlagConfig,
+  type SegmentMap,
 } from "@openclaw/krillswitch-core";
 import { drizzle } from "drizzle-orm/d1";
-import { loadFlagConfigs, resolveEnvironmentId } from "./db/flagStore";
+import {
+  loadFlagConfigs,
+  loadSegmentMap,
+  resolveEvalEnvironment,
+} from "./db/flagStore";
 
 export interface EnvironmentConfig {
   environmentId: string;
   flags: FlagConfig[];
+  segments: SegmentMap;
 }
 
 interface CacheEntry {
@@ -39,14 +45,15 @@ async function fetchEnvironmentConfig(
   // D1 client type predates D1DatabaseSession, but both expose prepare/batch.
   const session = db.withSession("first-primary");
   const sessionDb = drizzle(session as unknown as D1Database);
-  const environmentId = await resolveEnvironmentId(sessionDb, evalKey);
-  if (environmentId === null) {
+  const resolved = await resolveEvalEnvironment(sessionDb, evalKey);
+  if (resolved === null) {
     return null;
   }
-  return {
-    environmentId,
-    flags: await loadFlagConfigs(sessionDb, environmentId),
-  };
+  const [flags, segmentMap] = await Promise.all([
+    loadFlagConfigs(sessionDb, resolved.environmentId),
+    loadSegmentMap(sessionDb, resolved.projectId),
+  ]);
+  return { environmentId: resolved.environmentId, flags, segments: segmentMap };
 }
 
 export async function getEnvironmentConfig(

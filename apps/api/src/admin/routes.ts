@@ -59,6 +59,14 @@ import {
   setUserRole,
 } from "./management";
 import {
+  createSegment,
+  deleteSegment,
+  listSegments,
+  segmentBodySchema,
+  segmentCreateSchema,
+  updateSegment,
+} from "./segments";
+import {
   authenticateToken,
   countTokens,
   listTokens,
@@ -926,6 +934,104 @@ adminRoutes.post("/projects/:projectKey/flags", async (c) => {
       clearConfigCache();
       return c.json({ created: parsed.data.key }, 201);
   }
+});
+
+// --- Segments: reusable project-scoped audiences (editors may manage). ---
+
+adminRoutes.get("/projects/:projectKey/segments", async (c) => {
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ segments: await listSegments(db, projectId) });
+});
+
+adminRoutes.post("/projects/:projectKey/segments", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = segmentCreateSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const { key, ...draft } = parsed.data;
+  const outcome = await createSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key,
+    draft: { ...draft, description: draft.description ?? null },
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (outcome === "conflict") {
+    return c.json({ error: "conflict" }, 409);
+  }
+  clearConfigCache();
+  return c.json({ created: key }, 201);
+});
+
+adminRoutes.put("/projects/:projectKey/segments/:segmentKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = segmentBodySchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const updated = await updateSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key: c.req.param("segmentKey"),
+    draft: { ...parsed.data, description: parsed.data.description ?? null },
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  clearConfigCache();
+  return c.json({ updated: c.req.param("segmentKey") });
+});
+
+adminRoutes.delete("/projects/:projectKey/segments/:segmentKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const deleted = await deleteSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key: c.req.param("segmentKey"),
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  clearConfigCache();
+  return c.json({ deleted: c.req.param("segmentKey") });
 });
 
 const archiveFlagSchema = z.object({ archived: z.boolean() });

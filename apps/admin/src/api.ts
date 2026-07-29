@@ -45,6 +45,23 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+export type Segment = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  contextKeys: string[];
+  rules: { attribute: string; values: (string | number | boolean)[] }[];
+  createdAt: string;
+};
+
+export type SegmentBody = {
+  name: string;
+  description?: string | null;
+  contextKeys: string[];
+  rules: { attribute: string; values: (string | number | boolean)[] }[];
+};
+
 export type Webhook = {
   id: string;
   name: string;
@@ -137,11 +154,14 @@ export type FlagDetail = {
     offVariationId: string;
     defaultVariationId: string;
     targets: { variationId: string; contextKeys: string[] }[];
-    rules: {
-      variationId: string;
-      attribute: string;
-      values: (string | number | boolean)[];
-    }[];
+    rules: (
+      | {
+          variationId: string;
+          attribute: string;
+          values: (string | number | boolean)[];
+        }
+      | { variationId: string; segment: string }
+    )[];
     rollout: { variations: { variationId: string; weight: number }[] } | null;
   };
 };
@@ -165,11 +185,14 @@ export type FlagUpdateBody = {
   offVariationIndex: number;
   defaultVariationIndex: number;
   targets: { variationIndex: number; contextKeys: string[] }[];
-  rules: {
-    variationIndex: number;
-    attribute: string;
-    values: (string | number | boolean)[];
-  }[];
+  rules: (
+    | {
+        variationIndex: number;
+        attribute: string;
+        values: (string | number | boolean)[];
+      }
+    | { variationIndex: number; segment: string }
+  )[];
   rollout: { variations: { variationIndex: number; weight: number }[] } | null;
 };
 
@@ -332,6 +355,33 @@ export const api = {
   changeLogEntry: (id: string) =>
     request<{ entry: ChangeLogEntry }>(
       `/admin/changelog/${encodeURIComponent(id)}`,
+    ),
+  segments: (projectKey: string) =>
+    request<{ segments: Segment[] }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments`,
+    ),
+  createSegment: (projectKey: string, body: SegmentBody & { key: string }) =>
+    request<{ created: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  updateSegment: (projectKey: string, segmentKey: string, body: SegmentBody) =>
+    request<{ updated: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments/${encodeURIComponent(segmentKey)}`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  deleteSegment: (projectKey: string, segmentKey: string) =>
+    request<{ deleted: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments/${encodeURIComponent(segmentKey)}`,
+      { method: "DELETE" },
     ),
   webhooks: () => request<{ webhooks: Webhook[] }>("/admin/webhooks"),
   createWebhook: (body: { name: string; url: string }) =>

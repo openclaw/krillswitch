@@ -118,6 +118,12 @@ export function ProjectPage({ me }: { me: Me }) {
           </div>
         </div>
         <div className="oc-page-header-actions">
+          <Link
+            className="oc-action oc-action-ghost btn-link"
+            to={`/projects/${projectKey}/segments`}
+          >
+            Segments
+          </Link>
           <Select
             value={environmentKey}
             onValueChange={(env) =>

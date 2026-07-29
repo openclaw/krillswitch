@@ -20,6 +20,7 @@ import { MintTokenPage } from "./pages/MintTokenPage";
 import { NoAccess } from "./pages/NoAccess";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { SegmentsPage } from "./pages/SegmentsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignIn } from "./pages/SignIn";
 import { TokensPage } from "./pages/TokensPage";
@@ -106,6 +107,10 @@ export function App() {
         <Route
           path="/projects/:projectKey/flags/:flagKey"
           element={<FlagRedirect />}
+        />
+        <Route
+          path="/projects/:projectKey/segments"
+          element={<SegmentsPage me={me.data} />}
         />
         <Route path="/changelog" element={<ChangeLogPage />} />
         <Route path="/changelog/:id" element={<ChangeLogEntryPage />} />

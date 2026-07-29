@@ -1,4 +1,5 @@
 import type {
+  AttributeValue,
   FlagKind,
   FlagValue,
   JsonValue,
@@ -64,6 +65,9 @@ export type ChangeAction =
   | "key.rotate"
   | "token.mint"
   | "token.revoke"
+  | "segment.create"
+  | "segment.update"
+  | "segment.delete"
   | "webhook.create"
   | "webhook.update"
   | "webhook.delete";
@@ -200,3 +204,29 @@ export const webhooks = sqliteTable("webhooks", {
   lastSentAt: integer("last_sent_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+// Reusable project-scoped audiences referenced by flag rules ({segment}).
+// Deleting a segment leaves referencing rules in place; they simply stop
+// matching (see core ruleMatch), which is the safe direction.
+export const segments = sqliteTable(
+  "segments",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id),
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    contextKeys: text("context_keys", { mode: "json" })
+      .$type<string[]>()
+      .notNull(),
+    rules: text("rules", { mode: "json" })
+      .$type<{ attribute: string; values: AttributeValue[] }[]>()
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("segments_project_key").on(table.projectId, table.key),
+  ],
+);

@@ -146,7 +146,11 @@ app.post("/v1/eval", async (c) => {
   const evalStart = performance.now();
   const evaluated: Record<string, FlagEvaluation> = {};
   for (const flagConfig of config.flags) {
-    evaluated[flagConfig.key] = evaluateFlag(flagConfig, context);
+    evaluated[flagConfig.key] = evaluateFlag(
+      flagConfig,
+      context,
+      config.segments,
+    );
   }
   const evalMs = performance.now() - evalStart;
 

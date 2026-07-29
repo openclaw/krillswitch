@@ -3037,6 +3037,31 @@ h1 {
   white-space: nowrap;
 }
 
+/* Segments page: each segment is a disclosure card. */
+.segment-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.segment-summary code {
+  font-size: 12px;
+}
+
+.segment-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.segment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* Settings → Webhooks (admin). */
 .webhook-list {
   list-style: none;
