@@ -356,3 +356,69 @@ describe("manifest typing", () => {
     expect(neverCalled).toBeDefined();
   });
 });
+
+describe("stream", () => {
+  class FakeEventSource {
+    static instances: FakeEventSource[] = [];
+    url: string;
+    closed = false;
+    private listeners = new Map<string, (() => void)[]>();
+    constructor(url: string) {
+      this.url = url;
+      FakeEventSource.instances.push(this);
+    }
+    addEventListener(type: string, listener: () => void): void {
+      const existing = this.listeners.get(type) ?? [];
+      this.listeners.set(type, [...existing, listener]);
+    }
+    emit(type: string): void {
+      for (const listener of this.listeners.get(type) ?? []) {
+        listener();
+      }
+    }
+    close(): void {
+      this.closed = true;
+    }
+  }
+
+  beforeEach(() => {
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+  });
+
+  it("opens the stream with the eval key and refetches on change pings", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: false }));
+    render(
+      <FeatureFlagProvider evalKey={EVAL_KEY} baseUrl={BASE_URL} stream>
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const source = FakeEventSource.instances[0];
+    expect(source?.url).toBe(
+      `${BASE_URL}/v1/stream?key=${encodeURIComponent(EVAL_KEY)}`,
+    );
+
+    fetchMock.mockResolvedValue(evalResponse({ souls: true }));
+    source?.emit("change");
+    await waitFor(() =>
+      expect(screen.getByTestId("souls").textContent).toBe("true"),
+    );
+  });
+
+  it("closes the stream on unmount and never opens one without the option", async () => {
+    fetchMock.mockResolvedValue(evalResponse({ souls: false }));
+    const withStream = render(
+      <FeatureFlagProvider evalKey={EVAL_KEY} baseUrl={BASE_URL} stream>
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    await waitFor(() => expect(FakeEventSource.instances.length).toBe(1));
+    withStream.unmount();
+    expect(FakeEventSource.instances[0]?.closed).toBe(true);
+
+    renderDemo();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(FakeEventSource.instances.length).toBe(1);
+  });
+});
