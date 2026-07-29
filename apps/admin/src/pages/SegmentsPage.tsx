@@ -1,10 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { api, type Me, type Segment, type SegmentBody } from "../api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  api,
+  type Me,
+  type RuleOperator,
+  type Segment,
+  type SegmentBody,
+} from "../api";
 import { UsersIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { BlockSkeleton } from "../components/Skeleton";
+import { OPERATOR_LABELS, OPERATOR_ORDER } from "../operatorLabels";
+import { SINGLE_VALUE_OPERATORS } from "./flagDetail/draft";
 
 function splitList(raw: string): string[] {
   return raw
@@ -22,7 +37,11 @@ function coerceValue(entry: string): string | number | boolean {
   return entry;
 }
 
-type RuleDraft = { attribute: string; valuesRaw: string };
+type RuleDraft = {
+  attribute: string;
+  operator: RuleOperator;
+  valuesRaw: string;
+};
 
 type EditorState = {
   name: string;
@@ -36,6 +55,7 @@ function toEditor(segment: Segment): EditorState {
     keysRaw: segment.contextKeys.join(", "),
     rules: segment.rules.map((rule) => ({
       attribute: rule.attribute,
+      operator: rule.operator ?? "in",
       valuesRaw: rule.values.map(String).join(", "),
     })),
   };
@@ -54,7 +74,14 @@ function toBody(state: EditorState): SegmentBody | { error: string } {
     if (values.length === 0) {
       return { error: "a rule has no values to match" };
     }
-    rules.push({ attribute: rule.attribute.trim(), values });
+    if (SINGLE_VALUE_OPERATORS.has(rule.operator) && values.length !== 1) {
+      return { error: "a comparison rule needs exactly one value" };
+    }
+    rules.push({
+      attribute: rule.attribute.trim(),
+      operator: rule.operator,
+      values,
+    });
   }
   return {
     name: state.name.trim(),
@@ -168,10 +195,41 @@ function SegmentEditorFields({
               })
             }
           />
-          <span className="targeting-arrow muted">in</span>
+          <Select
+            value={rule.operator}
+            disabled={disabled}
+            onValueChange={(operator) =>
+              onChange({
+                ...state,
+                rules: state.rules.map((row, position) =>
+                  position === index
+                    ? { ...row, operator: operator as RuleOperator }
+                    : row,
+                ),
+              })
+            }
+          >
+            <SelectTrigger
+              aria-label={`Segment rule ${index + 1} operator`}
+              className="w-[130px]"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {OPERATOR_ORDER.map((operator) => (
+                <SelectItem key={operator} value={operator}>
+                  {OPERATOR_LABELS[operator]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <input
             className="oc-input input-mono targeting-values"
-            placeholder="values, comma separated"
+            placeholder={
+              SINGLE_VALUE_OPERATORS.has(rule.operator)
+                ? "one value"
+                : "values, comma separated"
+            }
             aria-label={`Segment rule ${index + 1} values`}
             value={rule.valuesRaw}
             disabled={disabled}
@@ -212,7 +270,10 @@ function SegmentEditorFields({
           onClick={() =>
             onChange({
               ...state,
-              rules: [...state.rules, { attribute: "", valuesRaw: "" }],
+              rules: [
+                ...state.rules,
+                { attribute: "", operator: "in" as const, valuesRaw: "" },
+              ],
             })
           }
         >
