@@ -36,7 +36,7 @@ function UsageChart({ stats }: { stats: EvalStatRow[] }) {
       <p className="dateline-label">Usage</p>
       <Sparkline
         counts={counts}
-        className="dateline-chart"
+        size="lg"
         label={`${totalRequests} eval requests in the last ${USAGE_DAYS} days`}
       />
       <div className="dateline-meta">

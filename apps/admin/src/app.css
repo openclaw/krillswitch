@@ -1125,13 +1125,12 @@ input[type="radio"]:focus-visible {
   width: 104px;
 }
 
-/* Inline per-row step chart (projects and flag tables). */
-.cell-spark {
-  display: block;
+/* Inline per-row step chart: tighter than oc-sparkline's default scale so
+   it sits inside fixed table columns. */
+.oc-sparkline.cell-spark {
   width: 90px;
   height: 16px;
   margin-bottom: 2px;
-  color: var(--ink-faint);
 }
 
 /* Key + copy button as one inline unit; the copy control lifts above the
@@ -1355,13 +1354,6 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-text);
-}
-
-.dateline-chart {
-  display: block;
-  width: 100%;
-  height: 44px;
-  color: var(--ink-faint);
 }
 
 .dateline-meta {
