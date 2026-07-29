@@ -171,6 +171,46 @@ describe("flag detail update", () => {
     });
   });
 
+  it("saves operator rules that eval honors (semver_gt end-to-end)", async () => {
+    const cookie = await devLogin("editor");
+    const draft = rolloutDemoDraft();
+    draft.rollout = null as never;
+    draft.rules = [
+      {
+        variationIndex: 1,
+        attribute: "appVersion",
+        operator: "semver_gt",
+        values: ["1.9.0"],
+      },
+    ] as never;
+    expect((await putDetail(cookie, draft)).status).toBe(200);
+    clearConfigCache();
+
+    const newer = await evalFlags("u1", { appVersion: "1.10.0" });
+    expect(newer.flags["rollout-demo"]).toMatchObject({
+      value: "b",
+      reason: { kind: "rule" },
+    });
+    const older = await evalFlags("u1", { appVersion: "1.8.0" });
+    expect(older.flags["rollout-demo"]).toMatchObject({
+      value: "a",
+      reason: { kind: "default" },
+    });
+  });
+
+  it("rejects a comparison operator with more than one value", async () => {
+    const cookie = await devLogin("editor");
+    const draft = rolloutDemoDraft();
+    draft.rollout = null as never;
+    draft.rules = [
+      { variationIndex: 1, attribute: "age", operator: "gt", values: [1, 2] },
+    ] as never;
+    const response = await putDetail(cookie, draft);
+    expect(response.status).toBe(400);
+    const body = await response.json<{ message?: string }>();
+    expect(body.message).toContain("exactly one value");
+  });
+
   it("rejects variation values that do not match the flag kind", async () => {
     const cookie = await devLogin("editor");
     const draft = rolloutDemoDraft();

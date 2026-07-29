@@ -260,6 +260,7 @@ export async function updateFlagDetail(
         : {
             variationId: indexToId(rule.variationIndex),
             attribute: rule.attribute,
+            operator: rule.operator,
             values: rule.values,
           },
     ),
