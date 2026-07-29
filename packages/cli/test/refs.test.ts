@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -16,12 +16,18 @@ beforeAll(async () => {
     join(root, "src", "app.ts"),
     'if (flags["souls"]) {\n  render();\n}\nconst theme = useFeatureFlag("theme");\n',
   );
-  await writeFile(join(root, "src", "other.ts"), "// mentions souls twice: souls\n");
+  await writeFile(
+    join(root, "src", "other.ts"),
+    "// mentions souls twice: souls\n",
+  );
   await writeFile(
     join(root, "node_modules", "dep", "index.js"),
     '"souls" must not count — dependency code is not a reference\n',
   );
-  await writeFile(join(root, "logo.png"), Buffer.from([0x89, 0x50, 0x00, 0x47]));
+  await writeFile(
+    join(root, "logo.png"),
+    Buffer.from([0x89, 0x50, 0x00, 0x47]),
+  );
 });
 
 afterAll(async () => {

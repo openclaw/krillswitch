@@ -26,9 +26,9 @@ import {
   flagsToggle,
 } from "./commands/flags";
 import { logTail } from "./commands/log";
-import { flagsRefs } from "./commands/refs";
 import { onboard } from "./commands/onboard";
 import { projectsList } from "./commands/projects";
+import { flagsRefs } from "./commands/refs";
 import { resolveConfig } from "./config";
 import { CliUsageError } from "./errors";
 import type { CommonOptions, ProjectEnvOptions } from "./options";

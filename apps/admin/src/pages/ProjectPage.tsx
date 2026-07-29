@@ -439,6 +439,14 @@ function FlagRow({
         <Link className="table-link flag-name row-stretch" to={detailPath}>
           {flag.name}
         </Link>
+        {staleDays(flag) !== null && (
+          <span
+            className="oc-badge oc-badge-warning stale-badge"
+            data-tip={`Temporary flag unchanged for ${staleDays(flag)} days — remove it from code, archive it, or mark it permanent`}
+          >
+            Stale
+          </span>
+        )}
         {flag.description && (
           <div className="flag-description muted">{flag.description}</div>
         )}
@@ -469,14 +477,6 @@ function FlagRow({
           label={`Requests serving ${flag.key}, last 14 days`}
         />
         {formatFlagChange(flag.lastChangedAt)}
-        {staleDays(flag) !== null && (
-          <span
-            className="oc-badge oc-badge-warning stale-badge"
-            data-tip={`Temporary flag unchanged for ${staleDays(flag)} days — remove it from code, archive it, or mark it permanent`}
-          >
-            Stale
-          </span>
-        )}
       </td>
       <td className="td-state">
         {flag.archived ? (
