@@ -1,4 +1,4 @@
-import type { ChangeLogEntry } from "../api";
+import type { ChangeLogEntry, EvalStatRow } from "../api";
 
 export const DAY_MS = 86_400_000;
 
@@ -18,6 +18,25 @@ export function dailyCounts(
     if (age >= 0 && age < days) {
       const index = days - 1 - age;
       counts[index] = (counts[index] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/** Bucket eval-traffic rows into per-day request counts ending today. */
+export function usageSeries(
+  stats: EvalStatRow[],
+  days: number,
+  match?: (row: EvalStatRow) => boolean,
+): number[] {
+  const counts: number[] = new Array(days).fill(0);
+  const today = Math.floor(Date.now() / DAY_MS);
+  for (const row of stats) {
+    if (match && !match(row)) continue;
+    const age = today - row.day;
+    if (age >= 0 && age < days) {
+      const index = days - 1 - age;
+      counts[index] = (counts[index] ?? 0) + row.count;
     }
   }
   return counts;

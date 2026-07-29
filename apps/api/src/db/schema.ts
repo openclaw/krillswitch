@@ -10,6 +10,7 @@ import type {
 import {
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -204,6 +205,19 @@ export const webhooks = sqliteTable("webhooks", {
   lastSentAt: integer("last_sent_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+// Per-environment daily eval request counts (UTC day = epoch ms / 86400000).
+// Written off the eval hot path; powers the usage sparklines. One row per
+// environment per day, so the table stays tiny.
+export const evalStatsDaily = sqliteTable(
+  "eval_stats_daily",
+  {
+    environmentId: text("environment_id").notNull(),
+    day: integer("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.environmentId, table.day] })],
+);
 
 // Reusable project-scoped audiences referenced by flag rules ({segment}).
 // Deleting a segment leaves referencing rules in place; they simply stop

@@ -108,12 +108,19 @@ async function recordEvalStats(
   environmentId: string,
 ): Promise<void> {
   try {
-    await db
-      .prepare(
-        "UPDATE environments SET eval_count = eval_count + 1, last_eval_at = ? WHERE id = ?",
-      )
-      .bind(Date.now(), environmentId)
-      .run();
+    const day = Math.floor(Date.now() / 86_400_000);
+    await db.batch([
+      db
+        .prepare(
+          "UPDATE environments SET eval_count = eval_count + 1, last_eval_at = ? WHERE id = ?",
+        )
+        .bind(Date.now(), environmentId),
+      db
+        .prepare(
+          "INSERT INTO eval_stats_daily (environment_id, day, count) VALUES (?, ?, 1) ON CONFLICT(environment_id, day) DO UPDATE SET count = count + 1",
+        )
+        .bind(environmentId, day),
+    ]);
   } catch {
     // Stats must never fail an eval; the next request tries again.
   }

@@ -92,6 +92,31 @@ describe("project detail", () => {
     expect(response.status).toBe(404);
   });
 
+  it("records daily eval usage for the sparklines", async () => {
+    await evalSouls();
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/eval-stats`, {
+      headers: { cookie },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json<{
+      stats: {
+        projectKey: string;
+        environmentKey: string;
+        day: number;
+        count: number;
+      }[];
+    }>();
+    const today = Math.floor(Date.now() / 86_400_000);
+    const row = body.stats.find(
+      (stat) =>
+        stat.projectKey === "clawhub" &&
+        stat.environmentKey === "development" &&
+        stat.day === today,
+    );
+    expect(row?.count).toBeGreaterThan(0);
+  });
+
   it("reports SDK eval freshness per environment", async () => {
     await evalSouls();
     const cookie = await devLogin("viewer");

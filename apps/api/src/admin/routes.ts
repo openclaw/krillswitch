@@ -1,5 +1,5 @@
 import { evaluateFlag, type FlagEvaluation } from "@openclaw/krillswitch-core";
-import { count, max } from "drizzle-orm";
+import { count, eq, gt, max } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
   type AdminRole,
   changeLog,
   environments,
+  evalStatsDaily,
   flags,
   projects,
   roleGrants,
@@ -365,6 +366,26 @@ adminRoutes.delete("/webhooks/:id", async (c) => {
     return c.json({ error: "not_found" }, 404);
   }
   return c.json({ deleted: c.req.param("id") });
+});
+
+// Usage series for the console sparklines: per-environment daily eval
+// request counts, joined to keys so the client can slice by project or env.
+adminRoutes.get("/eval-stats", async (c) => {
+  const db = drizzle(c.env.DB);
+  const since = Math.floor(Date.now() / 86_400_000) - 30;
+  const rows = await db
+    .select({
+      projectKey: projects.key,
+      environmentKey: environments.key,
+      day: evalStatsDaily.day,
+      count: evalStatsDaily.count,
+    })
+    .from(evalStatsDaily)
+    .innerJoin(environments, eq(evalStatsDaily.environmentId, environments.id))
+    .innerJoin(projects, eq(environments.projectId, projects.id))
+    .where(gt(evalStatsDaily.day, since))
+    .all();
+  return c.json({ stats: rows });
 });
 
 adminRoutes.get("/projects", async (c) => {

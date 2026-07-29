@@ -280,24 +280,31 @@ input[type="radio"]:focus-visible {
   text-decoration: none;
 }
 
-/* --- chips --- */
+/* --- identity markers ---
+   Roles and environments are identity, not state: they render as a tone dot
+   plus colored text with no pill chrome (pills read as buttons). The badge
+   classes stay for the dot and tone tokens; the chrome is stripped here. */
+.oc-badge.chip-role-admin,
+.oc-badge.chip-role-editor,
+.oc-badge.chip-role-viewer,
+.oc-badge.env-badge {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
 
 .oc-badge.chip-role-admin {
   color: var(--accent-text);
-  background: var(--accent-soft);
-  border-color: var(--accent-ring);
 }
 
 .oc-badge.chip-role-editor {
   color: var(--ok);
-  background: var(--ok-bg);
-  border-color: color-mix(in oklch, var(--ok), transparent 60%);
 }
 
 .oc-badge.chip-role-viewer {
   color: var(--viewer);
-  background: var(--viewer-bg);
-  border-color: color-mix(in oklch, var(--viewer), transparent 60%);
 }
 
 /* --- theme toggle --- */
@@ -2693,13 +2700,6 @@ tr.is-revoked td {
   overflow: auto;
 }
 
-/* The workspace context is a router link here, not the static span Carapace
-   previews, so the app's global anchor underline has to be cleared. */
-.oc-app-navigation-context {
-  color: inherit;
-  text-decoration: none;
-}
-
 /* --- Carapace application parity ---
    App-surface anatomy: app frame, workspace context, compact nav rows, and
    table wrappers. Tokens all resolve from the imports at the top of this file;
@@ -2872,13 +2872,6 @@ h1 {
 /* --- ⌘K search (CommandPalette.tsx) ---
    Rail trigger styled like the carapace.design search field, palette as a
    top-anchored dialog over the standard modal overlay. */
-/* Carapace's rail grid is header/context/body/footer (auto auto 1fr auto);
-   the search trigger adds a row, so restate the template or the trigger
-   swallows the 1fr body row. */
-.oc-app-navigation {
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-}
-
 .nav-search {
   display: flex;
   align-items: center;
@@ -3179,6 +3172,34 @@ h1 {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* Settings tabs: LD-style underline tabs, section state in the URL. */
+.settings-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-tab {
+  margin-bottom: -1px;
+  padding: 4px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  color: var(--ink);
+}
+
+.settings-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
 }
 
 /* Settings → Webhooks (admin). */

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ChangeLogEntry, Environment } from "../api";
+import type { ChangeLogEntry, Environment, EvalStatRow } from "../api";
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
 import { ChangeStream } from "../components/ChangeStream";
@@ -23,7 +23,7 @@ import { EnvBadge, isProductionEnv } from "../components/EnvBadge";
 import { GuardrailDialog } from "../components/GuardrailDialog";
 import { KeysSection } from "../components/KeysSection";
 import { BlockSkeleton, TableSkeleton } from "../components/Skeleton";
-import { dailyCounts, Sparkline } from "../components/Sparkline";
+import { Sparkline, usageSeries } from "../components/Sparkline";
 import { Switch } from "../components/Switch";
 import { TableFrame } from "../components/TableFrame";
 
@@ -36,11 +36,12 @@ export function ProjectPage({ me }: { me: Me }) {
     queryFn: () => api.projectDetail(projectKey),
     placeholderData: keepPreviousData,
   });
-  // Feeds the per-flag sparklines and the recent-activity stream.
+  // Recent-activity stream (audit) and per-flag usage sparklines (traffic).
   const activity = useQuery({
     queryKey: ["changelog-activity", projectKey],
-    queryFn: () => api.changeLog({ projectKey }, { limit: 200 }),
+    queryFn: () => api.changeLog({ projectKey }, { limit: 100 }),
   });
+  const usage = useQuery({ queryKey: ["eval-stats"], queryFn: api.evalStats });
 
   if (detail.isPending) {
     return (
@@ -165,7 +166,7 @@ export function ProjectPage({ me }: { me: Me }) {
         projectKey={projectKey}
         environmentKey={environmentKey}
         canEdit={me.role === "editor" || me.role === "admin"}
-        activityEntries={activity.data?.entries ?? []}
+        usageStats={usage.data?.stats ?? []}
         detailPath={(flagKey) =>
           `/projects/${projectKey}/${environmentKey}/flags/${flagKey}`
         }
@@ -236,13 +237,13 @@ function FlagTable({
   projectKey,
   environmentKey,
   canEdit,
-  activityEntries,
+  usageStats,
   detailPath,
 }: {
   projectKey: string;
   environmentKey: string;
   canEdit: boolean;
-  activityEntries: ChangeLogEntry[];
+  usageStats: EvalStatRow[];
   detailPath: (flagKey: string) => string;
 }) {
   const [showArchived, setShowArchived] = useState(false);
@@ -311,7 +312,7 @@ function FlagTable({
                 projectKey={projectKey}
                 environmentKey={environmentKey}
                 canEdit={canEdit}
-                activityEntries={activityEntries}
+                usageStats={usageStats}
                 detailPath={detailPath(flag.key)}
               />
             ),
@@ -349,14 +350,14 @@ function FlagRow({
   projectKey,
   environmentKey,
   canEdit,
-  activityEntries,
+  usageStats,
   detailPath,
 }: {
   flag: FlagListEntry;
   projectKey: string;
   environmentKey: string;
   canEdit: boolean;
-  activityEntries: ChangeLogEntry[];
+  usageStats: EvalStatRow[];
   detailPath: string;
 }) {
   const queryClient = useQueryClient();
@@ -438,15 +439,19 @@ function FlagRow({
       </td>
       <td className="td-last-change muted">
         <Sparkline
-          counts={dailyCounts(
-            activityEntries,
+          // Every eval request serves the whole flag set, so a flag's
+          // serve count is its environment's request count.
+          counts={usageSeries(
+            usageStats,
             14,
-            (entry) => entry.flagKey === flag.key,
+            (row) =>
+              row.projectKey === projectKey &&
+              row.environmentKey === environmentKey,
           )}
           width={90}
           height={16}
           className="cell-spark"
-          label={`${flag.key} changes, last 14 days`}
+          label={`Requests serving ${flag.key}, last 14 days`}
         />
         {formatFlagChange(flag.lastChangedAt)}
       </td>

@@ -1,44 +1,44 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
-import { api, type ChangeLogEntry, type Me, type ProjectSummary } from "../api";
+import { api, type EvalStatRow, type Me, type ProjectSummary } from "../api";
 import krillBanner from "../assets/krill-banner.avif";
-import { FolderIcon, LayersIcon, ListIcon } from "../components/brand";
+import { FolderIcon, LayersIcon, ListIcon, PlugIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
-import { DAY_MS, dailyCounts, Sparkline } from "../components/Sparkline";
+import { DAY_MS, Sparkline, usageSeries } from "../components/Sparkline";
 import { TableFrame } from "../components/TableFrame";
 
 const PAGE_SIZE = 10;
 
-// Dateline chart: recent change-log activity bucketed per day, drawn as a
+// Usage chart: eval requests per day across every environment, drawn as a
 // step line like the carapace.design/maintainer report datelines.
-const DATELINE_DAYS = 30;
+const USAGE_DAYS = 30;
 
-function Dateline({ entries }: { entries: ChangeLogEntry[] }) {
-  const counts = dailyCounts(entries, DATELINE_DAYS);
-  const totalChanges = counts.reduce((sum, count) => sum + count, 0);
+function UsageChart({ stats }: { stats: EvalStatRow[] }) {
+  const counts = usageSeries(stats, USAGE_DAYS);
+  const totalRequests = counts.reduce((sum, count) => sum + count, 0);
   const startLabel = new Date(
-    Date.now() - (DATELINE_DAYS - 1) * DAY_MS,
+    Date.now() - (USAGE_DAYS - 1) * DAY_MS,
   ).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const endLabel = new Date().toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   });
   return (
-    <section className="dateline" aria-label="Change activity">
-      <p className="dateline-label">Dateline</p>
+    <section className="dateline" aria-label="Eval traffic">
+      <p className="dateline-label">Usage</p>
       <Sparkline
         counts={counts}
         className="dateline-chart"
-        label={`${totalChanges} changes in the last ${DATELINE_DAYS} days`}
+        label={`${totalRequests} eval requests in the last ${USAGE_DAYS} days`}
       />
       <div className="dateline-meta">
         <span>{startLabel}</span>
         <span>
-          {totalChanges} change{totalChanges === 1 ? "" : "s"} · last{" "}
-          {DATELINE_DAYS} days
+          {totalRequests.toLocaleString()} request
+          {totalRequests === 1 ? "" : "s"} · last {USAGE_DAYS} days
         </span>
         <span>{endLabel}</span>
       </div>
@@ -65,11 +65,8 @@ export function ProjectsPage({ me }: { me: Me }) {
       api.projects({ limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     placeholderData: keepPreviousData,
   });
-  // Recent audit entries feed the dateline; 200 covers a busy month here.
-  const activity = useQuery({
-    queryKey: ["changelog-activity"],
-    queryFn: () => api.changeLog({}, { limit: 200 }),
-  });
+  // Per-day eval request counts feed the usage chart and row sparklines.
+  const usage = useQuery({ queryKey: ["eval-stats"], queryFn: api.evalStats });
 
   const isAdmin = me.role === "admin";
   const rows = projects.data?.projects ?? [];
@@ -108,8 +105,8 @@ export function ProjectsPage({ me }: { me: Me }) {
         </div>
       </header>
 
-      {activity.isSuccess && activity.data.entries.length > 0 && (
-        <Dateline entries={activity.data.entries} />
+      {usage.isSuccess && usage.data.stats.length > 0 && (
+        <UsageChart stats={usage.data.stats} />
       )}
 
       {projects.isSuccess && total > 0 && (
@@ -150,7 +147,7 @@ export function ProjectsPage({ me }: { me: Me }) {
             </span>
             <span className="oc-summary-metric-copy">
               <strong>{visibleFlagCount}</strong>
-              <small>Flags shown</small>
+              <small>Flags</small>
             </span>
           </div>
           <div className="oc-summary-metric">
@@ -159,7 +156,20 @@ export function ProjectsPage({ me }: { me: Me }) {
             </span>
             <span className="oc-summary-metric-copy">
               <strong>{visibleEnvironmentCount}</strong>
-              <small>Envs shown</small>
+              <small>Environments</small>
+            </span>
+          </div>
+          <div className="oc-summary-metric">
+            <span className="oc-summary-metric-icon" aria-hidden="true">
+              <PlugIcon />
+            </span>
+            <span className="oc-summary-metric-copy">
+              <strong>
+                {usageSeries(usage.data?.stats ?? [], 30)
+                  .reduce((sum, count) => sum + count, 0)
+                  .toLocaleString()}
+              </strong>
+              <small>Requests · 30d</small>
             </span>
           </div>
         </div>
@@ -203,7 +213,7 @@ export function ProjectsPage({ me }: { me: Me }) {
           <ProjectsTable
             projects={visible}
             query={query}
-            activityEntries={activity.data?.entries ?? []}
+            usageStats={usage.data?.stats ?? []}
           />
           <Pagination page={page} pageCount={pageCount} onPage={setPage} />
         </>
@@ -215,11 +225,11 @@ export function ProjectsPage({ me }: { me: Me }) {
 function ProjectsTable({
   projects,
   query,
-  activityEntries,
+  usageStats,
 }: {
   projects: ProjectSummary[];
   query: string;
-  activityEntries: ChangeLogEntry[];
+  usageStats: EvalStatRow[];
 }) {
   if (projects.length === 0) {
     return (
@@ -238,7 +248,7 @@ function ProjectsTable({
             <th>Name</th>
             <th>Key</th>
             <th className="col-num">Flags</th>
-            <th className="th-activity">Activity</th>
+            <th className="th-activity">Usage</th>
             <th>Last change</th>
           </tr>
         </thead>
@@ -266,15 +276,15 @@ function ProjectsTable({
               </td>
               <td className="td-activity">
                 <Sparkline
-                  counts={dailyCounts(
-                    activityEntries,
+                  counts={usageSeries(
+                    usageStats,
                     14,
-                    (entry) => entry.projectKey === project.key,
+                    (row) => row.projectKey === project.key,
                   )}
                   width={90}
                   height={18}
                   className="cell-spark"
-                  label={`${project.key} changes, last 14 days`}
+                  label={`${project.key} eval requests, last 14 days`}
                 />
               </td>
               <td className="cell-muted">

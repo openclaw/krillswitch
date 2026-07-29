@@ -62,6 +62,14 @@ export type SegmentBody = {
   rules: { attribute: string; values: (string | number | boolean)[] }[];
 };
 
+/** One environment-day of eval traffic (day = epoch ms / 86400000). */
+export type EvalStatRow = {
+  projectKey: string;
+  environmentKey: string;
+  day: number;
+  count: number;
+};
+
 export type Webhook = {
   id: string;
   name: string;
@@ -383,6 +391,7 @@ export const api = {
       `/admin/projects/${encodeURIComponent(projectKey)}/segments/${encodeURIComponent(segmentKey)}`,
       { method: "DELETE" },
     ),
+  evalStats: () => request<{ stats: EvalStatRow[] }>("/admin/eval-stats"),
   webhooks: () => request<{ webhooks: Webhook[] }>("/admin/webhooks"),
   createWebhook: (body: { name: string; url: string }) =>
     request<{ created: string }>("/admin/webhooks", {

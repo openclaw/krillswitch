@@ -4,7 +4,6 @@ import { NavLink } from "react-router";
 import { api, type Me } from "./api";
 import {
   Brandmark,
-  ChevronDownIcon,
   ChevronsLeftIcon,
   ExitIcon,
   FolderIcon,
@@ -76,16 +75,6 @@ export function Shell({
             <ChevronsLeftIcon />
           </button>
         </div>
-        <NavLink to="/" end className="oc-app-navigation-context">
-          <span className="oc-app-navigation-context-icon" aria-hidden="true">
-            <KrillMark />
-          </span>
-          <span className="oc-app-navigation-context-copy">
-            <strong>KrillSwitch</strong>
-            <small>Admin console</small>
-          </span>
-          <ChevronDownIcon className="oc-app-navigation-context-chevron" />
-        </NavLink>
         <button
           type="button"
           className="nav-search"
