@@ -12,8 +12,10 @@ import {
   KrillMark,
   ListIcon,
   LockIcon,
+  SearchIcon,
   UsersIcon,
 } from "./components/brand";
+import { CommandPalette } from "./components/CommandPalette";
 import { ThemeToggle } from "./components/ThemeToggle";
 import type { ThemeControl } from "./useThemeMode";
 
@@ -37,6 +39,7 @@ export function Shell({
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem("nav-mode") === "compact",
   );
+  const [paletteOpen, setPaletteOpen] = useState(false);
   useEffect(() => {
     localStorage.setItem("nav-mode", collapsed ? "compact" : "expanded");
   }, [collapsed]);
@@ -82,6 +85,16 @@ export function Shell({
           </span>
           <ChevronDownIcon className="oc-app-navigation-context-chevron" />
         </NavLink>
+        <button
+          type="button"
+          className="nav-search"
+          aria-label="Search pages, projects, and flags"
+          onClick={() => setPaletteOpen(true)}
+        >
+          <SearchIcon className="nav-search-glyph" />
+          <span className="nav-search-label">Search…</span>
+          <kbd className="nav-search-kbd">⌘K</kbd>
+        </button>
         <div className="oc-app-navigation-body">
           <section className="oc-app-navigation-section">
             <p className="oc-app-navigation-label">Workspace</p>
@@ -163,6 +176,11 @@ export function Shell({
       <div className="oc-app-main">
         <main className="oc-app-content">{children}</main>
       </div>
+      <CommandPalette
+        me={me}
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+      />
     </div>
   );
 }

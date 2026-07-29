@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 import { ApiError, api, type Me } from "./api";
 import {
   Brandmark,
@@ -7,6 +7,7 @@ import {
   RetryIcon,
   ShieldIcon,
 } from "./components/brand";
+import { BlockSkeleton } from "./components/Skeleton";
 import { ChangeLogEntryPage } from "./pages/ChangeLogEntryPage";
 import { ChangeLogPage } from "./pages/ChangeLogPage";
 import { CreateEnvironmentPage } from "./pages/CreateEnvironmentPage";
@@ -102,6 +103,10 @@ export function App() {
           path="/settings"
           element={<SettingsPage me={me.data} theme={theme} />}
         />
+        <Route
+          path="/projects/:projectKey/flags/:flagKey"
+          element={<FlagRedirect />}
+        />
         <Route path="/changelog" element={<ChangeLogPage />} />
         <Route path="/changelog/:id" element={<ChangeLogEntryPage />} />
         <Route
@@ -152,5 +157,26 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>
+  );
+}
+
+/** Palette flag links carry no environment; resolve the project's first
+ *  environment and forward. */
+function FlagRedirect() {
+  const { projectKey = "", flagKey = "" } = useParams();
+  const detail = useQuery({
+    queryKey: ["project", projectKey],
+    queryFn: () => api.projectDetail(projectKey),
+  });
+  if (detail.isPending) return <BlockSkeleton lines={3} />;
+  const firstEnvironment = detail.data?.environments[0];
+  if (!firstEnvironment) {
+    return <Navigate to={`/projects/${projectKey}`} replace />;
+  }
+  return (
+    <Navigate
+      to={`/projects/${projectKey}/${firstEnvironment.key}/flags/${flagKey}`}
+      replace
+    />
   );
 }
