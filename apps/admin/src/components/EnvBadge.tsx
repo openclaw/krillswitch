@@ -29,7 +29,12 @@ export function EnvBadge({
   name?: string;
   className?: string;
 }) {
-  const classes = ["oc-badge", `oc-badge-${envTone(envKey)}`, "env-badge"];
+  const classes = [
+    "oc-badge",
+    `oc-badge-${envTone(envKey)}`,
+    "oc-badge-plain",
+    "env-badge",
+  ];
   if (className) classes.push(className);
   return <span className={classes.join(" ")}>{name ?? envKey}</span>;
 }
