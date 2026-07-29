@@ -969,21 +969,18 @@ input[type="radio"]:focus-visible {
 
 .oc-table-wrap.can-scroll-left.can-scroll-right {
   box-shadow:
-    var(--shadow-panel),
     inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%),
     inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
 }
 
 .oc-table-wrap.can-scroll-left:not(.can-scroll-right) {
-  box-shadow:
-    var(--shadow-panel),
-    inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
+  box-shadow: inset 14px 0 10px -12px
+    color-mix(in oklch, var(--ink), transparent 70%);
 }
 
 .oc-table-wrap.can-scroll-right:not(.can-scroll-left) {
-  box-shadow:
-    var(--shadow-panel),
-    inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
+  box-shadow: inset -14px 0 10px -12px
+    color-mix(in oklch, var(--ink), transparent 70%);
 }
 
 .oc-table-wrap:focus-visible {
@@ -1432,19 +1429,15 @@ input[type="radio"]:focus-visible {
   color: var(--ink-muted);
 }
 
-/* Light mode gets a light hero: the dark band reads as a broken slab on a
-   near-white page. The artwork keeps its own colors; the gradient flips. */
+/* Light mode gets a clean typographic hero: the krill artwork has a dark
+   background baked into the asset, so over a light band it reads as a
+   dirty smear no gradient can save. Artwork stays a dark-mode treat. */
 [data-theme="light"] .page-hero {
   background: var(--surface-muted);
 }
 
-[data-theme="light"] .page-hero-backdrop::after {
-  background: linear-gradient(
-    to right,
-    color-mix(in oklch, var(--surface-muted), transparent 0%) 34%,
-    color-mix(in oklch, var(--surface-muted), transparent 45%) 62%,
-    transparent 100%
-  );
+[data-theme="light"] .page-hero-backdrop {
+  display: none;
 }
 
 [data-theme="light"] .page-hero h1 {
