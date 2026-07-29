@@ -3732,6 +3732,9 @@ h1 {
   }
 
   .changelog-stream .oc-log-message {
+    /* Carapace truncates to one line; phones wrap instead (nowrap inherits
+       into the before→after segments, which then clip mid-token). */
+    white-space: normal;
     overflow-wrap: anywhere;
   }
 }
