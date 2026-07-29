@@ -22,8 +22,12 @@ export type TargetDraft = {
 export type RuleDraft = {
   rowId: string;
   variationIndex: number;
+  /** Attribute rules match attribute∈values; segment rules match a
+   *  project segment by key. */
+  kind: "attribute" | "segment";
   attribute: string;
   valuesRaw: string;
+  segmentKey: string;
 };
 
 export function newRowId(): string {
@@ -72,12 +76,25 @@ export function toDraft(detail: FlagDetail): Draft {
       variationIndex: indexOf(target.variationId),
       keysRaw: target.contextKeys.join(", "),
     })),
-    rules: detail.config.rules.map((rule) => ({
-      rowId: newRowId(),
-      variationIndex: indexOf(rule.variationId),
-      attribute: rule.attribute,
-      valuesRaw: rule.values.map(String).join(", "),
-    })),
+    rules: detail.config.rules.map((rule) =>
+      "segment" in rule
+        ? {
+            rowId: newRowId(),
+            variationIndex: indexOf(rule.variationId),
+            kind: "segment" as const,
+            attribute: "",
+            valuesRaw: "",
+            segmentKey: rule.segment,
+          }
+        : {
+            rowId: newRowId(),
+            variationIndex: indexOf(rule.variationId),
+            kind: "attribute" as const,
+            attribute: rule.attribute,
+            valuesRaw: rule.values.map(String).join(", "),
+            segmentKey: "",
+          },
+    ),
     rolloutEnabled: detail.config.rollout !== null,
     weights,
   };
@@ -159,6 +176,16 @@ export function fromDraft(
 
   const rules: FlagUpdateBody["rules"] = [];
   for (const rule of draft.rules) {
+    if (rule.kind === "segment") {
+      if (rule.segmentKey.trim() === "") {
+        return { error: "a segment rule has no segment selected" };
+      }
+      rules.push({
+        variationIndex: rule.variationIndex,
+        segment: rule.segmentKey,
+      });
+      continue;
+    }
     if (rule.attribute.trim() === "") {
       return { error: "a rule is missing its attribute name" };
     }

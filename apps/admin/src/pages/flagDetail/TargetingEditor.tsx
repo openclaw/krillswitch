@@ -5,8 +5,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Segment } from "../../api";
 import type { RuleDraft, TargetDraft, VariationDraft } from "./draft";
 import { newRowId, variationLabel } from "./draft";
+import { VariationDot, variationColor } from "./VariationDot";
 
 function VariationSelect({
   variations,
@@ -36,6 +38,7 @@ function VariationSelect({
             key={variation.id ?? `new-${index}`}
             value={String(index)}
           >
+            <VariationDot index={index} />
             {variationLabel(variation, index)}
           </SelectItem>
         ))}
@@ -145,11 +148,13 @@ export function AllowlistEditor({
 export function RulesEditor({
   rules,
   variations,
+  segments,
   disabled,
   onChange,
 }: {
   rules: RuleDraft[];
   variations: VariationDraft[];
+  segments: Segment[];
   disabled: boolean;
   onChange: (rules: RuleDraft[]) => void;
 }) {
@@ -167,13 +172,14 @@ export function RulesEditor({
         rules.length > 0 ? "is-active" : ""
       }`}
     >
-      <h2>Attribute rules</h2>
+      <h2>Rules</h2>
       <p className="muted section-hint">
-        Matched top to bottom after the allowlist; first match serves.
+        Attribute and segment rules, matched top to bottom after the allowlist;
+        first match serves.
       </p>
       {rules.length === 0 && (
         <div className="targeting-empty-row">
-          <span>No attribute rules.</span>
+          <span>No rules.</span>
           {!disabled && (
             <button
               type="button"
@@ -184,8 +190,10 @@ export function RulesEditor({
                   {
                     rowId: newRowId(),
                     variationIndex: 0,
+                    kind: "attribute" as const,
                     attribute: "",
                     valuesRaw: "",
+                    segmentKey: "",
                   },
                 ])
               }
@@ -198,27 +206,74 @@ export function RulesEditor({
       {rules.map((rule, index) => (
         <div className="targeting-row" key={rule.rowId}>
           <span className="targeting-arrow muted">if</span>
-          <input
-            className="oc-input input-mono targeting-attribute"
-            aria-label={`Rule ${index + 1} attribute`}
-            placeholder="attribute"
-            value={rule.attribute}
+          <Select
+            value={rule.kind}
             disabled={disabled}
-            onChange={(event) =>
-              patch(index, { attribute: event.target.value })
+            onValueChange={(kind) =>
+              patch(index, { kind: kind as RuleDraft["kind"] })
             }
-          />
-          <span className="targeting-arrow muted">in</span>
-          <input
-            className="oc-input input-mono targeting-values"
-            aria-label={`Rule ${index + 1} values`}
-            placeholder="values, comma separated"
-            value={rule.valuesRaw}
-            disabled={disabled}
-            onChange={(event) =>
-              patch(index, { valuesRaw: event.target.value })
-            }
-          />
+          >
+            <SelectTrigger
+              aria-label={`Rule ${index + 1} type`}
+              className="w-[128px]"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="attribute">attribute</SelectItem>
+              <SelectItem value="segment">segment</SelectItem>
+            </SelectContent>
+          </Select>
+          {rule.kind === "segment" ? (
+            <Select
+              value={rule.segmentKey || undefined}
+              disabled={disabled}
+              onValueChange={(segmentKey) => patch(index, { segmentKey })}
+            >
+              <SelectTrigger
+                aria-label={`Rule ${index + 1} segment`}
+                className="w-[200px]"
+              >
+                <SelectValue placeholder="choose a segment" />
+              </SelectTrigger>
+              <SelectContent>
+                {segments.length === 0 && (
+                  <SelectItem value="__none" disabled>
+                    No segments in this project yet
+                  </SelectItem>
+                )}
+                {segments.map((segment) => (
+                  <SelectItem key={segment.id} value={segment.key}>
+                    {segment.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <>
+              <input
+                className="oc-input input-mono targeting-attribute"
+                aria-label={`Rule ${index + 1} attribute`}
+                placeholder="attribute"
+                value={rule.attribute}
+                disabled={disabled}
+                onChange={(event) =>
+                  patch(index, { attribute: event.target.value })
+                }
+              />
+              <span className="targeting-arrow muted">in</span>
+              <input
+                className="oc-input input-mono targeting-values"
+                aria-label={`Rule ${index + 1} values`}
+                placeholder="values, comma separated"
+                value={rule.valuesRaw}
+                disabled={disabled}
+                onChange={(event) =>
+                  patch(index, { valuesRaw: event.target.value })
+                }
+              />
+            </>
+          )}
           <span className="targeting-arrow muted">serves</span>
           <VariationSelect
             variations={variations}
@@ -251,8 +306,10 @@ export function RulesEditor({
               {
                 rowId: newRowId(),
                 variationIndex: 0,
+                kind: "attribute" as const,
                 attribute: "",
                 valuesRaw: "",
+                segmentKey: "",
               },
             ])
           }
@@ -319,7 +376,10 @@ export function RolloutEditor({
                   <span
                     key={variation.id ?? `new-${index}`}
                     className="rollout-bar-seg"
-                    style={{ flexGrow: weight }}
+                    style={{
+                      flexGrow: weight,
+                      backgroundColor: variationColor(index),
+                    }}
                     title={`${variationLabel(variation, index)}: ${weight}%`}
                   />
                 );
@@ -333,6 +393,7 @@ export function RolloutEditor({
                 key={variation.id ?? `new-${index}`}
               >
                 <span className="rollout-weight-name">
+                  <VariationDot index={index} />
                   {variationLabel(variation, index)}
                 </span>
                 <input

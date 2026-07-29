@@ -1,31 +1,44 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
-import { api, type ChangeLogEntry } from "../api";
-import { actionLabel } from "../changeLogActions";
+import { useSearchParams } from "react-router";
+import { api } from "../api";
 import { ListIcon } from "../components/brand";
+import { ChangeStream } from "../components/ChangeStream";
 import { Combobox, type ComboboxOption } from "../components/Combobox";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
-import { TableFrame } from "../components/TableFrame";
 
 const PAGE_SIZE = 15;
 
 export function ChangeLogPage() {
-  const [flagFilter, setFlagFilter] = useState("");
-  const [projectFilter, setProjectFilter] = useState("");
-  const [page, setPage] = useState(1);
+  // Filters live in the URL so other pages (flag History) can deep-link here.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectFilter = searchParams.get("project") ?? "";
+  const flagFilter = searchParams.get("flag") ?? "";
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
-  // A filter change resets to the first page.
+  // A filter change resets to the first page (page is set only when passed).
+  function updateParams(next: {
+    project?: string;
+    flag?: string;
+    page?: number;
+  }) {
+    const params = new URLSearchParams(searchParams);
+    const write = (key: string, value: string) =>
+      value ? params.set(key, value) : params.delete(key);
+    if (next.project !== undefined) write("project", next.project);
+    if (next.flag !== undefined) write("flag", next.flag);
+    const nextPage = next.page ?? 1;
+    write("page", nextPage > 1 ? String(nextPage) : "");
+    setSearchParams(params, { replace: true });
+  }
   function changeProjectFilter(value: string) {
-    setProjectFilter(value);
-    setPage(1);
+    updateParams({ project: value });
   }
   function changeFlagFilter(value: string) {
-    setFlagFilter(value);
-    setPage(1);
+    updateParams({ flag: value });
   }
+  const setPage = (nextPage: number) => updateParams({ page: nextPage });
 
   // Distinct key from the paginated Projects list (different cache shape).
   // First page of projects is plenty for the filter combobox.
@@ -101,13 +114,7 @@ export function ChangeLogPage() {
           />
         </div>
       </header>
-      {log.isPending && (
-        <TableSkeleton
-          columns={5}
-          rows={PAGE_SIZE}
-          frameClassName="oc-table-wrap-changelog"
-        />
-      )}
+      {log.isPending && <TableSkeleton columns={4} rows={PAGE_SIZE} />}
       {log.isError && <p role="alert">Failed to load the change log.</p>}
       {log.isSuccess &&
         entries.length === 0 &&
@@ -137,69 +144,10 @@ export function ChangeLogPage() {
         ))}
       {log.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="oc-table-wrap-changelog">
-            <table className="oc-table changelog-table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Actor</th>
-                  <th>Action</th>
-                  <th>Target</th>
-                  <th>Change</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <ChangeRow key={entry.id} entry={entry} />
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+          <ChangeStream entries={entries} />
           <Pagination page={page} pageCount={pageCount} onPage={setPage} />
         </>
       )}
     </section>
-  );
-}
-
-function formatWhen(timestamp: string): string {
-  return new Date(timestamp).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function ChangeRow({ entry }: { entry: ChangeLogEntry }) {
-  return (
-    <tr className="row-link">
-      <td className="td-when muted">
-        <Link
-          className="row-link-plain row-stretch"
-          to={`/changelog/${encodeURIComponent(entry.id)}`}
-          aria-label={`View details: ${actionLabel(entry.action)} on ${entry.target}`}
-        >
-          {formatWhen(entry.createdAt)}
-        </Link>
-      </td>
-      <td>{entry.actorName}</td>
-      <td className="td-action">{actionLabel(entry.action)}</td>
-      <td>
-        <code title={entry.target}>{entry.target}</code>
-      </td>
-      <td className="td-change">
-        {entry.before !== null && (
-          <code className="change-before">{JSON.stringify(entry.before)}</code>
-        )}
-        {entry.before !== null && entry.after !== null && (
-          <span className="muted change-sep">to</span>
-        )}
-        {entry.after !== null && (
-          <code className="change-after">{JSON.stringify(entry.after)}</code>
-        )}
-      </td>
-    </tr>
   );
 }

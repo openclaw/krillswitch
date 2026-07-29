@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 import { ApiError, api, type Me } from "./api";
 import {
   Brandmark,
@@ -7,8 +7,10 @@ import {
   RetryIcon,
   ShieldIcon,
 } from "./components/brand";
+import { BlockSkeleton } from "./components/Skeleton";
 import { ChangeLogEntryPage } from "./pages/ChangeLogEntryPage";
 import { ChangeLogPage } from "./pages/ChangeLogPage";
+import { ConnectPage } from "./pages/ConnectPage";
 import { CreateEnvironmentPage } from "./pages/CreateEnvironmentPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { FlagDetailPage } from "./pages/flagDetail/FlagDetailPage";
@@ -19,6 +21,8 @@ import { MintTokenPage } from "./pages/MintTokenPage";
 import { NoAccess } from "./pages/NoAccess";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { SegmentsPage } from "./pages/SegmentsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { SignIn } from "./pages/SignIn";
 import { TokensPage } from "./pages/TokensPage";
 import { Shell } from "./Shell";
@@ -97,6 +101,19 @@ export function App() {
     <Shell me={me.data} theme={theme}>
       <Routes>
         <Route path="/" element={<ProjectsPage me={me.data} />} />
+        <Route
+          path="/settings"
+          element={<SettingsPage me={me.data} theme={theme} />}
+        />
+        <Route
+          path="/projects/:projectKey/flags/:flagKey"
+          element={<FlagRedirect />}
+        />
+        <Route
+          path="/projects/:projectKey/segments"
+          element={<SegmentsPage me={me.data} />}
+        />
+        <Route path="/connect" element={<ConnectPage me={me.data} />} />
         <Route path="/changelog" element={<ChangeLogPage />} />
         <Route path="/changelog/:id" element={<ChangeLogEntryPage />} />
         <Route
@@ -147,5 +164,26 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>
+  );
+}
+
+/** Palette flag links carry no environment; resolve the project's first
+ *  environment and forward. */
+function FlagRedirect() {
+  const { projectKey = "", flagKey = "" } = useParams();
+  const detail = useQuery({
+    queryKey: ["project", projectKey],
+    queryFn: () => api.projectDetail(projectKey),
+  });
+  if (detail.isPending) return <BlockSkeleton lines={3} />;
+  const firstEnvironment = detail.data?.environments[0];
+  if (!firstEnvironment) {
+    return <Navigate to={`/projects/${projectKey}`} replace />;
+  }
+  return (
+    <Navigate
+      to={`/projects/${projectKey}/${firstEnvironment.key}/flags/${flagKey}`}
+      replace
+    />
   );
 }

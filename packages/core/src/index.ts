@@ -1,5 +1,5 @@
 export { CONFIG_CACHE_TTL_MS } from "./config";
-export { evaluateFlag } from "./evaluator";
+export { evaluateFlag, type SegmentMap } from "./evaluator";
 export { rolloutBucket } from "./hash";
 export type {
   AttributeValue,
@@ -14,6 +14,7 @@ export type {
   JsonValue,
   Rollout,
   RolloutVariation,
+  SegmentConfig,
   TargetingRule,
   UserTarget,
   Variation,

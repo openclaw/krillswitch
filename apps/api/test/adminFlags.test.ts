@@ -51,6 +51,21 @@ async function fetchFlags(cookie: string): Promise<Response> {
   );
 }
 
+async function evalSouls(): Promise<boolean> {
+  const response = await SELF.fetch(`${BASE}/v1/eval`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${DEV_EVAL_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ context: { key: "toggle-test-user" } }),
+  });
+  const body = await response.json<{
+    flags: { souls: { value: boolean } };
+  }>();
+  return body.flags.souls.value;
+}
+
 describe("project detail", () => {
   it("returns the project with its environments", async () => {
     const cookie = await devLogin("viewer");
@@ -75,6 +90,49 @@ describe("project detail", () => {
       headers: { cookie },
     });
     expect(response.status).toBe(404);
+  });
+
+  it("records daily eval usage for the sparklines", async () => {
+    await evalSouls();
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/eval-stats`, {
+      headers: { cookie },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json<{
+      stats: {
+        projectKey: string;
+        environmentKey: string;
+        day: number;
+        count: number;
+      }[];
+    }>();
+    const today = Math.floor(Date.now() / 86_400_000);
+    const row = body.stats.find(
+      (stat) =>
+        stat.projectKey === "clawhub" &&
+        stat.environmentKey === "development" &&
+        stat.day === today,
+    );
+    expect(row?.count).toBeGreaterThan(0);
+  });
+
+  it("reports SDK eval freshness per environment", async () => {
+    await evalSouls();
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/projects/clawhub`, {
+      headers: { cookie },
+    });
+    const body = await response.json<{
+      environments: {
+        key: string;
+        evalCount: number;
+        lastEvalAt: string | null;
+      }[];
+    }>();
+    const development = body.environments.find((e) => e.key === "development");
+    expect(development?.evalCount).toBeGreaterThan(0);
+    expect(development?.lastEvalAt).toBeTruthy();
   });
 });
 
@@ -108,6 +166,81 @@ describe("environment flag list", () => {
     const souls = body.flags.find((flag) => flag.key === "souls");
     expect(souls).toMatchObject({ kind: "boolean", enabled: true });
   });
+
+  it("carries the off variation and last-change time on each row", async () => {
+    const cookie = await devLogin("editor");
+    // Any change stamps the flag's lastChangedAt via the change log.
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({ enabled: true }),
+      },
+    );
+    const response = await fetchFlags(cookie);
+    const body = await response.json<{
+      flags: (FlagListEntry & {
+        offVariation: string | null;
+        lastChangedAt: string | null;
+      })[];
+    }>();
+    const souls = body.flags.find((flag) => flag.key === "souls");
+    expect(typeof souls?.offVariation).toBe("string");
+    expect(souls?.lastChangedAt).toBeTruthy();
+    expect(new Date(souls?.lastChangedAt ?? 0).getTime()).toBeGreaterThan(0);
+  });
+});
+
+describe("flag archive", () => {
+  const archiveUrl = `${BASE}/admin/projects/clawhub/flags/souls`;
+
+  it("archives and restores, keeps serving evals, and audits both", async () => {
+    const cookie = await devLogin("editor");
+    const archive = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: true }),
+    });
+    expect(archive.status).toBe(200);
+
+    const list = await fetchFlags(cookie);
+    const body = await list.json<{
+      flags: (FlagListEntry & { archived: boolean })[];
+    }>();
+    expect(body.flags.find((flag) => flag.key === "souls")?.archived).toBe(
+      true,
+    );
+
+    // Archived flags stay in the eval payload — archiving is always safe.
+    await expect(evalSouls()).resolves.toBeTypeOf("boolean");
+
+    const restore = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: false }),
+    });
+    expect(restore.status).toBe(200);
+
+    const log = await SELF.fetch(
+      `${BASE}/admin/changelog?flagKey=souls&projectKey=clawhub`,
+      { headers: { cookie } },
+    );
+    const entries = (await log.json<{ entries: { action: string }[] }>())
+      .entries;
+    expect(entries.some((entry) => entry.action === "flag.archive")).toBe(true);
+    expect(entries.some((entry) => entry.action === "flag.restore")).toBe(true);
+  });
+
+  it("viewers cannot archive", async () => {
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: true }),
+    });
+    expect(response.status).toBe(403);
+  });
 });
 
 describe("flag toggle", () => {
@@ -119,21 +252,6 @@ describe("flag toggle", () => {
       headers: { cookie, "content-type": "application/json" },
       body: JSON.stringify({ enabled }),
     });
-  }
-
-  async function evalSouls(): Promise<boolean> {
-    const response = await SELF.fetch(`${BASE}/v1/eval`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${DEV_EVAL_KEY}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ context: { key: "toggle-test-user" } }),
-    });
-    const body = await response.json<{
-      flags: { souls: { value: boolean } };
-    }>();
-    return body.flags.souls.value;
   }
 
   it("lets the editor toggle souls off and eval reflects it immediately", async () => {

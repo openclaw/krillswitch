@@ -45,6 +45,41 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+export type Segment = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  contextKeys: string[];
+  rules: { attribute: string; values: (string | number | boolean)[] }[];
+  createdAt: string;
+};
+
+export type SegmentBody = {
+  name: string;
+  description?: string | null;
+  contextKeys: string[];
+  rules: { attribute: string; values: (string | number | boolean)[] }[];
+};
+
+/** One environment-day of eval traffic (day = epoch ms / 86400000). */
+export type EvalStatRow = {
+  projectKey: string;
+  environmentKey: string;
+  day: number;
+  count: number;
+};
+
+export type Webhook = {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  lastStatus: string | null;
+  lastSentAt: string | null;
+  createdAt: string;
+};
+
 export type ChangeLogEntry = {
   id: string;
   actorUserId: string;
@@ -55,6 +90,7 @@ export type ChangeLogEntry = {
   target: string;
   before: unknown;
   after: unknown;
+  comment: string | null;
   /** ISO timestamp (Date serialized over JSON). */
   createdAt: string;
 };
@@ -66,7 +102,14 @@ export type EnvironmentKeyEntry = {
   evalKey: string;
 };
 
-export type Environment = { id: string; key: string; name: string };
+export type Environment = {
+  id: string;
+  key: string;
+  name: string;
+  /** SDK freshness (ISO timestamp of the newest /v1/eval request). */
+  lastEvalAt: string | null;
+  evalCount: number;
+};
 
 export type ProjectDetail = {
   project: Project;
@@ -90,6 +133,13 @@ export type FlagListEntry = {
   kind: FlagKind;
   description: string | null;
   enabled: boolean;
+  /** Variation served while the flag is off (list rows only; the toggle
+   *  response omits it, so cache updates must merge, not replace). */
+  offVariation?: string | null;
+  /** Latest change-log timestamp for the flag (ISO), if any. */
+  lastChangedAt?: string | null;
+  /** Archived flags hide from lists but keep serving evaluations. */
+  archived?: boolean;
 };
 
 export type FlagDetail = {
@@ -99,6 +149,7 @@ export type FlagDetail = {
     name: string;
     kind: FlagKind;
     description: string | null;
+    archived: boolean;
   };
   variations: {
     id: string;
@@ -111,11 +162,14 @@ export type FlagDetail = {
     offVariationId: string;
     defaultVariationId: string;
     targets: { variationId: string; contextKeys: string[] }[];
-    rules: {
-      variationId: string;
-      attribute: string;
-      values: (string | number | boolean)[];
-    }[];
+    rules: (
+      | {
+          variationId: string;
+          attribute: string;
+          values: (string | number | boolean)[];
+        }
+      | { variationId: string; segment: string }
+    )[];
     rollout: { variations: { variationId: string; weight: number }[] } | null;
   };
 };
@@ -133,15 +187,20 @@ export type FlagCreateBody = {
 
 export type FlagUpdateBody = {
   enabled: boolean;
+  /** Optional operator note stored on the audit-log entry. */
+  comment?: string;
   variations: { id?: string; value: FlagValue; name: string | null }[];
   offVariationIndex: number;
   defaultVariationIndex: number;
   targets: { variationIndex: number; contextKeys: string[] }[];
-  rules: {
-    variationIndex: number;
-    attribute: string;
-    values: (string | number | boolean)[];
-  }[];
+  rules: (
+    | {
+        variationIndex: number;
+        attribute: string;
+        values: (string | number | boolean)[];
+      }
+    | { variationIndex: number; segment: string }
+  )[];
   rollout: { variations: { variationIndex: number; weight: number }[] } | null;
 };
 
@@ -239,13 +298,14 @@ export const api = {
     environmentKey: string,
     flagKey: string,
     enabled: boolean,
+    comment?: string,
   ) =>
     request<{ flag: FlagListEntry }>(
       `${flagsPath(projectKey, environmentKey)}/${encodeURIComponent(flagKey)}`,
       {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify(comment ? { enabled, comment } : { enabled }),
       },
     ),
   flagDetail: (projectKey: string, environmentKey: string, flagKey: string) =>
@@ -275,6 +335,15 @@ export const api = {
         body: JSON.stringify(body),
       },
     ),
+  setFlagArchived: (projectKey: string, flagKey: string, archived: boolean) =>
+    request<{ archived: boolean }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ archived }),
+      },
+    ),
   deleteFlag: (projectKey: string, flagKey: string) =>
     request<{ deleted: string }>(
       `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
@@ -295,6 +364,51 @@ export const api = {
     request<{ entry: ChangeLogEntry }>(
       `/admin/changelog/${encodeURIComponent(id)}`,
     ),
+  segments: (projectKey: string) =>
+    request<{ segments: Segment[] }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments`,
+    ),
+  createSegment: (projectKey: string, body: SegmentBody & { key: string }) =>
+    request<{ created: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  updateSegment: (projectKey: string, segmentKey: string, body: SegmentBody) =>
+    request<{ updated: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments/${encodeURIComponent(segmentKey)}`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
+  deleteSegment: (projectKey: string, segmentKey: string) =>
+    request<{ deleted: string }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/segments/${encodeURIComponent(segmentKey)}`,
+      { method: "DELETE" },
+    ),
+  evalStats: () => request<{ stats: EvalStatRow[] }>("/admin/eval-stats"),
+  webhooks: () => request<{ webhooks: Webhook[] }>("/admin/webhooks"),
+  createWebhook: (body: { name: string; url: string }) =>
+    request<{ created: string }>("/admin/webhooks", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  setWebhookEnabled: (id: string, enabled: boolean) =>
+    request<{ enabled: boolean }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }),
+  deleteWebhook: (id: string) =>
+    request<{ deleted: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
   users: (page?: PageParams) =>
     request<{ users: UserWithRole[]; total: number }>(
       `/admin/users${pageSuffix(page)}`,

@@ -1,4 +1,5 @@
 import type {
+  AttributeValue,
   FlagKind,
   FlagValue,
   JsonValue,
@@ -9,6 +10,7 @@ import type {
 import {
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
   uniqueIndex,
@@ -54,6 +56,8 @@ export type ChangeAction =
   | "flag.toggle"
   | "flag.update"
   | "flag.create"
+  | "flag.archive"
+  | "flag.restore"
   | "flag.delete"
   | "role.set"
   | "project.create"
@@ -61,7 +65,13 @@ export type ChangeAction =
   | "environment.delete"
   | "key.rotate"
   | "token.mint"
-  | "token.revoke";
+  | "token.revoke"
+  | "segment.create"
+  | "segment.update"
+  | "segment.delete"
+  | "webhook.create"
+  | "webhook.update"
+  | "webhook.delete";
 
 // Append-only audit trail; rows are written in the same D1 batch as the
 // mutation they describe and are never updated or deleted (retention is an
@@ -78,6 +88,8 @@ export const changeLog = sqliteTable(
     target: text("target").notNull(),
     before: text("before", { mode: "json" }).$type<JsonValue>(),
     after: text("after", { mode: "json" }).$type<JsonValue>(),
+    // Optional operator-supplied intent ("why"), captured at save time.
+    comment: text("comment"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
@@ -102,6 +114,10 @@ export const environments = sqliteTable(
       .references(() => projects.id),
     key: text("key").notNull(),
     name: text("name").notNull(),
+    // SDK freshness: bumped off the eval hot path via waitUntil, so a
+    // slightly stale count is expected and fine.
+    lastEvalAt: integer("last_eval_at", { mode: "timestamp_ms" }),
+    evalCount: integer("eval_count").notNull().default(0),
   },
   (table) => [
     uniqueIndex("environments_project_key").on(table.projectId, table.key),
@@ -127,6 +143,9 @@ export const flags = sqliteTable(
     name: text("name").notNull(),
     kind: text("kind").$type<FlagKind>().notNull(),
     description: text("description"),
+    // Archived flags hide from admin lists but keep serving evaluations, so
+    // archiving is always safe; deletion is the destructive step.
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
   },
   (table) => [uniqueIndex("flags_project_key").on(table.projectId, table.key)],
 );
@@ -169,5 +188,59 @@ export const flagEnvironments = sqliteTable(
       table.flagId,
       table.environmentId,
     ),
+  ],
+);
+
+// Outbound notifications: every change-log entry is POSTed to each enabled
+// webhook. `cursor` is the change_log rowid already delivered; delivery is
+// notify-only (no retry queue), so the cursor advances even on failure and
+// last_status records the most recent result.
+export const webhooks = sqliteTable("webhooks", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  cursor: integer("cursor").notNull().default(0),
+  lastStatus: text("last_status"),
+  lastSentAt: integer("last_sent_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+// Per-environment daily eval request counts (UTC day = epoch ms / 86400000).
+// Written off the eval hot path; powers the usage sparklines. One row per
+// environment per day, so the table stays tiny.
+export const evalStatsDaily = sqliteTable(
+  "eval_stats_daily",
+  {
+    environmentId: text("environment_id").notNull(),
+    day: integer("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.environmentId, table.day] })],
+);
+
+// Reusable project-scoped audiences referenced by flag rules ({segment}).
+// Deleting a segment leaves referencing rules in place; they simply stop
+// matching (see core ruleMatch), which is the safe direction.
+export const segments = sqliteTable(
+  "segments",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id),
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    contextKeys: text("context_keys", { mode: "json" })
+      .$type<string[]>()
+      .notNull(),
+    rules: text("rules", { mode: "json" })
+      .$type<{ attribute: string; values: AttributeValue[] }[]>()
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("segments_project_key").on(table.projectId, table.key),
   ],
 );

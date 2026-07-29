@@ -8,6 +8,7 @@ import {
 import type { FlagKind } from "../../api";
 import { TableFrame } from "../../components/TableFrame";
 import type { VariationDraft } from "./draft";
+import { VariationDot } from "./VariationDot";
 
 export function VariationsEditor({
   kind,
@@ -78,15 +79,20 @@ export function VariationsEditor({
             {variations.map((variation, index) => (
               <tr key={variation.id ?? `new-${index}`}>
                 <td>
-                  <input
-                    className="oc-input"
-                    aria-label={`Variation ${index + 1} name`}
-                    value={variation.name}
-                    disabled={disabled}
-                    onChange={(event) =>
-                      patchVariation(index, { name: event.target.value })
-                    }
-                  />
+                  {/* Inner flex wrapper: a display:flex <td> leaves table
+                      layout and misaligns the whole row. */}
+                  <span className="variation-name-wrap">
+                    <VariationDot index={index} />
+                    <input
+                      className="oc-input"
+                      aria-label={`Variation ${index + 1} name`}
+                      value={variation.name}
+                      disabled={disabled}
+                      onChange={(event) =>
+                        patchVariation(index, { name: event.target.value })
+                      }
+                    />
+                  </span>
                 </td>
                 <td>
                   <VariationValueInput

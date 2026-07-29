@@ -64,6 +64,10 @@
   --surface: var(--oc-surface-card);
   --surface-muted: var(--oc-bg-surface);
   --surface-hover: var(--oc-control-bg-hover);
+  /* Floating menus need full opacity: --surface (oc-surface-card) is
+     deliberately translucent for resting cards, which lets table rows show
+     through popovers. */
+  --surface-pop: var(--oc-bg-elevated);
 
   --ink: var(--oc-text-primary);
   --ink-muted: var(--oc-text-secondary);
@@ -276,24 +280,31 @@ input[type="radio"]:focus-visible {
   text-decoration: none;
 }
 
-/* --- chips --- */
+/* --- identity markers ---
+   Roles and environments are identity, not state: they render as a tone dot
+   plus colored text with no pill chrome (pills read as buttons). The badge
+   classes stay for the dot and tone tokens; the chrome is stripped here. */
+.oc-badge.chip-role-admin,
+.oc-badge.chip-role-editor,
+.oc-badge.chip-role-viewer,
+.oc-badge.env-badge {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
 
 .oc-badge.chip-role-admin {
   color: var(--accent-text);
-  background: var(--accent-soft);
-  border-color: var(--accent-ring);
 }
 
 .oc-badge.chip-role-editor {
   color: var(--ok);
-  background: var(--ok-bg);
-  border-color: color-mix(in oklch, var(--ok), transparent 60%);
 }
 
 .oc-badge.chip-role-viewer {
   color: var(--viewer);
-  background: var(--viewer-bg);
-  border-color: color-mix(in oklch, var(--viewer), transparent 60%);
 }
 
 /* --- theme toggle --- */
@@ -308,11 +319,6 @@ input[type="radio"]:focus-visible {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-.oc-segmented-item.theme-tab svg {
-  width: 14px;
-  height: 14px;
 }
 
 /* --- auth + boot screens (sign-in, no-access, errors) --- */
@@ -715,14 +721,6 @@ input[type="radio"]:focus-visible {
     drop-shadow(0 -0.7px 0 var(--brand-outline));
 }
 
-[data-theme="light"] .oc-app-navigation .brandmark-img-dark {
-  display: block;
-}
-
-[data-theme="light"] .oc-app-navigation .brandmark-img-light {
-  display: none;
-}
-
 /* Colophon under the auth card: quiet provenance line, carapace.design's
    "An OpenClaw project" footer in KrillSwitch clothes. */
 .auth-colophon {
@@ -771,14 +769,17 @@ input[type="radio"]:focus-visible {
     box-shadow var(--oc-duration-fast) var(--oc-ease-out);
 }
 
-/* --- Surface depth (carapace.design recipe) ---
-   Elevated bordered surfaces lift off the recessed canvas with the package
-   shadow scale: sm for resting cards and tables, md for panels and the auth
-   card, lg for popovers. */
-.oc-table-wrap,
-.oc-summary-strip,
-.oc-empty {
-  box-shadow: var(--oc-shadow-sm);
+/* Resting surfaces (tables, strips, empty states) sit flat on the canvas —
+   their border is enough. Shadows are reserved for things that float:
+   popovers, modals, and the save bar. */
+
+/* Tighter control scale for pointer input: Carapace's 2.5rem actions read
+   oversized in a dense console. Touch keeps the full tap target. */
+@media (pointer: fine) {
+  .oc-app-content .oc-action {
+    min-height: 2.25rem;
+    padding-block: var(--oc-space-1);
+  }
 }
 
 /* --- app shell --- */
@@ -847,7 +848,7 @@ input[type="radio"]:focus-visible {
    header, summary, and body. Carapace leaves oc-app-content unpadded because
    its own specimens sit inside a framed pane. */
 .oc-app-content {
-  padding: var(--oc-space-5) var(--oc-space-6) var(--oc-space-7);
+  padding: var(--oc-space-4) var(--oc-space-5) var(--oc-space-6);
 }
 
 /* Cap and center the working area so tables and rows don't sprawl across
@@ -860,7 +861,13 @@ input[type="radio"]:focus-visible {
   /* justify-self, not `margin: 0 auto`: oc-app-content is a grid, and an auto
      margin on a grid item cancels stretch and shrinks it to its content. */
   justify-self: center;
-  gap: var(--oc-space-4);
+  gap: var(--oc-space-3);
+}
+
+/* LD-density type scale: the console is an operations surface, so titles,
+   section headings, and table type sit under Carapace's document scale. */
+.oc-app-content h1 {
+  font-size: 22px;
 }
 
 /* Carapace insets the page header for pane-flush use. Here the content column
@@ -884,6 +891,7 @@ input[type="radio"]:focus-visible {
    to the product because its own specimens use short cells. */
 .oc-table {
   table-layout: fixed;
+  font-size: 13px;
 }
 
 .oc-table-wrap::before {
@@ -934,13 +942,13 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding: 9px 14px;
+  padding: 7px 12px;
   border-bottom: 1px solid var(--line-strong);
 }
 
 .oc-table td {
-  height: 48px;
-  padding: 8px 14px;
+  height: 40px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   transition: background-color 120ms ease-out;
@@ -979,10 +987,6 @@ input[type="radio"]:focus-visible {
 
 .oc-table-wrap-keys .oc-table {
   min-width: 100%;
-}
-
-.oc-table-wrap-changelog .oc-table {
-  min-width: 1040px;
 }
 
 /* Member profile audit table: When/Action fixed, Target takes the rest and
@@ -1024,21 +1028,6 @@ input[type="radio"]:focus-visible {
 }
 
 /* Subtle count beside the page title (e.g. number of projects). */
-.title-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 7px;
-  border-radius: var(--oc-radius-control);
-  background: var(--surface-muted);
-  border: 1px solid var(--line);
-  color: var(--ink-muted);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .projects-search {
   width: 248px;
@@ -1120,8 +1109,57 @@ input[type="radio"]:focus-visible {
 
 .th-state,
 .td-state {
-  width: 104px;
+  width: 128px;
   white-space: nowrap;
+}
+
+.th-last-change,
+.td-last-change {
+  width: 118px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.th-activity,
+.td-activity {
+  width: 104px;
+}
+
+/* Inline per-row step chart (projects and flag tables). */
+.cell-spark {
+  display: block;
+  width: 90px;
+  height: 16px;
+  margin-bottom: 2px;
+  color: var(--ink-faint);
+}
+
+/* Key + copy button as one inline unit; the copy control lifts above the
+   row's stretched link via .row-control on the wrapper. */
+.key-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+/* Inline flag toggle beside the open-detail chevron. */
+.row-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-error {
+  display: block;
+  font-size: 11px;
+  color: var(--danger);
+}
+
+/* Archived flags fold away under the table; the toggle reveals them. */
+.oc-action.archived-toggle {
+  margin: 6px 8px;
+  color: var(--ink-muted);
 }
 
 /* Flags table: state is read-only; for editors it links to the flag page
@@ -1218,9 +1256,130 @@ input[type="radio"]:focus-visible {
 }
 
 .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   margin-bottom: 2px;
   color: var(--ink-muted);
+}
+
+/* Page title + environment badge on one line (see EnvBadge.tsx). */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* --- Home hero (maintainer-reports recipe) ---
+   A deliberate dark band in both themes, krill artwork bleeding in from
+   the right behind a legibility gradient. */
+.page-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #0d0d10;
+}
+
+.page-hero-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+/* Scoped under .page-hero to keep specificity level with the auth-banner
+   img rules above (biome noDescendingSpecificity). */
+.page-hero .page-hero-backdrop img {
+  position: absolute;
+  top: 50%;
+  right: -4%;
+  width: 58%;
+  transform: translateY(-46%);
+  opacity: 0.5;
+}
+
+.page-hero-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgb(13 13 16 / 0.96) 34%,
+    rgb(13 13 16 / 0.55) 62%,
+    transparent 100%
+  );
+}
+
+.page-hero-content {
+  position: relative;
+  max-width: 60ch;
+}
+
+.page-hero-kicker {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* Fixed dark-band hero: the dark-theme ember reads on it in both themes. */
+  color: #f5654a;
+}
+
+.page-hero h1 {
+  margin: 0 0 8px;
+  color: #f5f5f6;
+}
+
+.page-hero-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(245 245 246 / 0.72);
+}
+
+/* --- Dateline (change activity step chart) --- */
+.dateline {
+  padding: 12px 18px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.dateline-label {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.dateline-chart {
+  display: block;
+  width: 100%;
+  height: 44px;
+  color: var(--ink-faint);
+}
+
+.dateline-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* Filter + primary action row under the hero. */
+.page-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
 }
 
 .breadcrumb a {
@@ -1234,6 +1393,9 @@ input[type="radio"]:focus-visible {
 
 .flag-meta {
   margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .changelog-filters {
@@ -1370,13 +1532,14 @@ input[type="radio"]:focus-visible {
 }
 
 .flag-meta-sep {
-  margin: 0 7px;
+  /* .flag-meta's flex gap provides the spacing. */
+  margin: 0;
   color: var(--ink-faint);
 }
 
 .detail-section h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -1517,7 +1680,7 @@ input[type="radio"]:focus-visible {
   list-style: none;
   max-height: 268px;
   overflow-y: auto;
-  background: var(--surface);
+  background: var(--surface-pop);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -1527,10 +1690,10 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 9px;
+  padding: 4px 8px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .combobox-option.is-active {
@@ -1583,8 +1746,14 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 34px;
+  /* Dense: two radios per row must not dominate the row height. */
+  min-height: 24px;
   font-size: 13px;
+}
+
+/* Variations rows read as a dense grid, not padded cards. */
+.variations-table td {
+  padding-block: var(--oc-space-2);
 }
 
 .serve-choice + .serve-choice {
@@ -1660,17 +1829,24 @@ input[type="radio"]:focus-visible {
   font-size: 13px;
 }
 
-/* Detail-header enable: a deliberate, weighted control for the loudest
-   action on the page, not a stray checkbox. The switch label turns green
-   when on (state earns color). */
+/* Detail-header enable: the switch itself carries the weight; the state
+   word turns green when on (state earns color). No box — a bordered pill
+   next to a bordered button read as two competing buttons. */
 .enable-switch {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px 5px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+}
+
+/* Destructive-but-guarded header action: quiet until hovered. */
+.oc-action.danger-ghost {
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+
+.oc-action.danger-ghost:hover {
+  background: var(--danger-bg);
+  border-color: color-mix(in oklch, var(--danger), transparent 60%);
 }
 
 .targeting-keys,
@@ -1682,10 +1858,32 @@ input[type="radio"]:focus-visible {
   flex: 1 1 120px;
 }
 
+/* Rule rows read as a sentence: IF attribute IN values SERVES variation.
+   The connectives are set as small caps so the operands carry the weight. */
 .targeting-arrow {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-faint);
   flex-shrink: 0;
+}
+
+/* Deterministic variation color dot (VariationDot.tsx supplies the color). */
+.variation-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: baseline;
+}
+
+.variation-name-wrap {
+  /* Dot + name input on one line (inside the cell, never on the <td>). */
+  display: flex;
+  align-items: center;
 }
 
 .rollout-enable {
@@ -1709,26 +1907,10 @@ input[type="radio"]:focus-visible {
   background: var(--surface-muted);
 }
 
+/* Segment colors come inline from variationColor() so they match the dots. */
 .rollout-bar-seg {
   min-width: 3px;
-  background: var(--accent);
   transition: flex-grow 150ms ease-out;
-}
-
-.rollout-bar-seg:nth-child(2) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 45%);
-}
-
-.rollout-bar-seg:nth-child(3) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 65%);
-}
-
-.rollout-bar-seg:nth-child(4) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 80%);
-}
-
-.rollout-bar-seg:nth-child(n + 5) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 88%);
 }
 
 .rollout-weights {
@@ -1770,7 +1952,8 @@ input[type="radio"]:focus-visible {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  width: min(560px, calc(100vw - 32px));
+  flex-wrap: wrap;
+  width: min(680px, calc(100vw - 32px));
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -1783,6 +1966,40 @@ input[type="radio"]:focus-visible {
   margin-right: auto;
   color: var(--ink);
   font-size: 13px;
+}
+
+/* Change-log comment ride-along: fills the room between status and actions,
+   wraps to its own line when the bar gets narrow. */
+.save-comment {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* Production guardrail dialog (GuardrailDialog.tsx). */
+.guardrail-env {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.guardrail-comment {
+  margin: 10px 0 4px;
+}
+
+/* "View all" link under scoped log streams. */
+.history-more {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.history-more:hover {
+  text-decoration: underline;
 }
 
 .save-label-short {
@@ -2076,51 +2293,41 @@ tr.is-revoked td {
 
 /* --- change log --- */
 
+/* Also used by the member-profile audit table. */
 .td-when {
   white-space: nowrap;
   font-size: 12px;
   color: var(--ink-muted);
 }
 
-.changelog-table td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Fixed layout: keep timestamp/actor/action tight so the long target and
-   change columns get the remaining width instead of overflowing. */
-.changelog-table th:nth-child(1),
-.changelog-table td:nth-child(1) {
-  width: 150px;
-}
-.changelog-table th:nth-child(2),
-.changelog-table td:nth-child(2) {
-  width: 120px;
-}
-.changelog-table th:nth-child(3),
-.changelog-table td:nth-child(3) {
-  width: 168px;
-}
-.changelog-table th:nth-child(5),
-.changelog-table td:nth-child(5) {
-  width: 300px;
-}
-
 .td-action {
   font-weight: 500;
 }
 
-.td-change {
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Change log rendered as a Carapace log stream (oc-log-*): verb chip,
+   project/flag subsystem, message with inline before → after and comment.
+   Rows are links; the stream owns the mono styling. */
+.changelog-stream .oc-log-row {
+  /* Carapace's 7rem subsystem truncates project/flag pairs. */
+  grid-template-columns: auto 4.5rem 12rem minmax(0, 1fr);
+  padding-block: 1px;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  text-decoration: none;
 }
 
-.td-change code {
-  display: inline;
-  max-width: 100%;
-  font-size: 12px;
-  white-space: nowrap;
+/* Project- and flag-scoped streams drop the subsystem column. */
+.changelog-stream-scoped .oc-log-row {
+  grid-template-columns: auto 4.5rem minmax(0, 1fr);
+}
+
+.changelog-stream .oc-log-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
 }
 
 .change-before {
@@ -2131,12 +2338,6 @@ tr.is-revoked td {
 
 .change-after {
   color: var(--ink);
-}
-
-.change-sep {
-  margin: 0 6px;
-  color: var(--ink-faint);
-  font-size: 12px;
 }
 
 /* --- Change-log entry detail page: full target and before/after, no
@@ -2169,6 +2370,11 @@ tr.is-revoked td {
 @media (max-width: 768px) {
   /* Carapace already stacks the frame to a single column at this width; the
      old flex-direction override is gone with the flex layout it belonged to. */
+
+  /* The stacked mobile layout has no rail to collapse. */
+  .oc-app-navigation-collapse {
+    display: none;
+  }
 
   /* In the strip the logo sits inline, not as a full-width header box. */
   .oc-app-navigation-header {
@@ -2359,11 +2565,6 @@ tr.is-revoked td {
     min-height: 44px;
   }
 
-  .oc-segmented-item.theme-tab svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .disclosure {
     min-height: 44px;
   }
@@ -2471,17 +2672,6 @@ tr.is-revoked td {
 /* Touch input (any viewport width): enlarge the small segmented and pagination
    controls to a comfortable tap size. Pointer-based UIs keep the dense size. */
 @media (pointer: coarse) {
-  .oc-segmented-item.theme-tab {
-    flex-basis: 44px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .oc-segmented-item.theme-tab svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .page-btn {
     min-width: 40px;
     height: 40px;
@@ -2508,13 +2698,6 @@ tr.is-revoked td {
 .oc-app-content {
   min-height: 0;
   overflow: auto;
-}
-
-/* The workspace context is a router link here, not the static span Carapace
-   previews, so the app's global anchor underline has to be cleared. */
-.oc-app-navigation-context {
-  color: inherit;
-  text-decoration: none;
 }
 
 /* --- Carapace application parity ---
@@ -2578,52 +2761,540 @@ h1 {
   font-size: var(--oc-font-size-xs);
 }
 
+/* Icon-only copy affordance next to keys; sized to sit inline with <code>
+   in table cells and page headers without stretching the line. */
+.oc-action.copy-button {
+  min-height: 0;
+  padding: 3px;
+  color: var(--ink-muted);
+}
+
+.oc-action.copy-button.is-copied {
+  color: var(--ok);
+}
+
+.copy-glyph {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
 /* --- Navigation footer identity ---
-   Carapace's footer is a single flex row; the console stacks the signed-in
-   user, their role and sign-out, and the theme control, because this rail is
-   the only place app-level chrome lives now (there is no topbar). */
+   One flex row like Carapace's own footer: identity fills, then the theme
+   cycle control and sign-out sit as quiet icon buttons. Role and theme
+   choices live on the Settings page, not in the rail. */
 .oc-app-navigation-footer {
-  display: grid;
-  /* Carapace's footer is one 3-column row; the console stacks its blocks. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--oc-space-2);
-  align-items: stretch;
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
   padding: var(--oc-space-3);
 }
 
 .nav-identity {
   display: grid;
+  flex: 1;
   min-width: 0;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--oc-space-2);
 }
 
-.nav-identity-actions {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
+/* Icon control transcribed from the carapace.design site shell (theme
+   cycle + sign-out share it); upstreaming it into Carapace is the plan. */
+.theme-control {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.theme-control:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.theme-control-icon {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  line-height: 0;
+}
+
+.theme-control-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-signout-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+/* Rail header logo: wordmark when expanded, krill mark when compact
+   (Carapace already hides -title in compact; we hide the mark when the
+   wordmark is showing so the krill doesn't render twice). The mark is the
+   real brand artwork — wide pill — so it sizes by width, not the 1.5rem
+   glyph height Carapace assumes. */
+.oc-app-navigation-brand img {
+  width: 34px;
+  height: auto;
+}
+
+.oc-app-frame[data-navigation="expanded"]
+  .oc-app-navigation-header
+  .oc-app-navigation-brand {
+  display: none;
+}
+
+.oc-app-navigation-title .brandmark-img {
+  /* Sizing only — the theme swap rules own display. */
+  height: 20px;
+  width: auto;
+}
+
+/* Compact rail: the collapse chevrons point back out, and the footer's
+   avatar + icon controls stack in the 3.25rem column. */
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-collapse svg {
+  transform: rotate(180deg);
+}
+
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
+  flex-direction: column;
   gap: var(--oc-space-2);
 }
 
-/* Sign out is a quiet, compact affordance beside the role chip, not a
-   full-height control competing with navigation. */
-.oc-action.nav-signout {
-  min-height: 1.75rem;
-  padding: 0 var(--oc-space-2);
-  font-size: var(--oc-font-size-xs);
+.oc-app-frame[data-navigation="compact"] .nav-identity {
+  flex: 0 0 auto;
+  grid-template-columns: auto;
 }
 
-/* Three equal icon tabs filling the rail width. Carapace's segmented chrome
-   (border, card background, inner padding) is kept — it is the picker. */
-.oc-segmented.theme-toggle {
+/* --- ⌘K search (CommandPalette.tsx) ---
+   Rail trigger styled like the carapace.design search field, palette as a
+   top-anchored dialog over the standard modal overlay. */
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 var(--oc-space-3) var(--oc-space-2);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-muted);
+  color: var(--ink-faint);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-search:hover {
+  border-color: var(--line-strong);
+  color: var(--ink-muted);
+}
+
+.nav-search-glyph {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.nav-search-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-search-kbd,
+.palette-kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--oc-font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-search {
+  justify-content: center;
+  padding: 6px;
+  margin-inline: var(--oc-space-2);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-search-label,
+.oc-app-frame[data-navigation="compact"] .nav-search-kbd {
+  display: none;
+}
+
+.palette-overlay {
   display: grid;
-  width: 100%;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  overflow: visible;
+  justify-items: center;
+  align-items: start;
+  padding-top: 14vh;
+}
+
+.palette {
+  width: min(560px, calc(100vw - 32px));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-pop);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.palette-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.palette-glyph {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+}
+
+.palette-results {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.palette-empty {
   margin: 0;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.palette-option {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.palette-option.is-active {
+  background: var(--accent-soft);
+}
+
+.palette-option-label {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-option-hint {
+  margin-left: auto;
+  flex-shrink: 1;
+  min-width: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Connect page: copyable snippets in a recessed mono block. */
+.connect-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.snippet {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.snippet-label {
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.snippet-code {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* Connect steps: numbered cards with a live status loader. */
+.step-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--oc-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.step-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.step-body h2 {
+  margin: 0;
+}
+
+.step-hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot {
+    animation: none;
+  }
+}
+
+.connect-docs summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
+.connect-docs[open] summary {
+  margin-bottom: 8px;
+}
+
+.connect-notes {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Segments page: each segment is a disclosure card. */
+.segment-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.segment-summary code {
+  font-size: 12px;
+}
+
+.segment-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.segment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Settings tabs: LD-style underline tabs, section state in the URL. */
+.settings-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-tab {
+  margin-bottom: -1px;
+  padding: 4px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  color: var(--ink);
+}
+
+.settings-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* Settings → Webhooks (admin). */
+.webhook-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.webhook-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.webhook-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.webhook-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.webhook-status {
+  font-size: 12px;
+}
+
+.webhook-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.webhook-name-input {
+  flex: 1 1 160px;
+}
+
+.webhook-url-input {
+  flex: 2 1 260px;
+}
+
+/* Settings → Appearance: the explicit three-way choice (the rail control
+   only cycles the same setting). */
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Keyboard focus lands on the hidden radio; ring the visible label. */
+.theme-picker-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-picker-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.theme-picker-option:hover {
+  color: var(--ink);
+}
+
+.theme-picker-option.is-active {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* Carapace lays the summary strip out with auto-fit minmax(9rem), which at
@@ -2640,6 +3311,15 @@ h1 {
    the sibling button onto the next row. */
 .oc-page-header-actions .oc-select {
   width: auto;
+}
+
+/* LD-density controls: selects and filter inputs sit at 2rem, not the
+   2.5rem form scale, everywhere in the console. */
+.oc-select.select-trigger,
+.combobox-input {
+  min-height: 2rem;
+  padding-block: 2px;
+  font-size: 13px;
 }
 
 /* Radix draws its own chevron, so drop the right padding oc-select reserves
@@ -2810,4 +3490,11 @@ h1 {
 .oc-app-navigation [data-tip]:hover::after,
 .oc-app-navigation [data-tip]:focus-visible::after {
   transform: translate(0, 0);
+}
+
+/* Footer icons sit at the rail's right edge; anchor their tooltips right so
+   they stay inside the clipped rail. */
+.oc-app-navigation-footer [data-tip]::after {
+  left: auto;
+  right: 0;
 }

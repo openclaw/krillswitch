@@ -34,13 +34,23 @@ export const flagDetailUpdateSchema = z
         contextKeys: z.array(z.string().trim().min(1)).min(1),
       }),
     ),
+    // Attribute rules match a context attribute; segment rules match a
+    // project segment by key. Discriminated by the presence of `segment`.
     rules: z.array(
-      z.object({
-        variationIndex: z.number().int().nonnegative(),
-        attribute: z.string().trim().min(1),
-        values: z.array(attributeValueSchema).min(1),
-      }),
+      z.union([
+        z.object({
+          variationIndex: z.number().int().nonnegative(),
+          attribute: z.string().trim().min(1),
+          values: z.array(attributeValueSchema).min(1),
+        }),
+        z.object({
+          variationIndex: z.number().int().nonnegative(),
+          segment: z.string().trim().min(1),
+        }),
+      ]),
     ),
+    // Optional operator note for the audit log ("why this change").
+    comment: z.string().trim().max(500).optional(),
     rollout: z
       .object({
         variations: z

@@ -1,12 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ApiError, api, type FlagDetail, type Me } from "../../api";
+import {
+  ApiError,
+  api,
+  type FlagDetail,
+  type Me,
+  type Segment,
+} from "../../api";
 import { ChevronDownIcon } from "../../components/brand";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { CopyButton } from "../../components/CopyButton";
+import { EnvBadge, isProductionEnv } from "../../components/EnvBadge";
+import { GuardrailDialog } from "../../components/GuardrailDialog";
 import { BlockSkeleton } from "../../components/Skeleton";
 import { Switch } from "../../components/Switch";
 import { type Draft, fromDraft, toDraft } from "./draft";
+import { FlagHistory } from "./FlagHistory";
 import { AllowlistEditor, RolloutEditor, RulesEditor } from "./TargetingEditor";
 import { VariationsEditor } from "./VariationsEditor";
 
@@ -16,6 +26,10 @@ export function FlagDetailPage({ me }: { me: Me }) {
   const detail = useQuery({
     queryKey: ["flag", projectKey, environmentKey, flagKey],
     queryFn: () => api.flagDetail(projectKey, environmentKey, flagKey),
+  });
+  const segments = useQuery({
+    queryKey: ["segments", projectKey],
+    queryFn: () => api.segments(projectKey),
   });
 
   if (detail.isPending) {
@@ -38,6 +52,7 @@ export function FlagDetailPage({ me }: { me: Me }) {
       key={`${projectKey}/${environmentKey}/${flagKey}`}
       me={me}
       detail={detail.data}
+      segments={segments.data?.segments ?? []}
       projectKey={projectKey}
       environmentKey={environmentKey}
     />
@@ -47,11 +62,13 @@ export function FlagDetailPage({ me }: { me: Me }) {
 function FlagDetailEditor({
   me,
   detail,
+  segments,
   projectKey,
   environmentKey,
 }: {
   me: Me;
   detail: FlagDetail;
+  segments: Segment[];
   projectKey: string;
   environmentKey: string;
 }) {
@@ -64,6 +81,10 @@ function FlagDetailEditor({
   // Captured from the same object that seeds `draft`, so its row ids line up.
   const [savedDraft, setSavedDraft] = useState<Draft>(() => draft);
   const [draftError, setDraftError] = useState<string | null>(null);
+  // Optional everywhere, required by the guardrail before production saves.
+  const [comment, setComment] = useState("");
+  const [guardOpen, setGuardOpen] = useState(false);
+  const isProduction = isProductionEnv(environmentKey);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(savedDraft);
 
@@ -95,12 +116,17 @@ function FlagDetailEditor({
       const next = toDraft(updated);
       setDraft(next);
       setSavedDraft(next);
+      setComment("");
+      setGuardOpen(false);
       queryClient.setQueryData(
         ["flag", projectKey, environmentKey, flagKey],
         updated,
       );
       queryClient.invalidateQueries({
         queryKey: ["flags", projectKey, environmentKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flag-history", projectKey, flagKey],
       });
     },
   });
@@ -114,6 +140,22 @@ function FlagDetailEditor({
       navigate(`/projects/${projectKey}/${environmentKey}`);
     },
   });
+
+  const archive = useMutation({
+    mutationFn: (archived: boolean) =>
+      api.setFlagArchived(projectKey, flagKey, archived),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["flag", projectKey, environmentKey, flagKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flags", projectKey, environmentKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flag-history", projectKey, flagKey],
+      });
+    },
+  });
   const draftDisabled = readOnly || save.isPending;
 
   function onSave() {
@@ -123,12 +165,28 @@ function FlagDetailEditor({
       return;
     }
     setDraftError(null);
-    save.mutate(converted.body);
+    if (isProduction) {
+      // Production goes through the guardrail: confirm + required comment.
+      setGuardOpen(true);
+      return;
+    }
+    save.mutate({ ...converted.body, comment: comment.trim() || undefined });
+  }
+
+  function onConfirmProductionSave() {
+    const converted = fromDraft(draft, detail.flag.kind);
+    if ("error" in converted) {
+      setDraftError(converted.error);
+      setGuardOpen(false);
+      return;
+    }
+    save.mutate({ ...converted.body, comment: comment.trim() || undefined });
   }
 
   function onDiscard() {
     setDraft(savedDraft);
     setDraftError(null);
+    setComment("");
     save.reset();
   }
 
@@ -147,13 +205,18 @@ function FlagDetailEditor({
             <Link to={`/projects/${projectKey}/${environmentKey}`}>
               {projectKey}
             </Link>
-            <span className="muted"> / {environmentKey}</span>
+            <span className="muted">/</span>
+            <EnvBadge envKey={environmentKey} />
           </nav>
           <h1>{detail.flag.name}</h1>
           <p className="flag-meta">
             <code>{detail.flag.key}</code>
+            <CopyButton value={detail.flag.key} label="flag key" />
             <span className="flag-meta-sep">·</span>
             <span className="badge-kind">{detail.flag.kind}</span>
+            {detail.flag.archived && (
+              <span className="oc-badge oc-badge-neutral">Archived</span>
+            )}
           </p>
           {detail.flag.description && (
             <p className="muted flag-description">{detail.flag.description}</p>
@@ -170,6 +233,21 @@ function FlagDetailEditor({
               offLabel={`Disabled in ${environmentKey}`}
             />
           </div>
+          {!readOnly && (
+            <button
+              type="button"
+              className="oc-action oc-action-ghost"
+              disabled={archive.isPending}
+              data-tip={
+                detail.flag.archived
+                  ? "Show in flag lists again"
+                  : "Hide from flag lists; SDKs keep receiving it"
+              }
+              onClick={() => archive.mutate(!detail.flag.archived)}
+            >
+              {detail.flag.archived ? "Restore" : "Archive"}
+            </button>
+          )}
           {me.role === "admin" && (
             <ConfirmDialog
               title={`Delete “${detail.flag.name}”?`}
@@ -178,7 +256,10 @@ function FlagDetailEditor({
               pending={remove.isPending}
               onConfirm={() => remove.mutate()}
               trigger={
-                <button type="button" className="oc-action oc-action-secondary">
+                <button
+                  type="button"
+                  className="oc-action oc-action-ghost danger-ghost"
+                >
                   Delete flag
                 </button>
               }
@@ -200,6 +281,19 @@ function FlagDetailEditor({
           )}
           <section className="save-bar" aria-label="Unsaved changes">
             <strong className="save-bar-status">Unsaved changes</strong>
+            <input
+              className="oc-input save-comment"
+              value={comment}
+              maxLength={500}
+              disabled={save.isPending}
+              placeholder={
+                isProduction
+                  ? "Comment (required for production)"
+                  : "Comment for the change log (optional)"
+              }
+              aria-label="Change log comment"
+              onChange={(event) => setComment(event.currentTarget.value)}
+            />
             <div className="save-actions">
               <button
                 type="button"
@@ -226,6 +320,18 @@ function FlagDetailEditor({
       {!readOnly && !isDirty && save.isSuccess && (
         <p className="muted save-ok">Saved. Live within a second.</p>
       )}
+      <GuardrailDialog
+        open={guardOpen}
+        onOpenChange={setGuardOpen}
+        environmentKey={environmentKey}
+        title="Save to production?"
+        description={`These changes to “${detail.flag.name}” go live for real traffic as soon as they save.`}
+        confirmLabel="Save to production"
+        comment={comment}
+        onCommentChange={setComment}
+        onConfirm={onConfirmProductionSave}
+        pending={save.isPending}
+      />
 
       <VariationsEditor
         kind={detail.flag.kind}
@@ -298,6 +404,7 @@ function FlagDetailEditor({
             <RulesEditor
               rules={draft.rules}
               variations={draft.variations}
+              segments={segments}
               disabled={draftDisabled}
               onChange={(rules) => setDraft({ ...draft, rules })}
             />
@@ -313,6 +420,8 @@ function FlagDetailEditor({
           </div>
         )}
       </section>
+
+      <FlagHistory projectKey={projectKey} flagKey={flagKey} />
     </section>
   );
 }
