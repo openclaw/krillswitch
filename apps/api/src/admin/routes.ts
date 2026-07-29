@@ -855,7 +855,10 @@ adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
   return c.json({ deleted: c.req.param("flagKey") });
 });
 
-const toggleFlagSchema = z.object({ enabled: z.boolean() });
+const toggleFlagSchema = z.object({
+  enabled: z.boolean(),
+  comment: z.string().trim().max(500).optional(),
+});
 
 adminRoutes.patch(
   "/projects/:projectKey/environments/:environmentKey/flags/:flagKey",
@@ -887,6 +890,7 @@ adminRoutes.patch(
       actor: { id: actor.id, name: actor.name },
       projectKey: c.req.param("projectKey"),
       environmentKey: c.req.param("environmentKey"),
+      comment: parsed.data.comment || undefined,
     });
     if (!flag) {
       return c.json({ error: "not_found" }, 404);

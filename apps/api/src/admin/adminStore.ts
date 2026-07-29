@@ -113,6 +113,7 @@ export async function setFlagEnabled(
     actor: Actor;
     projectKey: string;
     environmentKey: string;
+    comment?: string;
   },
 ): Promise<FlagListEntry | null> {
   const row = await db
@@ -150,6 +151,7 @@ export async function setFlagEnabled(
       target: `${options.projectKey}/${options.environmentKey}/${options.flagKey}`,
       before: { enabled: row.enabled },
       after: { enabled: options.enabled },
+      comment: options.comment,
     }),
   ]);
   const { flagEnvironmentId: _omitted, enabled: _was, ...flag } = row;

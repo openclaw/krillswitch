@@ -305,6 +305,7 @@ export async function updateFlagDetail(
       projectKey: options.projectKey,
       flagKey: options.flagKey,
       target: `${options.projectKey}/${options.environmentKey}/${options.flagKey}`,
+      comment: draft.comment || undefined,
       before: diff.before,
       after: diff.after,
     }),

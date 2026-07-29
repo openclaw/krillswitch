@@ -78,6 +78,8 @@ export const changeLog = sqliteTable(
     target: text("target").notNull(),
     before: text("before", { mode: "json" }).$type<JsonValue>(),
     after: text("after", { mode: "json" }).$type<JsonValue>(),
+    // Optional operator-supplied intent ("why"), captured at save time.
+    comment: text("comment"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [

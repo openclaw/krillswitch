@@ -41,6 +41,8 @@ export const flagDetailUpdateSchema = z
         values: z.array(attributeValueSchema).min(1),
       }),
     ),
+    // Optional operator note for the audit log ("why this change").
+    comment: z.string().trim().max(500).optional(),
     rollout: z
       .object({
         variations: z
