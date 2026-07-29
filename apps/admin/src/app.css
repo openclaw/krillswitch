@@ -3533,11 +3533,123 @@ h1 {
   right: 0;
 }
 
-/* --- mobile strip: compact-preference neutralizers ---
-   Kept after the compact rail rules on purpose: these share specificity with
-   them, so cascade order is what makes the stacked layout win when the user
-   left the rail collapsed on desktop. */
+/* --- mobile navigation: brand strip + slide-over menu (MobileMenu in
+   Shell.tsx) ---
+   Kept after the compact rail rules on purpose: several selectors share
+   specificity with them, so cascade order is what lets the phone layout win
+   when the user left the rail collapsed on desktop. */
+
+/* Desktop: the phone-only header buttons stay out of the rail. */
+.mobile-nav-button {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.mobile-nav-button:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.mobile-nav-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Slide-over: right-anchored sheet over the standard dialog backdrop. The
+   :not([open]) guard mirrors the command palette — display:flex on the open
+   dialog would otherwise outrank the UA's closed-dialog hiding. */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  margin: 0 0 0 auto;
+  width: min(320px, 86vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.mobile-menu:not([open]) {
+  display: none;
+}
+
+.mobile-menu[open] {
+  display: flex;
+}
+
+.mobile-menu::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.mobile-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu-head .mobile-nav-button {
+  display: grid;
+}
+
+.mobile-menu-head .brandmark-img {
+  height: 20px;
+  width: auto;
+}
+
+.mobile-menu-body {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 18px;
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+
+.mobile-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
 @media (max-width: 768px) {
+  /* The rail reduces to a one-row brand strip; links, search bar, and the
+     footer all live in the slide-over instead. */
+  .nav-search,
+  .oc-app-navigation-body,
+  .oc-app-navigation-footer {
+    display: none;
+  }
+
+  .oc-app-navigation {
+    grid-template-rows: auto;
+  }
+
+  .oc-app-navigation-header,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 8px 10px 8px 14px;
+  }
+
   /* Wordmark only in the strip (Carapace re-shows -title at this width; our
      compact rules would otherwise center the krill mark). */
   .oc-app-navigation-header .oc-app-navigation-brand,
@@ -3545,25 +3657,34 @@ h1 {
     display: none;
   }
 
-  /* Carapace hides the footer in its stacked layout; ours keeps identity,
-     theme, and sign-out reachable on phones as a single trailing row. */
-  .oc-app-navigation-footer,
-  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: var(--oc-space-1);
-    padding: var(--oc-space-2) var(--oc-space-3);
-    border-top: 1px solid var(--line);
+  .oc-app-navigation-title {
+    margin-right: auto;
   }
 
-  .oc-app-frame[data-navigation="compact"] .nav-identity {
-    flex: 1;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer-copy {
+  .mobile-nav-button {
     display: grid;
+  }
+
+  /* Inside the slide-over the nav sections keep their vertical rail layout;
+     Carapace's stacked-strip rules would otherwise flow them horizontally. */
+  .mobile-menu .oc-app-navigation-section {
+    display: block;
+  }
+
+  .mobile-menu .oc-app-navigation-label {
+    display: block;
+    margin: 0 0 6px;
+  }
+
+  .mobile-menu .oc-app-navigation-list {
+    display: grid;
+    width: auto;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .mobile-menu .oc-app-navigation-item {
+    min-height: 44px;
   }
 
   /* Eval-key and token tables keep their columns and scroll sideways;
