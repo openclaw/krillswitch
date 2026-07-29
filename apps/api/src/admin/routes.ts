@@ -39,6 +39,7 @@ import {
   createFlag,
   deleteFlag,
   loadFlagDetail,
+  setFlagArchived,
   updateFlagDetail,
 } from "./flagDetail";
 import {
@@ -836,6 +837,39 @@ adminRoutes.post("/projects/:projectKey/flags", async (c) => {
       clearConfigCache();
       return c.json({ created: parsed.data.key }, 201);
   }
+});
+
+const archiveFlagSchema = z.object({ archived: z.boolean() });
+
+// Reversible lifecycle change, so editors may archive; delete stays admin.
+adminRoutes.patch("/projects/:projectKey/flags/:flagKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = archiveFlagSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const updated = await setFlagArchived(db, {
+    projectId,
+    flagKey: c.req.param("flagKey"),
+    archived: parsed.data.archived,
+    actor: { id: actor.id, name: actor.name },
+    projectKey: c.req.param("projectKey"),
+  });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ archived: parsed.data.archived });
 });
 
 adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {

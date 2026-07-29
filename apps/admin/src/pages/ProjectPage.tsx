@@ -166,6 +166,7 @@ function FlagTable({
   canEdit: boolean;
   detailPath: (flagKey: string) => string;
 }) {
+  const [showArchived, setShowArchived] = useState(false);
   const flags = useQuery({
     queryKey: ["flags", projectKey, environmentKey],
     queryFn: () => api.flags(projectKey, environmentKey),
@@ -180,6 +181,12 @@ function FlagTable({
   if (flags.isError) {
     return <p role="alert">Failed to load flags.</p>;
   }
+  const activeFlags = (flags.data?.flags ?? []).filter(
+    (flag) => !flag.archived,
+  );
+  const archivedFlags = (flags.data?.flags ?? []).filter(
+    (flag) => flag.archived,
+  );
   if (flags.data.flags.length === 0) {
     return canEdit ? (
       <EmptyState
@@ -217,18 +224,32 @@ function FlagTable({
           </tr>
         </thead>
         <tbody>
-          {flags.data.flags.map((flag) => (
-            <FlagRow
-              key={flag.id}
-              flag={flag}
-              projectKey={projectKey}
-              environmentKey={environmentKey}
-              canEdit={canEdit}
-              detailPath={detailPath(flag.key)}
-            />
-          ))}
+          {[...activeFlags, ...(showArchived ? archivedFlags : [])].map(
+            (flag) => (
+              <FlagRow
+                key={flag.id}
+                flag={flag}
+                projectKey={projectKey}
+                environmentKey={environmentKey}
+                canEdit={canEdit}
+                detailPath={detailPath(flag.key)}
+              />
+            ),
+          )}
         </tbody>
       </table>
+      {archivedFlags.length > 0 && (
+        <button
+          type="button"
+          className="oc-action oc-action-ghost archived-toggle"
+          aria-expanded={showArchived}
+          onClick={() => setShowArchived((current) => !current)}
+        >
+          {showArchived
+            ? "Hide archived"
+            : `Show archived (${archivedFlags.length})`}
+        </button>
+      )}
     </TableFrame>
   );
 }
@@ -337,7 +358,9 @@ function FlagRow({
         {formatFlagChange(flag.lastChangedAt)}
       </td>
       <td className="td-state">
-        {canEdit ? (
+        {flag.archived ? (
+          <span className="oc-badge oc-badge-neutral">Archived</span>
+        ) : canEdit ? (
           <span
             className="row-state row-control"
             data-tip={

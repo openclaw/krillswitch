@@ -4,6 +4,8 @@ export const ACTION_LABELS: Record<string, string> = {
   "flag.toggle": "Flag toggled",
   "flag.update": "Flag updated",
   "flag.create": "Flag created",
+  "flag.archive": "Flag archived",
+  "flag.restore": "Flag restored",
   "flag.delete": "Flag deleted",
   "role.set": "Role changed",
   "project.create": "Project created",

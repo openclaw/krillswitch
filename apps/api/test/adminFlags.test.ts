@@ -51,6 +51,21 @@ async function fetchFlags(cookie: string): Promise<Response> {
   );
 }
 
+async function evalSouls(): Promise<boolean> {
+  const response = await SELF.fetch(`${BASE}/v1/eval`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${DEV_EVAL_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ context: { key: "toggle-test-user" } }),
+  });
+  const body = await response.json<{
+    flags: { souls: { value: boolean } };
+  }>();
+  return body.flags.souls.value;
+}
+
 describe("project detail", () => {
   it("returns the project with its environments", async () => {
     const cookie = await devLogin("viewer");
@@ -134,6 +149,57 @@ describe("environment flag list", () => {
   });
 });
 
+describe("flag archive", () => {
+  const archiveUrl = `${BASE}/admin/projects/clawhub/flags/souls`;
+
+  it("archives and restores, keeps serving evals, and audits both", async () => {
+    const cookie = await devLogin("editor");
+    const archive = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: true }),
+    });
+    expect(archive.status).toBe(200);
+
+    const list = await fetchFlags(cookie);
+    const body = await list.json<{
+      flags: (FlagListEntry & { archived: boolean })[];
+    }>();
+    expect(body.flags.find((flag) => flag.key === "souls")?.archived).toBe(
+      true,
+    );
+
+    // Archived flags stay in the eval payload — archiving is always safe.
+    await expect(evalSouls()).resolves.toBeTypeOf("boolean");
+
+    const restore = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: false }),
+    });
+    expect(restore.status).toBe(200);
+
+    const log = await SELF.fetch(
+      `${BASE}/admin/changelog?flagKey=souls&projectKey=clawhub`,
+      { headers: { cookie } },
+    );
+    const entries = (await log.json<{ entries: { action: string }[] }>())
+      .entries;
+    expect(entries.some((entry) => entry.action === "flag.archive")).toBe(true);
+    expect(entries.some((entry) => entry.action === "flag.restore")).toBe(true);
+  });
+
+  it("viewers cannot archive", async () => {
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: true }),
+    });
+    expect(response.status).toBe(403);
+  });
+});
+
 describe("flag toggle", () => {
   const toggleUrl = `${BASE}/admin/projects/clawhub/environments/development/flags/souls`;
 
@@ -143,21 +209,6 @@ describe("flag toggle", () => {
       headers: { cookie, "content-type": "application/json" },
       body: JSON.stringify({ enabled }),
     });
-  }
-
-  async function evalSouls(): Promise<boolean> {
-    const response = await SELF.fetch(`${BASE}/v1/eval`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${DEV_EVAL_KEY}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ context: { key: "toggle-test-user" } }),
-    });
-    const body = await response.json<{
-      flags: { souls: { value: boolean } };
-    }>();
-    return body.flags.souls.value;
   }
 
   it("lets the editor toggle souls off and eval reflects it immediately", async () => {

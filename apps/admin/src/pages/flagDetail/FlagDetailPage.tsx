@@ -127,6 +127,22 @@ function FlagDetailEditor({
       navigate(`/projects/${projectKey}/${environmentKey}`);
     },
   });
+
+  const archive = useMutation({
+    mutationFn: (archived: boolean) =>
+      api.setFlagArchived(projectKey, flagKey, archived),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["flag", projectKey, environmentKey, flagKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flags", projectKey, environmentKey],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["flag-history", projectKey, flagKey],
+      });
+    },
+  });
   const draftDisabled = readOnly || save.isPending;
 
   function onSave() {
@@ -185,6 +201,9 @@ function FlagDetailEditor({
             <CopyButton value={detail.flag.key} label="flag key" />
             <span className="flag-meta-sep">·</span>
             <span className="badge-kind">{detail.flag.kind}</span>
+            {detail.flag.archived && (
+              <span className="oc-badge oc-badge-neutral">Archived</span>
+            )}
           </p>
           {detail.flag.description && (
             <p className="muted flag-description">{detail.flag.description}</p>
@@ -201,6 +220,21 @@ function FlagDetailEditor({
               offLabel={`Disabled in ${environmentKey}`}
             />
           </div>
+          {!readOnly && (
+            <button
+              type="button"
+              className="oc-action oc-action-ghost"
+              disabled={archive.isPending}
+              data-tip={
+                detail.flag.archived
+                  ? "Show in flag lists again"
+                  : "Hide from flag lists; SDKs keep receiving it"
+              }
+              onClick={() => archive.mutate(!detail.flag.archived)}
+            >
+              {detail.flag.archived ? "Restore" : "Archive"}
+            </button>
+          )}
           {me.role === "admin" && (
             <ConfirmDialog
               title={`Delete “${detail.flag.name}”?`}

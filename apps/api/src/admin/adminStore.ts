@@ -25,10 +25,11 @@ export type FlagListEntry = {
 };
 
 /** List rows carry extra operational context the toggle response does not:
- *  what serves while off, and when the flag last changed (change-log time,
- *  environment-agnostic). The client merges toggle responses into rows, so
- *  these stay stable across a PATCH. */
+ *  archived state, what serves while off, and when the flag last changed
+ *  (change-log time, environment-agnostic). The client merges toggle
+ *  responses into rows, so these stay stable across a PATCH. */
 export type FlagListRow = FlagListEntry & {
+  archived: boolean;
   offVariation: string | null;
   lastChangedAt: Date | null;
 };
@@ -98,6 +99,7 @@ export async function loadFlagList(
       kind: flags.kind,
       description: flags.description,
       enabled: flagEnvironments.enabled,
+      archived: flags.archived,
       offVariationId: flagEnvironments.offVariationId,
     })
     .from(flagEnvironments)

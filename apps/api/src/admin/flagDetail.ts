@@ -33,6 +33,7 @@ export type FlagDetail = {
     name: string;
     kind: FlagKind;
     description: string | null;
+    archived: boolean;
   };
   variations: {
     id: string;
@@ -409,6 +410,43 @@ export async function createFlag(
   ] as const;
   await db.batch([statements[0], ...statements.slice(1)]);
   return { kind: "ok" };
+}
+
+/** Reversible lifecycle step before deletion: archived flags leave admin
+ *  lists but keep serving evaluations, so SDKs never lose a value. */
+export async function setFlagArchived(
+  db: DrizzleD1Database,
+  options: {
+    projectId: string;
+    flagKey: string;
+    archived: boolean;
+    actor: Actor;
+    projectKey: string;
+  },
+): Promise<boolean> {
+  const flag = await loadFlagRow(db, options.projectId, options.flagKey);
+  if (!flag) {
+    return false;
+  }
+  if (flag.archived === options.archived) {
+    return true;
+  }
+  await db.batch([
+    db
+      .update(flags)
+      .set({ archived: options.archived })
+      .where(eq(flags.id, flag.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: options.archived ? "flag.archive" : "flag.restore",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.flagKey}`,
+      before: { archived: flag.archived },
+      after: { archived: options.archived },
+    }),
+  ]);
+  return true;
 }
 
 export async function deleteFlag(

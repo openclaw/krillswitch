@@ -96,6 +96,8 @@ export type FlagListEntry = {
   offVariation?: string | null;
   /** Latest change-log timestamp for the flag (ISO), if any. */
   lastChangedAt?: string | null;
+  /** Archived flags hide from lists but keep serving evaluations. */
+  archived?: boolean;
 };
 
 export type FlagDetail = {
@@ -105,6 +107,7 @@ export type FlagDetail = {
     name: string;
     kind: FlagKind;
     description: string | null;
+    archived: boolean;
   };
   variations: {
     id: string;
@@ -282,6 +285,15 @@ export const api = {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+      },
+    ),
+  setFlagArchived: (projectKey: string, flagKey: string, archived: boolean) =>
+    request<{ archived: boolean }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ archived }),
       },
     ),
   deleteFlag: (projectKey: string, flagKey: string) =>

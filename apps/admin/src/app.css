@@ -1128,6 +1128,12 @@ input[type="radio"]:focus-visible {
   color: var(--danger);
 }
 
+/* Archived flags fold away under the table; the toggle reveals them. */
+.oc-action.archived-toggle {
+  margin: 6px 8px;
+  color: var(--ink-muted);
+}
+
 /* Flags table: state is read-only; for editors it links to the flag page
    (where on/off and everything else is changed), with a trailing chevron. */
 .state-change-link {
