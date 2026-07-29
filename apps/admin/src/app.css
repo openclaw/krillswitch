@@ -2452,35 +2452,6 @@ tr.is-revoked td {
     flex-shrink: 0;
   }
 
-  /* The stacked strip ignores the persisted compact preference: one layout,
-     wordmark only (Carapace re-shows -title at this width; our compact rules
-     would otherwise center the krill mark and stack the footer vertically). */
-  .oc-app-navigation-header .oc-app-navigation-brand,
-  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
-    display: none;
-  }
-
-  /* Carapace hides the footer in its stacked layout; ours keeps identity,
-     theme, and sign-out reachable on phones as a single trailing row. */
-  .oc-app-navigation-footer,
-  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: var(--oc-space-1);
-    padding: var(--oc-space-2) var(--oc-space-3);
-    border-top: 1px solid var(--line);
-  }
-
-  .oc-app-frame[data-navigation="compact"] .nav-identity {
-    flex: 1;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer-copy {
-    display: grid;
-  }
-
   .token-reveal-header,
   .token-value-row {
     align-items: stretch;
@@ -2555,11 +2526,13 @@ tr.is-revoked td {
     gap: 10px;
   }
 
+  /* One column per card: paired columns overlapped once the wide
+     last-change/state cells landed on the same grid row. */
   .oc-table-wrap-projects tr,
   .oc-table-wrap-flags tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
     padding: 14px;
     border: 1px solid var(--line);
     background: var(--surface);
@@ -2649,6 +2622,18 @@ tr.is-revoked td {
   .oc-table-wrap-flags .td-state,
   .oc-table-wrap-flags .th-state {
     width: auto;
+  }
+
+  /* Flag keys run long; stack the label above the key so the code never
+     wraps letter-by-letter against the label. */
+  .oc-table-wrap-flags td:nth-child(2) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .oc-table-wrap-flags td:nth-child(2) .key-cell code {
+    overflow-wrap: anywhere;
   }
 
   .cell-sub,
@@ -3546,4 +3531,64 @@ h1 {
 .oc-app-navigation-footer [data-tip]::after {
   left: auto;
   right: 0;
+}
+
+/* --- mobile strip: compact-preference neutralizers ---
+   Kept after the compact rail rules on purpose: these share specificity with
+   them, so cascade order is what makes the stacked layout win when the user
+   left the rail collapsed on desktop. */
+@media (max-width: 768px) {
+  /* Wordmark only in the strip (Carapace re-shows -title at this width; our
+     compact rules would otherwise center the krill mark). */
+  .oc-app-navigation-header .oc-app-navigation-brand,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
+    display: none;
+  }
+
+  /* Carapace hides the footer in its stacked layout; ours keeps identity,
+     theme, and sign-out reachable on phones as a single trailing row. */
+  .oc-app-navigation-footer,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--oc-space-1);
+    padding: var(--oc-space-2) var(--oc-space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  .oc-app-frame[data-navigation="compact"] .nav-identity {
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer-copy {
+    display: grid;
+  }
+
+  /* Eval-key and token tables keep their columns and scroll sideways;
+     letting them squeeze wraps the mono keys one character per line. */
+  .oc-table-wrap-keys,
+  .oc-table-wrap-tokens {
+    overflow-x: auto;
+  }
+
+  .oc-table-wrap-keys .key-cell code {
+    white-space: nowrap;
+  }
+
+  /* Log streams: drop the subsystem column and let messages wrap; the
+     12rem column plus inline before→after JSON overflows a phone. */
+  .changelog-stream .oc-log-row,
+  .changelog-stream-scoped .oc-log-row {
+    grid-template-columns: auto 4rem minmax(0, 1fr);
+  }
+
+  .changelog-stream .oc-log-subsystem {
+    display: none;
+  }
+
+  .changelog-stream .oc-log-message {
+    overflow-wrap: anywhere;
+  }
 }
