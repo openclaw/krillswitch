@@ -2452,6 +2452,35 @@ tr.is-revoked td {
     flex-shrink: 0;
   }
 
+  /* The stacked strip ignores the persisted compact preference: one layout,
+     wordmark only (Carapace re-shows -title at this width; our compact rules
+     would otherwise center the krill mark and stack the footer vertically). */
+  .oc-app-navigation-header .oc-app-navigation-brand,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
+    display: none;
+  }
+
+  /* Carapace hides the footer in its stacked layout; ours keeps identity,
+     theme, and sign-out reachable on phones as a single trailing row. */
+  .oc-app-navigation-footer,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--oc-space-1);
+    padding: var(--oc-space-2) var(--oc-space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  .oc-app-frame[data-navigation="compact"] .nav-identity {
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer-copy {
+    display: grid;
+  }
+
   .token-reveal-header,
   .token-value-row {
     align-items: stretch;
@@ -2587,11 +2616,11 @@ tr.is-revoked td {
     content: "Flags";
   }
 
-  .oc-table-wrap-projects td:nth-child(4) {
-    grid-column: 1 / -1;
+  .oc-table-wrap-projects .td-activity::before {
+    content: "Usage";
   }
 
-  .oc-table-wrap-projects td:nth-child(4)::before {
+  .oc-table-wrap-projects td:nth-child(5)::before {
     content: "Last change";
   }
 
@@ -2603,8 +2632,18 @@ tr.is-revoked td {
     content: "Kind";
   }
 
-  .oc-table-wrap-flags td:nth-child(4)::before {
+  .oc-table-wrap-flags .td-last-change::before {
+    content: "Last change";
+  }
+
+  .oc-table-wrap-flags .td-state::before {
     content: "State";
+  }
+
+  /* The flag card's last-change row keeps the date; the 90px sparkline is
+     desktop texture and would fight the label for the narrow row. */
+  .oc-table-wrap-flags .td-last-change .cell-spark {
+    display: none;
   }
 
   .oc-table-wrap-flags .td-state,
