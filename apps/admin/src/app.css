@@ -3719,6 +3719,12 @@ h1 {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  /* Badge + long eval key + copy button share this row; wrapping beats
+     truncating the environment name. */
+  .flag-meta {
+    flex-wrap: wrap;
+  }
+
   /* Eval-key and token tables keep their columns and scroll sideways;
      letting them squeeze wraps the mono keys one character per line. */
   .oc-table-wrap-keys,
