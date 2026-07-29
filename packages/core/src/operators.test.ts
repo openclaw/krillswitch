@@ -6,7 +6,8 @@ function matches(
   rule: Omit<AttributeRule, "attribute">,
   actual: AttributeValue | undefined,
 ): boolean {
-  const attributes = actual === undefined ? {} : { attr: actual };
+  const attributes: Record<string, AttributeValue> =
+    actual === undefined ? {} : { attr: actual };
   return attributeRuleMatches({ attribute: "attr", ...rule }, attributes);
 }
 
