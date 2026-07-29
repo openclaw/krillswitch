@@ -1,15 +1,16 @@
-import type { AttributeValue } from "@openclaw/krillswitch-core";
+import type { AttributeRule } from "@openclaw/krillswitch-core";
 import { and, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { z } from "zod";
 import { segments } from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
+import { operatorValueError, ruleOperatorSchema } from "./flagDetailSchema";
 
 export type SegmentDraft = {
   name: string;
   description: string | null;
   contextKeys: string[];
-  rules: { attribute: string; values: AttributeValue[] }[];
+  rules: AttributeRule[];
 };
 
 const attributeValueSchema = z.union([z.string(), z.number(), z.boolean()]);
@@ -20,10 +21,18 @@ export const segmentBodySchema = z.object({
   contextKeys: z.array(z.string().trim().min(1)).max(500),
   rules: z
     .array(
-      z.object({
-        attribute: z.string().trim().min(1),
-        values: z.array(attributeValueSchema).min(1),
-      }),
+      z
+        .object({
+          attribute: z.string().trim().min(1),
+          operator: ruleOperatorSchema.optional(),
+          values: z.array(attributeValueSchema).min(1),
+        })
+        .superRefine((rule, context) => {
+          const valueError = operatorValueError(rule);
+          if (valueError) {
+            context.addIssue({ code: "custom", message: valueError });
+          }
+        }),
     )
     .max(50),
 });
@@ -45,7 +54,7 @@ export type SegmentRow = {
   name: string;
   description: string | null;
   contextKeys: string[];
-  rules: { attribute: string; values: AttributeValue[] }[];
+  rules: AttributeRule[];
   createdAt: Date;
 };
 

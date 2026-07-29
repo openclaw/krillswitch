@@ -1,5 +1,5 @@
 import type {
-  AttributeValue,
+  AttributeRule,
   FlagKind,
   FlagValue,
   JsonValue,
@@ -235,9 +235,7 @@ export const segments = sqliteTable(
     contextKeys: text("context_keys", { mode: "json" })
       .$type<string[]>()
       .notNull(),
-    rules: text("rules", { mode: "json" })
-      .$type<{ attribute: string; values: AttributeValue[] }[]>()
-      .notNull(),
+    rules: text("rules", { mode: "json" }).$type<AttributeRule[]>().notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
