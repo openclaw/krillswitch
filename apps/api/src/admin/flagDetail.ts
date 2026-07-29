@@ -34,6 +34,7 @@ export type FlagDetail = {
     kind: FlagKind;
     description: string | null;
     archived: boolean;
+    permanent: boolean;
   };
   variations: {
     id: string;
@@ -449,6 +450,44 @@ export async function setFlagArchived(
       target: `${options.projectKey}/${options.flagKey}`,
       before: { archived: flag.archived },
       after: { archived: options.archived },
+    }),
+  ]);
+  return true;
+}
+
+/** Lifecycle marking: permanent flags (kill switches, config knobs) are
+ *  exempt from staleness reporting; temporary is the default expectation
+ *  that a flag eventually leaves the codebase. */
+export async function setFlagPermanent(
+  db: DrizzleD1Database,
+  options: {
+    projectId: string;
+    flagKey: string;
+    permanent: boolean;
+    actor: Actor;
+    projectKey: string;
+  },
+): Promise<boolean> {
+  const flag = await loadFlagRow(db, options.projectId, options.flagKey);
+  if (!flag) {
+    return false;
+  }
+  if (flag.permanent === options.permanent) {
+    return true;
+  }
+  await db.batch([
+    db
+      .update(flags)
+      .set({ permanent: options.permanent })
+      .where(eq(flags.id, flag.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: options.permanent ? "flag.permanent" : "flag.temporary",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.flagKey}`,
+      before: { permanent: flag.permanent },
+      after: { permanent: options.permanent },
     }),
   ]);
   return true;

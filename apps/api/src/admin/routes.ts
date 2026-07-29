@@ -41,6 +41,7 @@ import {
   deleteFlag,
   loadFlagDetail,
   setFlagArchived,
+  setFlagPermanent,
   updateFlagDetail,
 } from "./flagDetail";
 import {
@@ -1071,15 +1072,24 @@ adminRoutes.delete("/projects/:projectKey/segments/:segmentKey", async (c) => {
   return c.json({ deleted: c.req.param("segmentKey") });
 });
 
-const archiveFlagSchema = z.object({ archived: z.boolean() });
+// One lifecycle field per PATCH: archived (reversible hide) or permanent
+// (staleness exemption). Both are editor-level; delete stays admin.
+const lifecycleFlagSchema = z
+  .object({
+    archived: z.boolean().optional(),
+    permanent: z.boolean().optional(),
+  })
+  .refine(
+    (body) => (body.archived === undefined) !== (body.permanent === undefined),
+    { message: "send exactly one of archived or permanent" },
+  );
 
-// Reversible lifecycle change, so editors may archive; delete stays admin.
 adminRoutes.patch("/projects/:projectKey/flags/:flagKey", async (c) => {
   const role = c.get("role");
   if (role === null || !canEditFlags(role)) {
     return c.json({ error: "forbidden" }, 403);
   }
-  const parsed = archiveFlagSchema.safeParse(
+  const parsed = lifecycleFlagSchema.safeParse(
     await c.req.json().catch(() => null),
   );
   if (!parsed.success) {
@@ -1091,17 +1101,23 @@ adminRoutes.patch("/projects/:projectKey/flags/:flagKey", async (c) => {
     return c.json({ error: "not_found" }, 404);
   }
   const actor = c.get("actor");
-  const updated = await setFlagArchived(db, {
+  const base = {
     projectId,
     flagKey: c.req.param("flagKey"),
-    archived: parsed.data.archived,
     actor: { id: actor.id, name: actor.name },
     projectKey: c.req.param("projectKey"),
-  });
+  };
+  const updated =
+    parsed.data.archived !== undefined
+      ? await setFlagArchived(db, { ...base, archived: parsed.data.archived })
+      : await setFlagPermanent(db, {
+          ...base,
+          permanent: parsed.data.permanent ?? false,
+        });
   if (!updated) {
     return c.json({ error: "not_found" }, 404);
   }
-  return c.json({ archived: parsed.data.archived });
+  return c.json(parsed.data);
 });
 
 adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {

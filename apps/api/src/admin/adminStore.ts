@@ -36,6 +36,7 @@ export type FlagListEntry = {
  *  responses into rows, so these stay stable across a PATCH. */
 export type FlagListRow = FlagListEntry & {
   archived: boolean;
+  permanent: boolean;
   offVariation: string | null;
   lastChangedAt: Date | null;
 };
@@ -108,6 +109,7 @@ export async function loadFlagList(
       description: flags.description,
       enabled: flagEnvironments.enabled,
       archived: flags.archived,
+      permanent: flags.permanent,
       offVariationId: flagEnvironments.offVariationId,
     })
     .from(flagEnvironments)
