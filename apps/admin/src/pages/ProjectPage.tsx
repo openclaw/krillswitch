@@ -335,6 +335,21 @@ function FlagTable({
   );
 }
 
+/** A temporary (non-permanent) flag unchanged this long is rollout debt:
+ *  surface it so someone removes it from code, archives it, or marks it
+ *  permanent. */
+const STALE_AFTER_DAYS = 30;
+
+function staleDays(flag: FlagListEntry): number | null {
+  if (flag.permanent || flag.archived || !flag.lastChangedAt) {
+    return null;
+  }
+  const days = Math.floor(
+    (Date.now() - new Date(flag.lastChangedAt).getTime()) / 86_400_000,
+  );
+  return days >= STALE_AFTER_DAYS ? days : null;
+}
+
 function formatFlagChange(iso: string | null | undefined): string {
   if (!iso) return "\u2014";
   return new Date(iso).toLocaleString(undefined, {
@@ -454,6 +469,14 @@ function FlagRow({
           label={`Requests serving ${flag.key}, last 14 days`}
         />
         {formatFlagChange(flag.lastChangedAt)}
+        {staleDays(flag) !== null && (
+          <span
+            className="oc-badge oc-badge-warning stale-badge"
+            data-tip={`Temporary flag unchanged for ${staleDays(flag)} days — remove it from code, archive it, or mark it permanent`}
+          >
+            Stale
+          </span>
+        )}
       </td>
       <td className="td-state">
         {flag.archived ? (

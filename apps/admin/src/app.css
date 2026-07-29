@@ -1037,6 +1037,11 @@ input[type="radio"]:focus-visible {
   white-space: nowrap;
 }
 
+/* Rollout-debt marker beside the last-change date. */
+.stale-badge {
+  margin-left: 6px;
+}
+
 @media (max-width: 720px) {
   .projects-search {
     width: 100%;
