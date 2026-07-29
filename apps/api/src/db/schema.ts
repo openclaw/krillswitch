@@ -106,6 +106,10 @@ export const environments = sqliteTable(
       .references(() => projects.id),
     key: text("key").notNull(),
     name: text("name").notNull(),
+    // SDK freshness: bumped off the eval hot path via waitUntil, so a
+    // slightly stale count is expected and fine.
+    lastEvalAt: integer("last_eval_at", { mode: "timestamp_ms" }),
+    evalCount: integer("eval_count").notNull().default(0),
   },
   (table) => [
     uniqueIndex("environments_project_key").on(table.projectId, table.key),

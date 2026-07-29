@@ -103,6 +103,22 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => {
 
 app.route("/admin", adminRoutes);
 
+async function recordEvalStats(
+  db: D1Database,
+  environmentId: string,
+): Promise<void> {
+  try {
+    await db
+      .prepare(
+        "UPDATE environments SET eval_count = eval_count + 1, last_eval_at = ? WHERE id = ?",
+      )
+      .bind(Date.now(), environmentId)
+      .run();
+  } catch {
+    // Stats must never fail an eval; the next request tries again.
+  }
+}
+
 app.post("/v1/eval", async (c) => {
   const requestStart = performance.now();
   const evalKey = bearerToken(c.req.header("authorization"));
@@ -143,6 +159,10 @@ app.post("/v1/eval", async (c) => {
       `total;dur=${(performance.now() - requestStart).toFixed(3)}`,
     ].join(", "),
   );
+
+  // SDK freshness bookkeeping happens after the response; a lost write only
+  // understates the count.
+  c.executionCtx.waitUntil(recordEvalStats(c.env.DB, config.environmentId));
 
   const body: EvalResponseBody = { flags: evaluated };
   const serialized = JSON.stringify(body);

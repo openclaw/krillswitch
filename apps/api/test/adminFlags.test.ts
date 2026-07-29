@@ -91,6 +91,24 @@ describe("project detail", () => {
     });
     expect(response.status).toBe(404);
   });
+
+  it("reports SDK eval freshness per environment", async () => {
+    await evalSouls();
+    const cookie = await devLogin("viewer");
+    const response = await SELF.fetch(`${BASE}/admin/projects/clawhub`, {
+      headers: { cookie },
+    });
+    const body = await response.json<{
+      environments: {
+        key: string;
+        evalCount: number;
+        lastEvalAt: string | null;
+      }[];
+    }>();
+    const development = body.environments.find((e) => e.key === "development");
+    expect(development?.evalCount).toBeGreaterThan(0);
+    expect(development?.lastEvalAt).toBeTruthy();
+  });
 });
 
 describe("project flag keys", () => {

@@ -12,7 +12,13 @@ import { type Actor, changeLogInsert } from "./changeLog";
 
 export type ProjectDetail = {
   project: { id: string; key: string; name: string };
-  environments: { id: string; key: string; name: string }[];
+  environments: {
+    id: string;
+    key: string;
+    name: string;
+    lastEvalAt: Date | null;
+    evalCount: number;
+  }[];
 };
 
 export type FlagListEntry = {
@@ -51,6 +57,8 @@ export async function loadProjectDetail(
       id: environments.id,
       key: environments.key,
       name: environments.name,
+      lastEvalAt: environments.lastEvalAt,
+      evalCount: environments.evalCount,
     })
     .from(environments)
     .where(eq(environments.projectId, project.id))

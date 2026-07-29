@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Environment } from "../api";
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
 import { CopyButton } from "../components/CopyButton";
@@ -109,6 +110,11 @@ export function ProjectPage({ me }: { me: Me }) {
                 environments.find((env) => env.key === environmentKey)?.name
               }
             />
+            <SdkFreshness
+              environment={environments.find(
+                (env) => env.key === environmentKey,
+              )}
+            />
           </div>
         </div>
         <div className="oc-page-header-actions">
@@ -152,6 +158,48 @@ export function ProjectPage({ me }: { me: Me }) {
       />
       {me.role === "admin" && <KeysSection projectKey={projectKey} />}
     </section>
+  );
+}
+
+const SDK_ACTIVE_MS = 10 * 60 * 1000;
+const SDK_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** LD-style connection signal: has any SDK asked this environment for flags,
+ *  and how recently. Counts come from /v1/eval bookkeeping. */
+function SdkFreshness({ environment }: { environment?: Environment }) {
+  if (!environment) return null;
+  if (!environment.lastEvalAt) {
+    return (
+      <span
+        className="oc-badge oc-badge-neutral"
+        data-tip="No SDK has requested flags from this environment yet"
+      >
+        No requests yet
+      </span>
+    );
+  }
+  const age = Date.now() - new Date(environment.lastEvalAt).getTime();
+  const tone =
+    age < SDK_ACTIVE_MS
+      ? "success"
+      : age < SDK_STALE_MS
+        ? "neutral"
+        : "warning";
+  const when =
+    age < 60_000
+      ? "just now"
+      : age < 3_600_000
+        ? `${Math.round(age / 60_000)}m ago`
+        : age < 86_400_000
+          ? `${Math.round(age / 3_600_000)}h ago`
+          : `${Math.round(age / 86_400_000)}d ago`;
+  return (
+    <span
+      className={`oc-badge oc-badge-${tone}`}
+      data-tip={`${environment.evalCount.toLocaleString()} eval requests total`}
+    >
+      SDK {when}
+    </span>
   );
 }
 

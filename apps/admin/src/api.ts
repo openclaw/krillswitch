@@ -67,7 +67,14 @@ export type EnvironmentKeyEntry = {
   evalKey: string;
 };
 
-export type Environment = { id: string; key: string; name: string };
+export type Environment = {
+  id: string;
+  key: string;
+  name: string;
+  /** SDK freshness (ISO timestamp of the newest /v1/eval request). */
+  lastEvalAt: string | null;
+  evalCount: number;
+};
 
 export type ProjectDetail = {
   project: Project;
