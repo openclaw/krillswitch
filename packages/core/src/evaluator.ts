@@ -1,4 +1,5 @@
 import { rolloutBucket } from "./hash";
+import { attributeRuleMatches } from "./operators";
 import type {
   EvalContext,
   FlagConfig,
@@ -13,14 +14,9 @@ function segmentMatches(segment: SegmentConfig, context: EvalContext): boolean {
   if (segment.contextKeys.includes(context.key)) {
     return true;
   }
-  const attributes = context.attributes;
-  if (!attributes) {
-    return false;
-  }
-  return segment.rules.some((rule) => {
-    const actual = attributes[rule.attribute];
-    return actual !== undefined && rule.values.includes(actual);
-  });
+  return segment.rules.some((rule) =>
+    attributeRuleMatches(rule, context.attributes),
+  );
 }
 
 function variationById(flag: FlagConfig, variationId: string): Variation {
@@ -69,8 +65,7 @@ const ruleMatch: EvaluationStep = (flag, context, segments) => {
       }
       continue;
     }
-    const actual = context.attributes?.[rule.attribute];
-    if (actual !== undefined && rule.values.includes(actual)) {
+    if (attributeRuleMatches(rule, context.attributes)) {
       return serve(flag, rule.variationId, {
         kind: "rule",
         attribute: rule.attribute,
