@@ -65,6 +65,13 @@ import {
   mintToken,
   revokeToken,
 } from "./tokens";
+import {
+  createWebhook,
+  deleteWebhook,
+  drainWebhooks,
+  listWebhooks,
+  setWebhookEnabled,
+} from "./webhooks";
 
 // One identity shape for both session users and access tokens. Handlers read
 // `actor` for change-log attribution and /me; only the session path also has a
@@ -268,6 +275,88 @@ adminRoutes.use("*", async (c, next) => {
     return c.json({ error: "no_access" }, 403);
   }
   await next();
+});
+
+// Webhook fan-out: any successful mutation may have appended change-log
+// entries; drain them to subscribers after the response is sent.
+adminRoutes.use("*", async (c, next) => {
+  await next();
+  const method = c.req.method;
+  if (method !== "GET" && method !== "HEAD" && c.res.status < 400) {
+    // Swallowed rejection: notify-only fan-out must never become a worker
+    // error (e.g. storage already torn down when the drain runs).
+    c.executionCtx.waitUntil(drainWebhooks(drizzle(c.env.DB)).catch(() => {}));
+  }
+});
+
+// --- Webhooks (admin-only): notify external systems of every change. ---
+
+const webhookCreateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  url: z.string().trim().url().max(500),
+});
+
+adminRoutes.get("/webhooks", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  return c.json({ webhooks: await listWebhooks(drizzle(c.env.DB)) });
+});
+
+adminRoutes.post("/webhooks", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = webhookCreateSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const actor = c.get("actor");
+  const id = await createWebhook(drizzle(c.env.DB), {
+    name: parsed.data.name,
+    url: parsed.data.url,
+    actor: { id: actor.id, name: actor.name },
+  });
+  return c.json({ created: id }, 201);
+});
+
+adminRoutes.patch("/webhooks/:id", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = z
+    .object({ enabled: z.boolean() })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const actor = c.get("actor");
+  const updated = await setWebhookEnabled(drizzle(c.env.DB), {
+    id: c.req.param("id"),
+    enabled: parsed.data.enabled,
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ enabled: parsed.data.enabled });
+});
+
+adminRoutes.delete("/webhooks/:id", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const actor = c.get("actor");
+  const deleted = await deleteWebhook(drizzle(c.env.DB), {
+    id: c.req.param("id"),
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ deleted: c.req.param("id") });
 });
 
 adminRoutes.get("/projects", async (c) => {

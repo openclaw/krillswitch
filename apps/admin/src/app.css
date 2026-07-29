@@ -3037,6 +3037,54 @@ h1 {
   white-space: nowrap;
 }
 
+/* Settings → Webhooks (admin). */
+.webhook-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.webhook-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.webhook-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.webhook-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.webhook-status {
+  font-size: 12px;
+}
+
+.webhook-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.webhook-name-input {
+  flex: 1 1 160px;
+}
+
+.webhook-url-input {
+  flex: 2 1 260px;
+}
+
 /* Settings → Appearance: the explicit three-way choice (the rail control
    only cycles the same setting). */
 .theme-picker {

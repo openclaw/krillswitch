@@ -14,6 +14,9 @@ export const ACTION_LABELS: Record<string, string> = {
   "key.rotate": "Key rotated",
   "token.mint": "Token minted",
   "token.revoke": "Token revoked",
+  "webhook.create": "Webhook added",
+  "webhook.update": "Webhook updated",
+  "webhook.delete": "Webhook removed",
 };
 
 export function actionLabel(action: string): string {

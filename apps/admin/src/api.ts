@@ -45,6 +45,16 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+export type Webhook = {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  lastStatus: string | null;
+  lastSentAt: string | null;
+  createdAt: string;
+};
+
 export type ChangeLogEntry = {
   id: string;
   actorUserId: string;
@@ -323,6 +333,23 @@ export const api = {
     request<{ entry: ChangeLogEntry }>(
       `/admin/changelog/${encodeURIComponent(id)}`,
     ),
+  webhooks: () => request<{ webhooks: Webhook[] }>("/admin/webhooks"),
+  createWebhook: (body: { name: string; url: string }) =>
+    request<{ created: string }>("/admin/webhooks", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  setWebhookEnabled: (id: string, enabled: boolean) =>
+    request<{ enabled: boolean }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }),
+  deleteWebhook: (id: string) =>
+    request<{ deleted: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
   users: (page?: PageParams) =>
     request<{ users: UserWithRole[]; total: number }>(
       `/admin/users${pageSuffix(page)}`,

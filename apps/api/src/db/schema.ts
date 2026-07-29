@@ -63,7 +63,10 @@ export type ChangeAction =
   | "environment.delete"
   | "key.rotate"
   | "token.mint"
-  | "token.revoke";
+  | "token.revoke"
+  | "webhook.create"
+  | "webhook.update"
+  | "webhook.delete";
 
 // Append-only audit trail; rows are written in the same D1 batch as the
 // mutation they describe and are never updated or deleted (retention is an
@@ -182,3 +185,18 @@ export const flagEnvironments = sqliteTable(
     ),
   ],
 );
+
+// Outbound notifications: every change-log entry is POSTed to each enabled
+// webhook. `cursor` is the change_log rowid already delivered; delivery is
+// notify-only (no retry queue), so the cursor advances even on failure and
+// last_status records the most recent result.
+export const webhooks = sqliteTable("webhooks", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  cursor: integer("cursor").notNull().default(0),
+  lastStatus: text("last_status"),
+  lastSentAt: integer("last_sent_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
