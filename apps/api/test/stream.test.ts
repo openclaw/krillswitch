@@ -84,9 +84,7 @@ describe("GET /v1/stream", () => {
       `https://krillswitch.test/v1/stream?key=${DEV_EVAL_KEY}`,
     );
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain(
-      "text/event-stream",
-    );
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
     const events = await readEvents(response, (e) => e.event === "hello");
     expect(events[0]?.event).toBe("hello");
     const payload = JSON.parse(events[0]?.data ?? "{}") as { version: number };
