@@ -6,6 +6,7 @@ import {
   evalKeys,
   flagEnvironments,
   flags,
+  projects,
   segments,
   variations,
 } from "./schema";
@@ -13,14 +14,20 @@ import {
 export async function resolveEvalEnvironment(
   db: DrizzleD1Database,
   evalKey: string,
-): Promise<{ environmentId: string; projectId: string } | null> {
+): Promise<{
+  environmentId: string;
+  projectId: string;
+  projectKey: string;
+} | null> {
   const row = await db
     .select({
       environmentId: evalKeys.environmentId,
       projectId: environments.projectId,
+      projectKey: projects.key,
     })
     .from(evalKeys)
     .innerJoin(environments, eq(evalKeys.environmentId, environments.id))
+    .innerJoin(projects, eq(environments.projectId, projects.id))
     .where(eq(evalKeys.key, evalKey))
     .get();
   return row ?? null;

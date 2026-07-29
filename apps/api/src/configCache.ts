@@ -12,6 +12,8 @@ import {
 
 export interface EnvironmentConfig {
   environmentId: string;
+  /** Change-log entries are project-keyed; the SSE stream versions by it. */
+  projectKey: string;
   flags: FlagConfig[];
   segments: SegmentMap;
 }
@@ -53,7 +55,12 @@ async function fetchEnvironmentConfig(
     loadFlagConfigs(sessionDb, resolved.environmentId),
     loadSegmentMap(sessionDb, resolved.projectId),
   ]);
-  return { environmentId: resolved.environmentId, flags, segments: segmentMap };
+  return {
+    environmentId: resolved.environmentId,
+    projectKey: resolved.projectKey,
+    flags,
+    segments: segmentMap,
+  };
 }
 
 export async function getEnvironmentConfig(
