@@ -1218,9 +1218,20 @@ input[type="radio"]:focus-visible {
 }
 
 .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   margin-bottom: 2px;
   color: var(--ink-muted);
+}
+
+/* Page title + environment badge on one line (see EnvBadge.tsx). */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .breadcrumb a {
@@ -1234,6 +1245,9 @@ input[type="radio"]:focus-visible {
 
 .flag-meta {
   margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .changelog-filters {
@@ -1370,7 +1384,8 @@ input[type="radio"]:focus-visible {
 }
 
 .flag-meta-sep {
-  margin: 0 7px;
+  /* .flag-meta's flex gap provides the spacing. */
+  margin: 0;
   color: var(--ink-faint);
 }
 
@@ -1770,7 +1785,8 @@ input[type="radio"]:focus-visible {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  width: min(560px, calc(100vw - 32px));
+  flex-wrap: wrap;
+  width: min(680px, calc(100vw - 32px));
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -1783,6 +1799,27 @@ input[type="radio"]:focus-visible {
   margin-right: auto;
   color: var(--ink);
   font-size: 13px;
+}
+
+/* Change-log comment ride-along: fills the room between status and actions,
+   wraps to its own line when the bar gets narrow. */
+.save-comment {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* Production guardrail dialog (GuardrailDialog.tsx). */
+.guardrail-env {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.guardrail-comment {
+  margin: 10px 0 4px;
 }
 
 .save-label-short {
@@ -2576,6 +2613,24 @@ h1 {
   min-height: 2rem;
   padding: var(--oc-space-1) var(--oc-space-3);
   font-size: var(--oc-font-size-xs);
+}
+
+/* Icon-only copy affordance next to keys; sized to sit inline with <code>
+   in table cells and page headers without stretching the line. */
+.oc-action.copy-button {
+  min-height: 0;
+  padding: 3px;
+  color: var(--ink-muted);
+}
+
+.oc-action.copy-button.is-copied {
+  color: var(--ok);
+}
+
+.copy-glyph {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
 /* --- Navigation footer identity ---

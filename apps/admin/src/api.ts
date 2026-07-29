@@ -55,6 +55,7 @@ export type ChangeLogEntry = {
   target: string;
   before: unknown;
   after: unknown;
+  comment: string | null;
   /** ISO timestamp (Date serialized over JSON). */
   createdAt: string;
 };
@@ -133,6 +134,8 @@ export type FlagCreateBody = {
 
 export type FlagUpdateBody = {
   enabled: boolean;
+  /** Optional operator note stored on the audit-log entry. */
+  comment?: string;
   variations: { id?: string; value: FlagValue; name: string | null }[];
   offVariationIndex: number;
   defaultVariationIndex: number;
@@ -239,13 +242,14 @@ export const api = {
     environmentKey: string,
     flagKey: string,
     enabled: boolean,
+    comment?: string,
   ) =>
     request<{ flag: FlagListEntry }>(
       `${flagsPath(projectKey, environmentKey)}/${encodeURIComponent(flagKey)}`,
       {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify(comment ? { enabled, comment } : { enabled }),
       },
     ),
   flagDetail: (projectKey: string, environmentKey: string, flagKey: string) =>

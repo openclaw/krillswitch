@@ -10,6 +10,7 @@ import {
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
 import { EmptyState } from "../components/EmptyState";
+import { EnvBadge } from "../components/EnvBadge";
 import { KeysSection } from "../components/KeysSection";
 import { BlockSkeleton, TableSkeleton } from "../components/Skeleton";
 import { TableFrame } from "../components/TableFrame";
@@ -91,7 +92,15 @@ export function ProjectPage({ me }: { me: Me }) {
           >
             {projectKey}
           </Link>
-          <h1>{project.name}</h1>
+          <div className="page-title-row">
+            <h1>{project.name}</h1>
+            <EnvBadge
+              envKey={environmentKey}
+              name={
+                environments.find((env) => env.key === environmentKey)?.name
+              }
+            />
+          </div>
         </div>
         <div className="oc-page-header-actions">
           <Select

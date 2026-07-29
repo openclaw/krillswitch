@@ -4,6 +4,9 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ApiError, api, type FlagDetail, type Me } from "../../api";
 import { ChevronDownIcon } from "../../components/brand";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { CopyButton } from "../../components/CopyButton";
+import { EnvBadge, isProductionEnv } from "../../components/EnvBadge";
+import { GuardrailDialog } from "../../components/GuardrailDialog";
 import { BlockSkeleton } from "../../components/Skeleton";
 import { Switch } from "../../components/Switch";
 import { type Draft, fromDraft, toDraft } from "./draft";
@@ -64,6 +67,10 @@ function FlagDetailEditor({
   // Captured from the same object that seeds `draft`, so its row ids line up.
   const [savedDraft, setSavedDraft] = useState<Draft>(() => draft);
   const [draftError, setDraftError] = useState<string | null>(null);
+  // Optional everywhere, required by the guardrail before production saves.
+  const [comment, setComment] = useState("");
+  const [guardOpen, setGuardOpen] = useState(false);
+  const isProduction = isProductionEnv(environmentKey);
 
   const isDirty = JSON.stringify(draft) !== JSON.stringify(savedDraft);
 
@@ -95,6 +102,8 @@ function FlagDetailEditor({
       const next = toDraft(updated);
       setDraft(next);
       setSavedDraft(next);
+      setComment("");
+      setGuardOpen(false);
       queryClient.setQueryData(
         ["flag", projectKey, environmentKey, flagKey],
         updated,
@@ -123,12 +132,28 @@ function FlagDetailEditor({
       return;
     }
     setDraftError(null);
-    save.mutate(converted.body);
+    if (isProduction) {
+      // Production goes through the guardrail: confirm + required comment.
+      setGuardOpen(true);
+      return;
+    }
+    save.mutate({ ...converted.body, comment: comment.trim() || undefined });
+  }
+
+  function onConfirmProductionSave() {
+    const converted = fromDraft(draft, detail.flag.kind);
+    if ("error" in converted) {
+      setDraftError(converted.error);
+      setGuardOpen(false);
+      return;
+    }
+    save.mutate({ ...converted.body, comment: comment.trim() || undefined });
   }
 
   function onDiscard() {
     setDraft(savedDraft);
     setDraftError(null);
+    setComment("");
     save.reset();
   }
 
@@ -147,11 +172,13 @@ function FlagDetailEditor({
             <Link to={`/projects/${projectKey}/${environmentKey}`}>
               {projectKey}
             </Link>
-            <span className="muted"> / {environmentKey}</span>
+            <span className="muted">/</span>
+            <EnvBadge envKey={environmentKey} />
           </nav>
           <h1>{detail.flag.name}</h1>
           <p className="flag-meta">
             <code>{detail.flag.key}</code>
+            <CopyButton value={detail.flag.key} label="flag key" />
             <span className="flag-meta-sep">·</span>
             <span className="badge-kind">{detail.flag.kind}</span>
           </p>
@@ -200,6 +227,19 @@ function FlagDetailEditor({
           )}
           <section className="save-bar" aria-label="Unsaved changes">
             <strong className="save-bar-status">Unsaved changes</strong>
+            <input
+              className="oc-input save-comment"
+              value={comment}
+              maxLength={500}
+              disabled={save.isPending}
+              placeholder={
+                isProduction
+                  ? "Comment (required for production)"
+                  : "Comment for the change log (optional)"
+              }
+              aria-label="Change log comment"
+              onChange={(event) => setComment(event.currentTarget.value)}
+            />
             <div className="save-actions">
               <button
                 type="button"
@@ -226,6 +266,18 @@ function FlagDetailEditor({
       {!readOnly && !isDirty && save.isSuccess && (
         <p className="muted save-ok">Saved. Live within a second.</p>
       )}
+      <GuardrailDialog
+        open={guardOpen}
+        onOpenChange={setGuardOpen}
+        environmentKey={environmentKey}
+        title="Save to production?"
+        description={`These changes to “${detail.flag.name}” go live for real traffic as soon as they save.`}
+        confirmLabel="Save to production"
+        comment={comment}
+        onCommentChange={setComment}
+        onConfirm={onConfirmProductionSave}
+        pending={save.isPending}
+      />
 
       <VariationsEditor
         kind={detail.flag.kind}
