@@ -55,21 +55,19 @@ export const THEME_LABELS: Record<ThemeMode, string> = {
 // Same cycle order as the carapace.design site switcher.
 const ORDER: ThemeMode[] = ["light", "dark", "system"];
 
-/** Single cycling theme control, matching the carapace.design site: one
- *  icon button showing the current mode, click advances light → dark →
- *  system. Candidate for upstreaming into Carapace as a shared component. */
+/** Single cycling theme control matching the shared Carapace primitive. */
 export function ThemeToggle({ theme }: { theme: ThemeControl }) {
   const next =
     ORDER[(ORDER.indexOf(theme.mode) + 1) % ORDER.length] ?? "system";
   return (
     <button
       type="button"
-      className="theme-control"
+      className="oc-theme-toggle"
       aria-label={`Color theme: ${THEME_LABELS[theme.mode]}. Activate to switch to ${THEME_LABELS[next].toLowerCase()}.`}
       data-tip={`${THEME_LABELS[theme.mode]} theme`}
       onClick={() => theme.setMode(next)}
     >
-      <span className="theme-control-icon">{THEME_ICONS[theme.mode]}</span>
+      <span className="oc-theme-toggle-icon">{THEME_ICONS[theme.mode]}</span>
     </button>
   );
 }

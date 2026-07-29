@@ -128,7 +128,7 @@ function AppearanceSection({ theme }: { theme: ThemeControl }) {
               checked={theme.mode === mode}
               onChange={() => theme.setMode(mode)}
             />
-            <span className="theme-control-icon">{THEME_ICONS[mode]}</span>
+            <span className="oc-theme-toggle-icon">{THEME_ICONS[mode]}</span>
             {THEME_LABELS[mode]}
           </label>
         ))}

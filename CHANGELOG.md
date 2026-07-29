@@ -4,6 +4,21 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.3.0] - 2026-07-29
+
+### Added
+
+- Complete Connect guidance with copyable SDK examples and live first-request status.
+
+### Fixed
+
+- Derive member roles consistently for Cloudflare Access identities and end Access sessions during sign-out.
+- Keep the light dashboard hero legible and table scroll edges visually flat.
+
+### Changed
+
+- Update to Carapace v0.6.0, use its plain identity badges and theme-toggle primitive, and consume the canonical OKLCH application themes without a copied local palette.
+
 ## [v0.2.0] - 2026-07-29
 
 ### Added
@@ -79,7 +94,9 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.3.0...HEAD
+[v0.3.0]: https://github.com/openclaw/krillswitch/compare/v0.2.0...v0.3.0
+[v0.2.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.2.0
 [v0.1.2]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.0

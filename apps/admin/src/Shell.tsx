@@ -167,7 +167,7 @@ export function Shell({
           <ThemeToggle theme={theme} />
           <button
             type="button"
-            className="theme-control nav-signout"
+            className="nav-signout"
             aria-label="Sign out"
             data-tip="Sign out"
             onClick={signOut}
