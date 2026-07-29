@@ -1125,13 +1125,12 @@ input[type="radio"]:focus-visible {
   width: 104px;
 }
 
-/* Inline per-row step chart (projects and flag tables). */
-.cell-spark {
-  display: block;
+/* Inline per-row step chart: tighter than oc-sparkline's default scale so
+   it sits inside fixed table columns. */
+.oc-sparkline.cell-spark {
   width: 90px;
   height: 16px;
   margin-bottom: 2px;
-  color: var(--ink-faint);
 }
 
 /* Key + copy button as one inline unit; the copy control lifts above the
@@ -1355,13 +1354,6 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-text);
-}
-
-.dateline-chart {
-  display: block;
-  width: 100%;
-  height: 44px;
-  color: var(--ink-faint);
 }
 
 .dateline-meta {
@@ -1895,22 +1887,11 @@ input[type="radio"]:focus-visible {
   margin-bottom: 10px;
 }
 
-/* Proportional split bar: see the distribution, not just read numbers. */
-.rollout-bar {
-  display: flex;
-  gap: 2px;
-  height: 10px;
+/* Proportional split bar: carapace oc-split with segment colors driven by
+   variationColor() so the bar matches the variation dots. */
+.oc-split.rollout-split {
   max-width: 480px;
   margin-bottom: 14px;
-  border-radius: var(--r-pill);
-  overflow: hidden;
-  background: var(--surface-muted);
-}
-
-/* Segment colors come inline from variationColor() so they match the dots. */
-.rollout-bar-seg {
-  min-width: 3px;
-  transition: flex-grow 150ms ease-out;
 }
 
 .rollout-weights {
@@ -2931,95 +2912,12 @@ h1 {
   display: none;
 }
 
-.palette-overlay {
-  display: grid;
-  justify-items: center;
-  align-items: start;
-  padding-top: 14vh;
-}
-
-.palette {
-  width: min(560px, calc(100vw - 32px));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  background: var(--surface-pop);
-  box-shadow: var(--shadow-pop);
-  overflow: hidden;
-}
-
-.palette-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
-}
-
-.palette-glyph {
-  width: 16px;
-  height: 16px;
-  color: var(--ink-faint);
-  flex-shrink: 0;
-}
-
-.palette-input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-size: 14px;
-  outline: none;
-}
-
-.palette-results {
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 5px;
-}
-
-.palette-empty {
-  margin: 0;
-  padding: 10px;
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-
-.palette-option {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  gap: 10px;
-  padding: 5px 9px;
-  border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--ink);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.palette-option.is-active {
-  background: var(--accent-soft);
-}
-
-.palette-option-label {
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.palette-option-hint {
-  margin-left: auto;
-  flex-shrink: 1;
-  min-width: 0;
-  color: var(--ink-muted);
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Palette surface comes from carapace (oc-command-palette on a native
+   <dialog>). Upstream bug workaround: the package sets display:flex on the
+   class, which outranks the UA's dialog:not([open]) { display:none }, so a
+   closed palette would render inline as a stray strip. */
+.oc-command-palette:not([open]) {
+  display: none;
 }
 
 /* Connect page: copyable snippets in a recessed mono block. */

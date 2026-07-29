@@ -357,8 +357,10 @@ export function RolloutEditor({
       {enabled && (
         <>
           {total > 0 && (
-            <div
-              className="rollout-bar"
+            <svg
+              className="oc-split rollout-split"
+              viewBox="0 0 100 8"
+              preserveAspectRatio="none"
               role="img"
               aria-label={`Traffic split: ${variations
                 .map(
@@ -369,22 +371,33 @@ export function RolloutEditor({
                 )
                 .join(", ")}`}
             >
-              {variations.map((variation, index) => {
-                const weight = weights[index] ?? 0;
-                if (weight <= 0) return null;
-                return (
-                  <span
-                    key={variation.id ?? `new-${index}`}
-                    className="rollout-bar-seg"
-                    style={{
-                      flexGrow: weight,
-                      backgroundColor: variationColor(index),
-                    }}
-                    title={`${variationLabel(variation, index)}: ${weight}%`}
-                  />
-                );
-              })}
-            </div>
+              {(() => {
+                let start = 0;
+                return variations.map((variation, index) => {
+                  const weight = weights[index] ?? 0;
+                  if (weight <= 0) return null;
+                  const x = (start / total) * 100;
+                  start += weight;
+                  return (
+                    <rect
+                      key={variation.id ?? `new-${index}`}
+                      className="oc-split-segment"
+                      x={x}
+                      y={0}
+                      width={(weight / total) * 100}
+                      height={8}
+                      style={
+                        {
+                          "--oc-chart-color": variationColor(index),
+                        } as React.CSSProperties
+                      }
+                    >
+                      <title>{`${variationLabel(variation, index)}: ${weight}%`}</title>
+                    </rect>
+                  );
+                });
+              })()}
+            </svg>
           )}
           <div className="rollout-weights">
             {variations.map((variation, index) => (

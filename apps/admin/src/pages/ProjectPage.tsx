@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ChangeLogEntry, Environment, EvalStatRow } from "../api";
+import type { Environment, EvalStatRow } from "../api";
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
 import { ChangeStream } from "../components/ChangeStream";

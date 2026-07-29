@@ -54,19 +54,22 @@ function stepPath(counts: number[], width: number, height: number): string {
     .join(" ");
 }
 
-/** Maintainer-report-style step chart. Inherits `currentColor` for the
- *  line; the last day gets an accent end marker. */
+/** Carapace `oc-sparkline`: the consumer (this component) computes the
+ *  stepped geometry; the package owns size, stroke, and tone. `size="lg"`
+ *  is the full-width dateline band. */
 export function Sparkline({
   counts,
   width = 640,
   height = 44,
   label,
+  size,
   className = "",
 }: {
   counts: number[];
   width?: number;
   height?: number;
   label: string;
+  size?: "lg";
   className?: string;
 }) {
   const max = Math.max(1, ...counts);
@@ -74,25 +77,20 @@ export function Sparkline({
   const lastY = height - 2 - (last / max) * (height - 6);
   return (
     <svg
-      className={`sparkline ${className}`}
+      className={`oc-sparkline ${className}`}
+      data-size={size}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
       role="img"
       aria-label={label}
     >
-      <path
-        d={stepPath(counts, width, height)}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        vectorEffect="non-scaling-stroke"
-      />
+      <path className="oc-sparkline-line" d={stepPath(counts, width, height)} />
       <rect
+        className="oc-sparkline-endpoint"
         x={width - Math.max(7, width / 90)}
         y={Math.min(lastY - 2, height - 4)}
         width={Math.max(7, width / 90)}
         height="4"
-        fill="var(--accent)"
       />
     </svg>
   );

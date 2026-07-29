@@ -36,7 +36,7 @@ function UsageChart({ stats }: { stats: EvalStatRow[] }) {
       <p className="dateline-label">Usage</p>
       <Sparkline
         counts={counts}
-        className="dateline-chart"
+        size="lg"
         label={`${totalRequests} eval requests in the last ${USAGE_DAYS} days`}
       />
       <div className="dateline-meta">
@@ -48,6 +48,25 @@ function UsageChart({ stats }: { stats: EvalStatRow[] }) {
         <span>{endLabel}</span>
       </div>
     </section>
+  );
+}
+
+/** Carapace oc-delta: last 7 days of requests vs the 7 before. Direction
+ *  tints only the arrow — traffic volume is not a value judgment. */
+function UsageDelta({ counts }: { counts: number[] }) {
+  const recent = counts.slice(-7).reduce((sum, count) => sum + count, 0);
+  const prior = counts.slice(-14, -7).reduce((sum, count) => sum + count, 0);
+  if (prior === 0 && recent === 0) return null;
+  const change =
+    prior === 0 ? 100 : Math.round(((recent - prior) / prior) * 100);
+  const direction = change >= 0 ? "up" : "down";
+  return (
+    <span className="oc-delta" data-direction={direction}>
+      <span className="oc-delta-arrow" aria-hidden="true">
+        {direction === "up" ? "▲" : "▼"}
+      </span>
+      {Math.abs(change)}% vs prior 7d
+    </span>
   );
 }
 
@@ -175,6 +194,7 @@ export function ProjectsPage({ me }: { me: Me }) {
                   .toLocaleString()}
               </strong>
               <small>Requests · 30d</small>
+              <UsageDelta counts={usageSeries(usage.data?.stats ?? [], 14)} />
             </span>
           </div>
         </div>

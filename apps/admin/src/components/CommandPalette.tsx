@@ -72,23 +72,19 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // Backdrop click closes (same pattern as Combobox: outside pointerdown,
-  // not an onClick on the overlay div, which trips a11y click rules).
+  // Native <dialog>: showModal owns focus trapping, Escape, and the
+  // ::backdrop the carapace palette styles.
   useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: PointerEvent) {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node)
-      ) {
-        onOpenChange(false);
-      }
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
+      dialog.close();
     }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open, onOpenChange]);
+  }, [open]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -184,47 +180,63 @@ export function CommandPalette({
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div className="modal-overlay palette-overlay">
-      <div className="palette" role="dialog" aria-label="Search" ref={panelRef}>
-        <div className="palette-field">
-          <SearchIcon className="palette-glyph" />
-          <input
-            ref={inputRef}
-            className="palette-input"
-            value={query}
-            placeholder="Search pages, projects, and flags…"
-            aria-label="Search pages, projects, and flags"
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={onKeyDown}
-          />
-          <kbd className="palette-kbd">esc</kbd>
-        </div>
-        <div className="palette-results" role="listbox" aria-label="Results">
-          {results.length === 0 && <p className="palette-empty">No matches.</p>}
-          {results.map((command, index) => (
-            <button
-              key={command.id}
-              type="button"
-              role="option"
-              aria-selected={index === activeIndex}
-              className={`palette-option ${index === activeIndex ? "is-active" : ""}`}
-              onMouseEnter={() => setActiveIndex(index)}
-              onClick={() => run(command)}
-            >
-              <span className="palette-option-label">{command.label}</span>
-              {command.hint && (
-                <span className="palette-option-hint">{command.hint}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    // biome-ignore lint/a11y/useKeyWithClickEvents: the click handler only detects backdrop hits; Escape already closes via the native dialog.
+    <dialog
+      ref={dialogRef}
+      className="oc-command-palette"
+      aria-label="Search"
+      onClose={() => onOpenChange(false)}
+      onClick={(event) => {
+        if (event.target === dialogRef.current) onOpenChange(false);
+      }}
+    >
+      {open && (
+        <>
+          <label className="oc-command-palette-search">
+            <SearchIcon />
+            <input
+              ref={inputRef}
+              value={query}
+              placeholder="Search pages, projects, and flags…"
+              aria-label="Search pages, projects, and flags"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onKeyDown={onKeyDown}
+            />
+            <kbd className="palette-kbd">esc</kbd>
+          </label>
+          <div className="oc-command-palette-results">
+            {results.length === 0 && (
+              <p className="oc-command-palette-empty">No matches.</p>
+            )}
+            <ul className="oc-command-palette-list">
+              {results.map((command, index) => (
+                <li key={command.id}>
+                  <button
+                    type="button"
+                    data-active={index === activeIndex ? "" : undefined}
+                    className="oc-command-palette-item"
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => run(command)}
+                  >
+                    <span className="oc-command-palette-item-label">
+                      {command.label}
+                    </span>
+                    {command.hint && (
+                      <span className="oc-command-palette-item-keys">
+                        {command.hint}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </dialog>
   );
 }
