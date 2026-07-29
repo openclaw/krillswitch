@@ -47,13 +47,33 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+/** Mirrors core's RuleOperator; `in` is the default when omitted. */
+export type RuleOperator =
+  | "in"
+  | "not_in"
+  | "contains"
+  | "starts_with"
+  | "ends_with"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "semver_gt"
+  | "semver_lt"
+  | "before"
+  | "after";
+
 export type Segment = {
   id: string;
   key: string;
   name: string;
   description: string | null;
   contextKeys: string[];
-  rules: { attribute: string; values: (string | number | boolean)[] }[];
+  rules: {
+    attribute: string;
+    operator?: RuleOperator;
+    values: (string | number | boolean)[];
+  }[];
   createdAt: string;
 };
 
@@ -61,7 +81,11 @@ export type SegmentBody = {
   name: string;
   description?: string | null;
   contextKeys: string[];
-  rules: { attribute: string; values: (string | number | boolean)[] }[];
+  rules: {
+    attribute: string;
+    operator?: RuleOperator;
+    values: (string | number | boolean)[];
+  }[];
 };
 
 /** One environment-day of eval traffic (day = epoch ms / 86400000). */
@@ -168,6 +192,7 @@ export type FlagDetail = {
       | {
           variationId: string;
           attribute: string;
+          operator?: RuleOperator;
           values: (string | number | boolean)[];
         }
       | { variationId: string; segment: string }
@@ -199,6 +224,7 @@ export type FlagUpdateBody = {
     | {
         variationIndex: number;
         attribute: string;
+        operator?: RuleOperator;
         values: (string | number | boolean)[];
       }
     | { variationIndex: number; segment: string }

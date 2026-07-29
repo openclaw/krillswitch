@@ -14,6 +14,49 @@ const flagValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 
 const attributeValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
+/** Mirrors core's RuleOperator. Comparison/date operators read a single
+ *  threshold, so they require exactly one value. */
+export const ruleOperatorSchema = z.enum([
+  "in",
+  "not_in",
+  "contains",
+  "starts_with",
+  "ends_with",
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "semver_gt",
+  "semver_lt",
+  "before",
+  "after",
+]);
+
+const SINGLE_VALUE_OPERATORS = new Set([
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "semver_gt",
+  "semver_lt",
+  "before",
+  "after",
+]);
+
+export function operatorValueError(rule: {
+  operator?: string;
+  values: unknown[];
+}): string | null {
+  if (
+    rule.operator !== undefined &&
+    SINGLE_VALUE_OPERATORS.has(rule.operator) &&
+    rule.values.length !== 1
+  ) {
+    return `operator ${rule.operator} compares against exactly one value`;
+  }
+  return null;
+}
+
 const variationDraftSchema = z.object({
   id: z.string().optional(),
   value: flagValueSchema,
@@ -41,6 +84,7 @@ export const flagDetailUpdateSchema = z
         z.object({
           variationIndex: z.number().int().nonnegative(),
           attribute: z.string().trim().min(1),
+          operator: ruleOperatorSchema.optional(),
           values: z.array(attributeValueSchema).min(1),
         }),
         z.object({
@@ -150,6 +194,14 @@ export function semanticError(
   }
   if (draft.rules.some((rule) => !inRange(rule.variationIndex))) {
     return "a rule references a removed variation";
+  }
+  for (const rule of draft.rules) {
+    if ("attribute" in rule) {
+      const valueError = operatorValueError(rule);
+      if (valueError) {
+        return valueError;
+      }
+    }
   }
   if (draft.rollout) {
     if (

@@ -3,6 +3,7 @@ import type {
   FlagKind,
   FlagUpdateBody,
   FlagValue,
+  RuleOperator,
 } from "../../api";
 
 export type VariationDraft = {
@@ -22,13 +23,26 @@ export type TargetDraft = {
 export type RuleDraft = {
   rowId: string;
   variationIndex: number;
-  /** Attribute rules match attribute∈values; segment rules match a
-   *  project segment by key. */
+  /** Attribute rules compare an attribute via operator; segment rules match
+   *  a project segment by key. */
   kind: "attribute" | "segment";
   attribute: string;
+  operator: RuleOperator;
   valuesRaw: string;
   segmentKey: string;
 };
+
+/** Comparison and date operators read a single threshold value. */
+export const SINGLE_VALUE_OPERATORS: ReadonlySet<RuleOperator> = new Set([
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "semver_gt",
+  "semver_lt",
+  "before",
+  "after",
+]);
 
 export function newRowId(): string {
   return crypto.randomUUID();
@@ -83,6 +97,7 @@ export function toDraft(detail: FlagDetail): Draft {
             variationIndex: indexOf(rule.variationId),
             kind: "segment" as const,
             attribute: "",
+            operator: "in" as const,
             valuesRaw: "",
             segmentKey: rule.segment,
           }
@@ -91,6 +106,7 @@ export function toDraft(detail: FlagDetail): Draft {
             variationIndex: indexOf(rule.variationId),
             kind: "attribute" as const,
             attribute: rule.attribute,
+            operator: rule.operator ?? "in",
             valuesRaw: rule.values.map(String).join(", "),
             segmentKey: "",
           },
@@ -193,9 +209,13 @@ export function fromDraft(
     if (values.length === 0) {
       return { error: "a rule has no values to match" };
     }
+    if (SINGLE_VALUE_OPERATORS.has(rule.operator) && values.length !== 1) {
+      return { error: "a comparison rule needs exactly one value" };
+    }
     rules.push({
       variationIndex: rule.variationIndex,
       attribute: rule.attribute.trim(),
+      operator: rule.operator,
       values,
     });
   }

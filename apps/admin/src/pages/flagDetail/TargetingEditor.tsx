@@ -5,9 +5,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Segment } from "../../api";
+import type { RuleOperator, Segment } from "../../api";
+import { OPERATOR_LABELS, OPERATOR_ORDER } from "../../operatorLabels";
 import type { RuleDraft, TargetDraft, VariationDraft } from "./draft";
-import { newRowId, variationLabel } from "./draft";
+import { newRowId, SINGLE_VALUE_OPERATORS, variationLabel } from "./draft";
 import { VariationDot, variationColor } from "./VariationDot";
 
 function VariationSelect({
@@ -192,6 +193,7 @@ export function RulesEditor({
                     variationIndex: 0,
                     kind: "attribute" as const,
                     attribute: "",
+                    operator: "in" as const,
                     valuesRaw: "",
                     segmentKey: "",
                   },
@@ -261,11 +263,35 @@ export function RulesEditor({
                   patch(index, { attribute: event.target.value })
                 }
               />
-              <span className="targeting-arrow muted">in</span>
+              <Select
+                value={rule.operator}
+                disabled={disabled}
+                onValueChange={(operator) =>
+                  patch(index, { operator: operator as RuleOperator })
+                }
+              >
+                <SelectTrigger
+                  aria-label={`Rule ${index + 1} operator`}
+                  className="w-[130px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPERATOR_ORDER.map((operator) => (
+                    <SelectItem key={operator} value={operator}>
+                      {OPERATOR_LABELS[operator]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <input
                 className="oc-input input-mono targeting-values"
                 aria-label={`Rule ${index + 1} values`}
-                placeholder="values, comma separated"
+                placeholder={
+                  SINGLE_VALUE_OPERATORS.has(rule.operator)
+                    ? "one value"
+                    : "values, comma separated"
+                }
                 value={rule.valuesRaw}
                 disabled={disabled}
                 onChange={(event) =>
@@ -308,6 +334,7 @@ export function RulesEditor({
                 variationIndex: 0,
                 kind: "attribute" as const,
                 attribute: "",
+                operator: "in" as const,
                 valuesRaw: "",
                 segmentKey: "",
               },
