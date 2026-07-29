@@ -64,6 +64,10 @@
   --surface: var(--oc-surface-card);
   --surface-muted: var(--oc-bg-surface);
   --surface-hover: var(--oc-control-bg-hover);
+  /* Floating menus need full opacity: --surface (oc-surface-card) is
+     deliberately translucent for resting cards, which lets table rows show
+     through popovers. */
+  --surface-pop: var(--oc-bg-elevated);
 
   --ink: var(--oc-text-primary);
   --ink-muted: var(--oc-text-secondary);
@@ -710,14 +714,6 @@ input[type="radio"]:focus-visible {
     drop-shadow(0 -0.7px 0 var(--brand-outline));
 }
 
-[data-theme="light"] .oc-app-navigation .brandmark-img-dark {
-  display: block;
-}
-
-[data-theme="light"] .oc-app-navigation .brandmark-img-light {
-  display: none;
-}
-
 /* Colophon under the auth card: quiet provenance line, carapace.design's
    "An OpenClaw project" footer in KrillSwitch clothes. */
 .auth-colophon {
@@ -1018,21 +1014,6 @@ input[type="radio"]:focus-visible {
 }
 
 /* Subtle count beside the page title (e.g. number of projects). */
-.title-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 7px;
-  border-radius: var(--oc-radius-control);
-  background: var(--surface-muted);
-  border: 1px solid var(--line);
-  color: var(--ink-muted);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .projects-search {
   width: 248px;
@@ -1255,6 +1236,116 @@ input[type="radio"]:focus-visible {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* --- Home hero (maintainer-reports recipe) ---
+   A deliberate dark band in both themes, krill artwork bleeding in from
+   the right behind a legibility gradient. */
+.page-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 32px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #0d0d10;
+}
+
+.page-hero-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+/* Scoped under .page-hero to keep specificity level with the auth-banner
+   img rules above (biome noDescendingSpecificity). */
+.page-hero .page-hero-backdrop img {
+  position: absolute;
+  top: 50%;
+  right: -4%;
+  width: 58%;
+  transform: translateY(-46%);
+  opacity: 0.5;
+}
+
+.page-hero-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgb(13 13 16 / 0.96) 34%,
+    rgb(13 13 16 / 0.55) 62%,
+    transparent 100%
+  );
+}
+
+.page-hero-content {
+  position: relative;
+  max-width: 60ch;
+}
+
+.page-hero-kicker {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* Fixed dark-band hero: the dark-theme ember reads on it in both themes. */
+  color: #f5654a;
+}
+
+.page-hero h1 {
+  margin: 0 0 8px;
+  color: #f5f5f6;
+}
+
+.page-hero-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(245 245 246 / 0.72);
+}
+
+/* --- Dateline (change activity step chart) --- */
+.dateline {
+  padding: 12px 18px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.dateline-label {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.dateline-chart {
+  display: block;
+  width: 100%;
+  height: 44px;
+  color: var(--ink-faint);
+}
+
+.dateline-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* Filter + primary action row under the hero. */
+.page-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
 }
 
 .breadcrumb a {
@@ -1555,7 +1646,7 @@ input[type="radio"]:focus-visible {
   list-style: none;
   max-height: 268px;
   overflow-y: auto;
-  background: var(--surface);
+  background: var(--surface-pop);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -1565,10 +1656,10 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 9px;
+  padding: 4px 8px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .combobox-option.is-active {
@@ -2761,6 +2852,21 @@ h1 {
 .nav-signout-glyph {
   width: 16px;
   height: 16px;
+}
+
+/* Rail header logo: wordmark when expanded, krill glyph when compact
+   (Carapace already hides -title in compact; we hide the glyph when the
+   wordmark is showing so the krill doesn't render twice). */
+.oc-app-frame[data-navigation="expanded"]
+  .oc-app-navigation-header
+  .oc-app-navigation-brand {
+  display: none;
+}
+
+.oc-app-navigation-title .brandmark-img {
+  /* Sizing only — the theme swap rules own display. */
+  height: 20px;
+  width: auto;
 }
 
 /* Compact rail: the collapse chevrons point back out, and the footer's

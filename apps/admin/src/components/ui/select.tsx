@@ -77,7 +77,7 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-start rounded-sm py-[7px] pl-[9px] pr-8 text-sm outline-none",
+        "relative flex w-full cursor-pointer select-none items-start rounded-sm py-1 pl-2 pr-8 text-[13px] outline-none",
         "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
