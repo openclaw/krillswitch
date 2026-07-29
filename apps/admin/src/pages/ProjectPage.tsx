@@ -1,4 +1,10 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import {
   Select,
@@ -9,10 +15,13 @@ import {
 } from "@/components/ui/select";
 import { api, type FlagListEntry, type Me } from "../api";
 import { ChevronRightIcon, LayersIcon, ListIcon } from "../components/brand";
+import { CopyButton } from "../components/CopyButton";
 import { EmptyState } from "../components/EmptyState";
-import { EnvBadge } from "../components/EnvBadge";
+import { EnvBadge, isProductionEnv } from "../components/EnvBadge";
+import { GuardrailDialog } from "../components/GuardrailDialog";
 import { KeysSection } from "../components/KeysSection";
 import { BlockSkeleton, TableSkeleton } from "../components/Skeleton";
+import { Switch } from "../components/Switch";
 import { TableFrame } from "../components/TableFrame";
 
 export function ProjectPage({ me }: { me: Me }) {
@@ -211,6 +220,8 @@ function FlagTable({
             <FlagRow
               key={flag.id}
               flag={flag}
+              projectKey={projectKey}
+              environmentKey={environmentKey}
               canEdit={canEdit}
               detailPath={detailPath(flag.key)}
             />
@@ -223,13 +234,59 @@ function FlagTable({
 
 function FlagRow({
   flag,
+  projectKey,
+  environmentKey,
   canEdit,
   detailPath,
 }: {
   flag: FlagListEntry;
+  projectKey: string;
+  environmentKey: string;
   canEdit: boolean;
   detailPath: string;
 }) {
+  const queryClient = useQueryClient();
+  const isProduction = isProductionEnv(environmentKey);
+  // Pending toggle direction while the production guardrail is open.
+  const [guardNext, setGuardNext] = useState<boolean | null>(null);
+  const [comment, setComment] = useState("");
+
+  const toggle = useMutation({
+    mutationFn: (input: { next: boolean; comment?: string }) =>
+      api.setFlagEnabled(
+        projectKey,
+        environmentKey,
+        flag.key,
+        input.next,
+        input.comment,
+      ),
+    onSuccess: ({ flag: updated }) => {
+      queryClient.setQueryData<{ flags: FlagListEntry[] }>(
+        ["flags", projectKey, environmentKey],
+        (current) =>
+          current && {
+            flags: current.flags.map((row) =>
+              row.id === updated.id ? updated : row,
+            ),
+          },
+      );
+      // The detail page seeds its draft from its own query; keep it fresh.
+      queryClient.invalidateQueries({
+        queryKey: ["flag", projectKey, environmentKey, flag.key],
+      });
+      setGuardNext(null);
+      setComment("");
+    },
+  });
+
+  function onToggle(next: boolean) {
+    if (isProduction) {
+      setGuardNext(next);
+      return;
+    }
+    toggle.mutate({ next });
+  }
+
   const stateWord = (
     <span className={`state-word ${flag.enabled ? "is-on" : ""}`}>
       {flag.enabled ? "On" : "Off"}
@@ -246,24 +303,63 @@ function FlagRow({
         )}
       </td>
       <td>
-        <code>{flag.key}</code>
+        <span className="key-cell row-control">
+          <code>{flag.key}</code>
+          <CopyButton value={flag.key} label={`${flag.key} flag key`} />
+        </span>
       </td>
       <td>
         <span className="badge-kind">{flag.kind}</span>
       </td>
       <td className="td-state">
         {canEdit ? (
-          <Link
-            className="state-change-link row-control"
-            to={detailPath}
-            aria-label={`Change ${flag.key}`}
-          >
-            {stateWord}
-            <ChevronRightIcon className="state-chevron" />
-          </Link>
+          <span className="row-state row-control">
+            <Switch
+              checked={flag.enabled}
+              disabled={toggle.isPending}
+              ariaLabel={`${flag.key} enabled in ${environmentKey}`}
+              onChange={onToggle}
+            />
+            <Link
+              className="state-change-link"
+              to={detailPath}
+              aria-label={`Open ${flag.key}`}
+            >
+              <ChevronRightIcon className="state-chevron" />
+            </Link>
+          </span>
         ) : (
           stateWord
         )}
+        {toggle.isError && (
+          <span className="toggle-error" role="alert">
+            Save failed — try again
+          </span>
+        )}
+        <GuardrailDialog
+          open={guardNext !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setGuardNext(null);
+              setComment("");
+            }
+          }}
+          environmentKey={environmentKey}
+          title={`Turn ${guardNext ? "on" : "off"} “${flag.name}” in production?`}
+          description={
+            guardNext
+              ? "Real traffic starts receiving this flag's enabled variations within a second."
+              : "Real traffic falls back to the off variation within a second."
+          }
+          confirmLabel={guardNext ? "Turn on" : "Turn off"}
+          comment={comment}
+          onCommentChange={setComment}
+          onConfirm={() =>
+            guardNext !== null &&
+            toggle.mutate({ next: guardNext, comment: comment.trim() })
+          }
+          pending={toggle.isPending}
+        />
       </td>
     </tr>
   );

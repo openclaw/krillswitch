@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 import { api } from "../api";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { CopyButton } from "./CopyButton";
 import { TableFrame } from "./TableFrame";
 
 /** Admin-only project panel: eval keys per environment + new environments. */
@@ -83,7 +84,13 @@ export function KeysSection({ projectKey }: { projectKey: string }) {
               <tr key={entry.environmentId}>
                 <td>{entry.environmentName}</td>
                 <td>
-                  <code>{entry.evalKey}</code>
+                  <span className="key-cell">
+                    <code>{entry.evalKey}</code>
+                    <CopyButton
+                      value={entry.evalKey}
+                      label={`${entry.environmentName} eval key`}
+                    />
+                  </span>
                 </td>
                 <td className="td-key-actions">
                   <div className="key-actions">

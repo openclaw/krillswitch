@@ -1120,8 +1120,30 @@ input[type="radio"]:focus-visible {
 
 .th-state,
 .td-state {
-  width: 104px;
+  width: 128px;
   white-space: nowrap;
+}
+
+/* Key + copy button as one inline unit; the copy control lifts above the
+   row's stretched link via .row-control on the wrapper. */
+.key-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+/* Inline flag toggle beside the open-detail chevron. */
+.row-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-error {
+  display: block;
+  font-size: 11px;
+  color: var(--danger);
 }
 
 /* Flags table: state is read-only; for editors it links to the flag page
