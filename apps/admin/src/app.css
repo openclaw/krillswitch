@@ -1037,6 +1037,11 @@ input[type="radio"]:focus-visible {
   white-space: nowrap;
 }
 
+/* Rollout-debt marker beside the last-change date. */
+.stale-badge {
+  margin-left: 6px;
+}
+
 @media (max-width: 720px) {
   /* Shares the row with the New-project button; flex-none + width:100%
      overflowed the row and pushed the input off the left edge. */

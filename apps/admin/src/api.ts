@@ -166,6 +166,8 @@ export type FlagListEntry = {
   lastChangedAt?: string | null;
   /** Archived flags hide from lists but keep serving evaluations. */
   archived?: boolean;
+  /** Permanent flags are exempt from staleness reporting. */
+  permanent?: boolean;
 };
 
 export type FlagDetail = {
@@ -176,6 +178,7 @@ export type FlagDetail = {
     kind: FlagKind;
     description: string | null;
     archived: boolean;
+    permanent: boolean;
   };
   variations: {
     id: string;
@@ -361,6 +364,15 @@ export const api = {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+      },
+    ),
+  setFlagPermanent: (projectKey: string, flagKey: string, permanent: boolean) =>
+    request<{ permanent: boolean }>(
+      `/admin/projects/${encodeURIComponent(projectKey)}/flags/${encodeURIComponent(flagKey)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ permanent }),
       },
     ),
   setFlagArchived: (projectKey: string, flagKey: string, archived: boolean) =>

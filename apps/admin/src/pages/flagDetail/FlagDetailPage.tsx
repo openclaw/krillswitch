@@ -141,20 +141,28 @@ function FlagDetailEditor({
     },
   });
 
+  const invalidateFlag = () => {
+    queryClient.invalidateQueries({
+      queryKey: ["flag", projectKey, environmentKey, flagKey],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["flags", projectKey, environmentKey],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["flag-history", projectKey, flagKey],
+    });
+  };
+
   const archive = useMutation({
     mutationFn: (archived: boolean) =>
       api.setFlagArchived(projectKey, flagKey, archived),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["flag", projectKey, environmentKey, flagKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["flags", projectKey, environmentKey],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["flag-history", projectKey, flagKey],
-      });
-    },
+    onSuccess: invalidateFlag,
+  });
+
+  const permanent = useMutation({
+    mutationFn: (next: boolean) =>
+      api.setFlagPermanent(projectKey, flagKey, next),
+    onSuccess: invalidateFlag,
   });
   const draftDisabled = readOnly || save.isPending;
 
@@ -217,6 +225,14 @@ function FlagDetailEditor({
             {detail.flag.archived && (
               <span className="oc-badge oc-badge-neutral">Archived</span>
             )}
+            {detail.flag.permanent && (
+              <span
+                className="oc-badge oc-badge-neutral"
+                data-tip="Exempt from staleness reporting"
+              >
+                Permanent
+              </span>
+            )}
           </p>
           {detail.flag.description && (
             <p className="muted flag-description">{detail.flag.description}</p>
@@ -246,6 +262,21 @@ function FlagDetailEditor({
               onClick={() => archive.mutate(!detail.flag.archived)}
             >
               {detail.flag.archived ? "Restore" : "Archive"}
+            </button>
+          )}
+          {!readOnly && (
+            <button
+              type="button"
+              className="oc-action oc-action-ghost"
+              disabled={permanent.isPending}
+              data-tip={
+                detail.flag.permanent
+                  ? "Temporary flags surface as stale once they sit unchanged"
+                  : "Kill switches and config knobs live forever; skip staleness reporting"
+              }
+              onClick={() => permanent.mutate(!detail.flag.permanent)}
+            >
+              {detail.flag.permanent ? "Mark temporary" : "Mark permanent"}
             </button>
           )}
           {me.role === "admin" && (

@@ -241,6 +241,56 @@ describe("flag archive", () => {
     });
     expect(response.status).toBe(403);
   });
+
+  it("marks a flag permanent and back, audits both, and lists expose it", async () => {
+    const cookie = await devLogin("editor");
+    const mark = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ permanent: true }),
+    });
+    expect(mark.status).toBe(200);
+    expect(await mark.json()).toEqual({ permanent: true });
+
+    const list = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags`,
+      { headers: { cookie } },
+    );
+    const { flags } = await list.json<{
+      flags: { key: string; permanent?: boolean }[];
+    }>();
+    expect(flags.find((flag) => flag.key === "souls")?.permanent).toBe(true);
+
+    const unmark = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ permanent: false }),
+    });
+    expect(unmark.status).toBe(200);
+
+    const log = await SELF.fetch(
+      `${BASE}/admin/changelog?flagKey=souls&projectKey=clawhub`,
+      { headers: { cookie } },
+    );
+    const entries = (await log.json<{ entries: { action: string }[] }>())
+      .entries;
+    expect(entries.some((entry) => entry.action === "flag.permanent")).toBe(
+      true,
+    );
+    expect(entries.some((entry) => entry.action === "flag.temporary")).toBe(
+      true,
+    );
+  });
+
+  it("rejects a PATCH carrying both lifecycle fields", async () => {
+    const cookie = await devLogin("editor");
+    const response = await SELF.fetch(archiveUrl, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ archived: true, permanent: true }),
+    });
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("flag toggle", () => {

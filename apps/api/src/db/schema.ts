@@ -58,6 +58,8 @@ export type ChangeAction =
   | "flag.create"
   | "flag.archive"
   | "flag.restore"
+  | "flag.permanent"
+  | "flag.temporary"
   | "flag.delete"
   | "role.set"
   | "project.create"
@@ -146,6 +148,11 @@ export const flags = sqliteTable(
     // Archived flags hide from admin lists but keep serving evaluations, so
     // archiving is always safe; deletion is the destructive step.
     archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    // Permanent flags (kill switches, config knobs) are exempt from
+    // staleness reporting; temporary flags are expected to be removed.
+    permanent: integer("permanent", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => [uniqueIndex("flags_project_key").on(table.projectId, table.key)],
 );
