@@ -44,6 +44,9 @@ export interface FeatureFlagProviderProps {
   attributes?: Record<string, AttributeValue>;
   /** Background poll cadence; idle polls are ~free via ETag/304. */
   pollIntervalMs?: number;
+  /** Subscribe to /v1/stream and refetch on its change events. Polling
+   *  stays on as the fallback; streams only shrink change latency. */
+  stream?: boolean;
   children: ReactNode;
 }
 
@@ -167,6 +170,7 @@ function createClient<M extends FlagManifest>(
       contextKey,
       attributes,
       pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+      stream = false,
       children,
     } = props;
     const anonymousKey = useRef<string | null>(null);
@@ -270,10 +274,21 @@ function createClient<M extends FlagManifest>(
       document.addEventListener("visibilitychange", onVisibilityChange);
       const pollTimer = setInterval(() => void refresh(), pollIntervalMs);
 
+      // Server pushes a version ping on config changes; the actual values
+      // still come from /v1/eval so evaluation stays context-personalized.
+      let eventSource: EventSource | null = null;
+      if (stream && typeof EventSource !== "undefined") {
+        eventSource = new EventSource(
+          `${baseUrl}/v1/stream?key=${encodeURIComponent(evalKey)}`,
+        );
+        eventSource.addEventListener("change", () => void refresh());
+      }
+
       return () => {
         disposed = true;
         activeController?.abort();
         clearInterval(pollTimer);
+        eventSource?.close();
         document.removeEventListener("visibilitychange", onVisibilityChange);
       };
     }, [
@@ -282,6 +297,7 @@ function createClient<M extends FlagManifest>(
       resolvedContextKey,
       attributesJson,
       pollIntervalMs,
+      stream,
       storageKey,
     ]);
 
