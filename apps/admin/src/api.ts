@@ -91,6 +91,11 @@ export type FlagListEntry = {
   kind: FlagKind;
   description: string | null;
   enabled: boolean;
+  /** Variation served while the flag is off (list rows only; the toggle
+   *  response omits it, so cache updates must merge, not replace). */
+  offVariation?: string | null;
+  /** Latest change-log timestamp for the flag (ISO), if any. */
+  lastChangedAt?: string | null;
 };
 
 export type FlagDetail = {

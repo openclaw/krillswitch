@@ -212,6 +212,7 @@ function FlagTable({
             <th>Name</th>
             <th>Key</th>
             <th>Kind</th>
+            <th className="th-last-change">Last change</th>
             <th className="th-state">State</th>
           </tr>
         </thead>
@@ -230,6 +231,16 @@ function FlagTable({
       </table>
     </TableFrame>
   );
+}
+
+function formatFlagChange(iso: string | null | undefined): string {
+  if (!iso) return "\u2014";
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function FlagRow({
@@ -266,7 +277,15 @@ function FlagRow({
         (current) =>
           current && {
             flags: current.flags.map((row) =>
-              row.id === updated.id ? updated : row,
+              row.id === updated.id
+                ? // Merge: the toggle response lacks list-only fields, and
+                  // the toggle itself is this flag's newest change.
+                  {
+                    ...row,
+                    ...updated,
+                    lastChangedAt: new Date().toISOString(),
+                  }
+                : row,
             ),
           },
       );
@@ -314,9 +333,17 @@ function FlagRow({
       <td>
         <span className="badge-kind">{flag.kind}</span>
       </td>
+      <td className="td-last-change muted">
+        {formatFlagChange(flag.lastChangedAt)}
+      </td>
       <td className="td-state">
         {canEdit ? (
-          <span className="row-state row-control">
+          <span
+            className="row-state row-control"
+            data-tip={
+              flag.offVariation ? `Off serves ${flag.offVariation}` : undefined
+            }
+          >
             <Switch
               checked={flag.enabled}
               disabled={toggle.isPending}

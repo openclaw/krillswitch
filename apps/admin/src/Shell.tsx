@@ -1,9 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { NavLink } from "react-router";
 import { api, type Me } from "./api";
 import {
   ChevronDownIcon,
+  ChevronsLeftIcon,
   ExitIcon,
   FolderIcon,
   GearIcon,
@@ -31,6 +32,13 @@ export function Shell({
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
+  // Rail width preference; Carapace owns the compact (icon-only) layout.
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("nav-mode") === "compact",
+  );
+  useEffect(() => {
+    localStorage.setItem("nav-mode", collapsed ? "compact" : "expanded");
+  }, [collapsed]);
 
   async function signOut() {
     await api.signOut();
@@ -38,13 +46,25 @@ export function Shell({
   }
 
   return (
-    <div className="oc-app-frame" data-navigation="expanded">
+    <div
+      className="oc-app-frame"
+      data-navigation={collapsed ? "compact" : "expanded"}
+    >
       <nav className="oc-app-navigation" aria-label="Main">
         <div className="oc-app-navigation-header">
           <span className="oc-app-navigation-brand" aria-hidden="true">
             <KrillMark />
           </span>
           <span className="oc-app-navigation-title">KrillSwitch</span>
+          <button
+            type="button"
+            className="oc-app-navigation-collapse"
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            aria-expanded={!collapsed}
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <ChevronsLeftIcon />
+          </button>
         </div>
         <NavLink to="/" end className="oc-app-navigation-context">
           <span className="oc-app-navigation-context-icon" aria-hidden="true">

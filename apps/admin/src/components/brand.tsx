@@ -109,6 +109,15 @@ export function CheckIcon({ className }: IconProps) {
   );
 }
 
+export function ChevronsLeftIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className} aria-hidden="true">
+      <path d="M11 17l-5-5 5-5" />
+      <path d="M18 17l-5-5 5-5" />
+    </svg>
+  );
+}
+
 export function ExitIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden="true">

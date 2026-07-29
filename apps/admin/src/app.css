@@ -766,14 +766,17 @@ input[type="radio"]:focus-visible {
     box-shadow var(--oc-duration-fast) var(--oc-ease-out);
 }
 
-/* --- Surface depth (carapace.design recipe) ---
-   Elevated bordered surfaces lift off the recessed canvas with the package
-   shadow scale: sm for resting cards and tables, md for panels and the auth
-   card, lg for popovers. */
-.oc-table-wrap,
-.oc-summary-strip,
-.oc-empty {
-  box-shadow: var(--oc-shadow-sm);
+/* Resting surfaces (tables, strips, empty states) sit flat on the canvas —
+   their border is enough. Shadows are reserved for things that float:
+   popovers, modals, and the save bar. */
+
+/* Tighter control scale for pointer input: Carapace's 2.5rem actions read
+   oversized in a dense console. Touch keeps the full tap target. */
+@media (pointer: fine) {
+  .oc-app-content .oc-action {
+    min-height: 2.25rem;
+    padding-block: var(--oc-space-1);
+  }
 }
 
 /* --- app shell --- */
@@ -976,10 +979,6 @@ input[type="radio"]:focus-visible {
   min-width: 100%;
 }
 
-.oc-table-wrap-changelog .oc-table {
-  min-width: 1040px;
-}
-
 /* Member profile audit table: When/Action fixed, Target takes the rest and
    ellipsizes (the row links through to the full entry). */
 .oc-table-wrap-audit .oc-table {
@@ -1117,6 +1116,13 @@ input[type="radio"]:focus-visible {
 .td-state {
   width: 128px;
   white-space: nowrap;
+}
+
+.th-last-change,
+.td-last-change {
+  width: 118px;
+  white-space: nowrap;
+  font-size: 12px;
 }
 
 /* Key + copy button as one inline unit; the copy control lifts above the
@@ -1615,8 +1621,14 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 34px;
+  /* Dense: two radios per row must not dominate the row height. */
+  min-height: 24px;
   font-size: 13px;
+}
+
+/* Variations rows read as a dense grid, not padded cards. */
+.variations-table td {
+  padding-block: var(--oc-space-2);
 }
 
 .serve-choice + .serve-choice {
@@ -2207,51 +2219,33 @@ tr.is-revoked td {
 
 /* --- change log --- */
 
+/* Also used by the member-profile audit table. */
 .td-when {
   white-space: nowrap;
   font-size: 12px;
   color: var(--ink-muted);
 }
 
-.changelog-table td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Fixed layout: keep timestamp/actor/action tight so the long target and
-   change columns get the remaining width instead of overflowing. */
-.changelog-table th:nth-child(1),
-.changelog-table td:nth-child(1) {
-  width: 150px;
-}
-.changelog-table th:nth-child(2),
-.changelog-table td:nth-child(2) {
-  width: 120px;
-}
-.changelog-table th:nth-child(3),
-.changelog-table td:nth-child(3) {
-  width: 168px;
-}
-.changelog-table th:nth-child(5),
-.changelog-table td:nth-child(5) {
-  width: 300px;
-}
-
 .td-action {
   font-weight: 500;
 }
 
-.td-change {
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Change log rendered as a Carapace log stream (oc-log-*): verb chip,
+   project/flag subsystem, message with inline before → after and comment.
+   Rows are links; the stream owns the mono styling. */
+.changelog-stream .oc-log-row {
+  /* Carapace's 7rem subsystem truncates project/flag pairs. */
+  grid-template-columns: auto 4.5rem 12rem minmax(0, 1fr);
+  color: inherit;
+  text-decoration: none;
 }
 
-.td-change code {
-  display: inline;
-  max-width: 100%;
-  font-size: 12px;
-  white-space: nowrap;
+.changelog-stream .oc-log-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
 }
 
 .change-before {
@@ -2262,12 +2256,6 @@ tr.is-revoked td {
 
 .change-after {
   color: var(--ink);
-}
-
-.change-sep {
-  margin: 0 6px;
-  color: var(--ink-faint);
-  font-size: 12px;
 }
 
 /* --- Change-log entry detail page: full target and before/after, no
@@ -2300,6 +2288,11 @@ tr.is-revoked td {
 @media (max-width: 768px) {
   /* Carapace already stacks the frame to a single column at this width; the
      old flex-direction override is gone with the flex layout it belonged to. */
+
+  /* The stacked mobile layout has no rail to collapse. */
+  .oc-app-navigation-collapse {
+    display: none;
+  }
 
   /* In the strip the logo sits inline, not as a full-width header box. */
   .oc-app-navigation-header {
@@ -2768,6 +2761,22 @@ h1 {
 .nav-signout-glyph {
   width: 16px;
   height: 16px;
+}
+
+/* Compact rail: the collapse chevrons point back out, and the footer's
+   avatar + icon controls stack in the 3.25rem column. */
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-collapse svg {
+  transform: rotate(180deg);
+}
+
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
+  flex-direction: column;
+  gap: var(--oc-space-2);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-identity {
+  flex: 0 0 auto;
+  grid-template-columns: auto;
 }
 
 /* Settings → Appearance: the explicit three-way choice (the rail control

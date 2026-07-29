@@ -7,7 +7,6 @@ import { Combobox, type ComboboxOption } from "../components/Combobox";
 import { EmptyState } from "../components/EmptyState";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
-import { TableFrame } from "../components/TableFrame";
 
 const PAGE_SIZE = 15;
 
@@ -115,13 +114,7 @@ export function ChangeLogPage() {
           />
         </div>
       </header>
-      {log.isPending && (
-        <TableSkeleton
-          columns={5}
-          rows={PAGE_SIZE}
-          frameClassName="oc-table-wrap-changelog"
-        />
-      )}
+      {log.isPending && <TableSkeleton columns={4} rows={PAGE_SIZE} />}
       {log.isError && <p role="alert">Failed to load the change log.</p>}
       {log.isSuccess &&
         entries.length === 0 &&
@@ -151,24 +144,11 @@ export function ChangeLogPage() {
         ))}
       {log.isSuccess && entries.length > 0 && (
         <>
-          <TableFrame className="oc-table-wrap-changelog">
-            <table className="oc-table changelog-table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Actor</th>
-                  <th>Action</th>
-                  <th>Target</th>
-                  <th>Change</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <ChangeRow key={entry.id} entry={entry} />
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+          <div className="oc-log-stream changelog-stream">
+            {entries.map((entry) => (
+              <ChangeRow key={entry.id} entry={entry} />
+            ))}
+          </div>
           <Pagination page={page} pageCount={pageCount} onPage={setPage} />
         </>
       )}
@@ -186,37 +166,44 @@ function formatWhen(timestamp: string): string {
   });
 }
 
+// The level chip is the action verb; destructive actions read as warnings.
+function logLevel(action: string): "warn" | "info" {
+  return /delete|revoke|rotate/.test(action) ? "warn" : "info";
+}
+
+function actionVerb(action: string): string {
+  return action.split(".").pop() ?? action;
+}
+
 function ChangeRow({ entry }: { entry: ChangeLogEntry }) {
+  const subsystem =
+    entry.projectKey && entry.flagKey
+      ? `${entry.projectKey}/${entry.flagKey}`
+      : (entry.projectKey ?? entry.target);
   return (
-    <tr className="row-link">
-      <td className="td-when muted">
-        <Link
-          className="row-link-plain row-stretch"
-          to={`/changelog/${encodeURIComponent(entry.id)}`}
-          aria-label={`View details: ${actionLabel(entry.action)} on ${entry.target}`}
-        >
-          {formatWhen(entry.createdAt)}
-        </Link>
-      </td>
-      <td>{entry.actorName}</td>
-      <td className="td-action">{actionLabel(entry.action)}</td>
-      <td>
-        <code title={entry.target}>{entry.target}</code>
-      </td>
-      <td className="td-change">
+    <Link
+      className="oc-log-row"
+      data-level={logLevel(entry.action)}
+      to={`/changelog/${encodeURIComponent(entry.id)}`}
+      aria-label={`View details: ${actionLabel(entry.action)} on ${entry.target}`}
+    >
+      <time className="oc-log-time">{formatWhen(entry.createdAt)}</time>
+      <span className="oc-log-level">{actionVerb(entry.action)}</span>
+      <span className="oc-log-subsystem" title={entry.target}>
+        {subsystem}
+      </span>
+      <span className="oc-log-message">
+        {actionLabel(entry.action)} — {entry.actorName}
         {entry.before !== null && (
           <code className="change-before">{JSON.stringify(entry.before)}</code>
-        )}
-        {entry.before !== null && entry.after !== null && (
-          <span className="muted change-sep">to</span>
         )}
         {entry.after !== null && (
           <code className="change-after">{JSON.stringify(entry.after)}</code>
         )}
         {entry.comment && (
-          <div className="change-comment muted">“{entry.comment}”</div>
+          <span className="change-comment">“{entry.comment}”</span>
         )}
-      </td>
-    </tr>
+      </span>
+    </Link>
   );
 }
