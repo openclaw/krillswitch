@@ -45,7 +45,12 @@ export function Shell({
   }, [collapsed]);
 
   async function signOut() {
-    await api.signOut();
+    await api.signOut().catch(() => {});
+    if (me.signOutUrl) {
+      // Access owns the session; only its logout endpoint ends it.
+      window.location.href = me.signOutUrl;
+      return;
+    }
     await queryClient.invalidateQueries({ queryKey: ["me"] });
   }
 

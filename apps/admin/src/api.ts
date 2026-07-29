@@ -3,6 +3,8 @@ export type AdminRole = "admin" | "editor" | "viewer";
 export type Me = {
   user: { id: string; name: string; email: string };
   role: AdminRole | null;
+  /** Cloudflare Access sessions sign out through this URL, not the app. */
+  signOutUrl?: string | null;
 };
 
 export type DevPersonaOption = {

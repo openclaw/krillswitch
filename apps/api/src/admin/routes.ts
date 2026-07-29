@@ -97,6 +97,9 @@ type AdminContext = {
   Variables: {
     actor: Actor;
     role: AdminRole | null;
+    /** Set when the session came from Cloudflare Access: app-level sign-out
+     *  cannot end it, only the Access logout endpoint can. */
+    accessSession: boolean;
   };
 };
 
@@ -223,6 +226,7 @@ adminRoutes.use("*", async (c, next) => {
 
   const accessUser = await cloudflareAccessUser(db, c.env, c.req.raw.headers);
   if (accessUser) {
+    c.set("accessSession", true);
     c.set("actor", {
       kind: "session",
       id: accessUser.id,
@@ -274,6 +278,8 @@ adminRoutes.get("/me", (c) => {
   return c.json({
     user: { id: actor.id, name: actor.name, email: actor.email },
     role: c.get("role"),
+    // Access-issued identities sign out through Cloudflare, not better-auth.
+    signOutUrl: c.get("accessSession") ? "/cdn-cgi/access/logout" : null,
   });
 });
 
@@ -550,7 +556,14 @@ adminRoutes.get("/users", async (c) => {
   const db = drizzle(c.env.DB);
   const { limit, offset } = parsePage(c);
   const [users, total] = await Promise.all([
-    listUsers(db, { limit, offset }),
+    listUsers(
+      db,
+      { limit, offset },
+      {
+        bootstrapAdminEmail: c.env.BOOTSTRAP_ADMIN_EMAIL,
+        githubViewerOrg: c.env.GITHUB_VIEWER_ORG,
+      },
+    ),
     countUsers(db),
   ]);
   return c.json({ users, total });
@@ -559,7 +572,10 @@ adminRoutes.get("/users", async (c) => {
 adminRoutes.get("/users/:userId", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
-  const member = await loadUser(drizzle(c.env.DB), c.req.param("userId"));
+  const member = await loadUser(drizzle(c.env.DB), c.req.param("userId"), {
+    bootstrapAdminEmail: c.env.BOOTSTRAP_ADMIN_EMAIL,
+    githubViewerOrg: c.env.GITHUB_VIEWER_ORG,
+  });
   if (!member) {
     return c.json({ error: "not_found" }, 404);
   }
