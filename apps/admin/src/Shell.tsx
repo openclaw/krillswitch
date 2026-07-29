@@ -29,13 +29,7 @@ function initials(name: string): string {
 
 /** Workspace/Administration link sections; rendered in the desktop rail and
  *  again inside the mobile menu (which closes itself via onNavigate). */
-function NavSections({
-  me,
-  onNavigate,
-}: {
-  me: Me;
-  onNavigate?: () => void;
-}) {
+function NavSections({ me, onNavigate }: { me: Me; onNavigate?: () => void }) {
   return (
     <>
       <section className="oc-app-navigation-section">
