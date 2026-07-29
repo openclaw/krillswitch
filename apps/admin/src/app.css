@@ -1038,8 +1038,12 @@ input[type="radio"]:focus-visible {
 }
 
 @media (max-width: 720px) {
+  /* Shares the row with the New-project button; flex-none + width:100%
+     overflowed the row and pushed the input off the left edge. */
   .projects-search {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 }
 
@@ -2449,11 +2453,13 @@ tr.is-revoked td {
     gap: 10px;
   }
 
+  /* One column per card: paired columns overlapped once the wide
+     last-change/state cells landed on the same grid row. */
   .oc-table-wrap-projects tr,
   .oc-table-wrap-flags tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
     padding: 14px;
     border: 1px solid var(--line);
     background: var(--surface);
@@ -2510,11 +2516,11 @@ tr.is-revoked td {
     content: "Flags";
   }
 
-  .oc-table-wrap-projects td:nth-child(4) {
-    grid-column: 1 / -1;
+  .oc-table-wrap-projects .td-activity::before {
+    content: "Usage";
   }
 
-  .oc-table-wrap-projects td:nth-child(4)::before {
+  .oc-table-wrap-projects td:nth-child(5)::before {
     content: "Last change";
   }
 
@@ -2526,13 +2532,35 @@ tr.is-revoked td {
     content: "Kind";
   }
 
-  .oc-table-wrap-flags td:nth-child(4)::before {
+  .oc-table-wrap-flags .td-last-change::before {
+    content: "Last change";
+  }
+
+  .oc-table-wrap-flags .td-state::before {
     content: "State";
+  }
+
+  /* The flag card's last-change row keeps the date; the 90px sparkline is
+     desktop texture and would fight the label for the narrow row. */
+  .oc-table-wrap-flags .td-last-change .cell-spark {
+    display: none;
   }
 
   .oc-table-wrap-flags .td-state,
   .oc-table-wrap-flags .th-state {
     width: auto;
+  }
+
+  /* Flag keys run long; stack the label above the key so the code never
+     wraps letter-by-letter against the label. */
+  .oc-table-wrap-flags td:nth-child(2) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .oc-table-wrap-flags td:nth-child(2) .key-cell code {
+    overflow-wrap: anywhere;
   }
 
   .cell-sub,
@@ -3416,4 +3444,222 @@ h1 {
 .oc-app-navigation-footer [data-tip]::after {
   left: auto;
   right: 0;
+}
+
+/* --- mobile navigation: brand strip + slide-over menu (MobileMenu in
+   Shell.tsx) ---
+   Kept after the compact rail rules on purpose: several selectors share
+   specificity with them, so cascade order is what lets the phone layout win
+   when the user left the rail collapsed on desktop. */
+
+/* Desktop: the phone-only header buttons stay out of the rail. */
+.mobile-nav-button {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.mobile-nav-button:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.mobile-nav-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Slide-over: right-anchored sheet over the standard dialog backdrop. The
+   :not([open]) guard mirrors the command palette — display:flex on the open
+   dialog would otherwise outrank the UA's closed-dialog hiding. */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  margin: 0 0 0 auto;
+  width: min(320px, 86vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.mobile-menu:not([open]) {
+  display: none;
+}
+
+.mobile-menu[open] {
+  display: flex;
+}
+
+.mobile-menu::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.mobile-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu-head .mobile-nav-button {
+  display: grid;
+}
+
+.mobile-menu-head .brandmark-img {
+  height: 20px;
+  width: auto;
+}
+
+.mobile-menu-body {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 18px;
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+
+.mobile-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  /* The rail reduces to a one-row brand strip; links, search bar, and the
+     footer all live in the slide-over instead. */
+  .nav-search,
+  .oc-app-navigation-body,
+  .oc-app-navigation-footer {
+    display: none;
+  }
+
+  /* Carapace only guarantees 32rem; short pages otherwise end in a band of
+     frame background under the content surface. */
+  .oc-app-frame {
+    min-height: 100dvh;
+  }
+
+  .oc-app-navigation {
+    grid-template-rows: auto;
+  }
+
+  .oc-app-navigation-header,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 8px 10px 8px 14px;
+  }
+
+  /* Wordmark only in the strip (Carapace re-shows -title at this width; our
+     compact rules would otherwise center the krill mark). */
+  .oc-app-navigation-header .oc-app-navigation-brand,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
+    display: none;
+  }
+
+  .oc-app-navigation-title {
+    margin-right: auto;
+  }
+
+  .mobile-nav-button {
+    display: grid;
+  }
+
+  /* Inside the slide-over the nav sections keep their vertical rail layout;
+     Carapace's stacked-strip rules would otherwise flow them horizontally.
+     Frame-qualified so these outrank the compact-rail hiding rules, which
+     also match inside the dialog. */
+  .oc-app-frame .mobile-menu .oc-app-navigation-section {
+    display: block;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-label {
+    display: block;
+    margin: 0 0 6px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-list {
+    display: grid;
+    width: auto;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-item {
+    min-height: 44px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-item-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-footer-copy {
+    display: grid;
+  }
+
+  .oc-app-frame .mobile-menu .nav-identity {
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Badge + long eval key + copy button share this row; wrapping beats
+     truncating the environment name. */
+  .flag-meta {
+    flex-wrap: wrap;
+  }
+
+  /* Eval-key and token tables keep their columns and scroll sideways;
+     letting them squeeze wraps the mono keys one character per line. */
+  .oc-table-wrap-keys,
+  .oc-table-wrap-tokens {
+    overflow-x: auto;
+  }
+
+  .oc-table-wrap-keys .key-cell code {
+    white-space: nowrap;
+  }
+
+  /* Log streams: drop the subsystem column and let messages wrap; the
+     12rem column plus inline before→after JSON overflows a phone. */
+  .changelog-stream .oc-log-row,
+  .changelog-stream-scoped .oc-log-row {
+    grid-template-columns: auto 4rem minmax(0, 1fr);
+  }
+
+  .changelog-stream .oc-log-subsystem {
+    display: none;
+  }
+
+  .changelog-stream .oc-log-message {
+    /* Carapace truncates to one line; phones wrap instead (nowrap inherits
+       into the before→after segments, which then clip mid-token). */
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
