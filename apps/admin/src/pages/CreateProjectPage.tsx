@@ -28,7 +28,7 @@ export function CreateProjectPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to="/">Projects</Link>
@@ -44,27 +44,27 @@ export function CreateProjectPage() {
           if (canSubmit) create.mutate();
         }}
       >
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-project-name">Name</label>
           <input
             id="new-project-name"
-            className="input"
+            className="oc-input"
             placeholder="ClawHub"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
         </div>
-        <div className="field">
+        <div className="oc-field">
           <label htmlFor="new-project-key">Key</label>
           <input
             id="new-project-key"
-            className="input input-mono"
+            className="oc-input input-mono"
             placeholder="e.g. clawhub"
             autoComplete="off"
             value={key}
             onChange={(event) => setKey(event.target.value)}
           />
-          <p className="field-hint">
+          <p className="oc-field-message">
             A short, lowercase identifier used in URLs, the API, and the CLI.
             It's permanent; the display name can change later.
           </p>
@@ -77,12 +77,12 @@ export function CreateProjectPage() {
         <div className="form-actions">
           <button
             type="submit"
-            className="btn btn-primary"
+            className="oc-action oc-action-primary"
             disabled={!canSubmit}
           >
             Create project
           </button>
-          <Link className="btn btn-quiet btn-link" to="/">
+          <Link className="oc-action oc-action-ghost btn-link" to="/">
             Cancel
           </Link>
         </div>

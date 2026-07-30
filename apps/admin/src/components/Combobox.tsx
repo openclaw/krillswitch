@@ -96,7 +96,7 @@ export function Combobox({
     <div className="combobox" ref={wrapRef}>
       <input
         ref={inputRef}
-        className="input combobox-input"
+        className="oc-input combobox-input"
         type="text"
         role="combobox"
         aria-label={ariaLabel}

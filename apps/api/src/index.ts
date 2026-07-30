@@ -10,6 +10,14 @@ import { adminRoutes } from "./admin/routes";
 import { createAuth } from "./auth/auth";
 import { isDevPersonaAuthEnabled } from "./auth/devAuth";
 import { getEnvironmentConfig } from "./configCache";
+import {
+  bearerToken,
+  evalBodyEtag,
+  matchesEtag,
+  recordEvalStats,
+} from "./evalShared";
+import { ofrepRoutes } from "./ofrep";
+import { streamRoutes } from "./stream";
 
 type Bindings = {
   DB: D1Database;
@@ -23,6 +31,11 @@ type Bindings = {
 const PUBLIC_EVAL_HOST = "flags.openclaw.ai";
 const ADMIN_HOST = "switch.openclaw.ai";
 const PUBLIC_EVAL_PATH = "/v1/eval";
+// OpenFeature Remote Evaluation Protocol lives on the same public
+// evaluation trust boundary as /v1/eval.
+const OFREP_PREFIX = "/ofrep/";
+// SSE change signal; GET because EventSource cannot POST.
+const PUBLIC_STREAM_PATH = "/v1/stream";
 
 const evalRequestSchema = z.object({
   context: z.object({
@@ -33,31 +46,6 @@ const evalRequestSchema = z.object({
   }),
 });
 
-/** Weak ETag over the serialized response so idle polls can 304. */
-function evalBodyEtag(serializedBody: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < serializedBody.length; i++) {
-    hash ^= serializedBody.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return `W/"${(hash >>> 0).toString(16)}"`;
-}
-
-function bearerToken(authorization: string | undefined): string | undefined {
-  const match = /^Bearer\s+(.+)$/i.exec(authorization ?? "");
-  const token = match?.[1]?.trim();
-  return token && token.length > 0 ? token : undefined;
-}
-
-function matchesEtag(header: string | undefined, etag: string): boolean {
-  return (
-    header
-      ?.split(",")
-      .map((value) => value.trim())
-      .some((value) => value === "*" || value === etag) ?? false
-  );
-}
-
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Production has two distinct trust boundaries. Keep the public evaluation
@@ -65,12 +53,18 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Access has a chance to protect the dashboard hostname.
 app.use("*", async (c, next) => {
   const hostname = new URL(c.req.url).hostname;
+  const isStreamPath = c.req.path === PUBLIC_STREAM_PATH;
+  const isEvalPath =
+    c.req.path === PUBLIC_EVAL_PATH ||
+    c.req.path.startsWith(OFREP_PREFIX) ||
+    isStreamPath;
   const isPublicEvalRequest =
-    c.req.path === PUBLIC_EVAL_PATH &&
-    (c.req.method === "POST" || c.req.method === "OPTIONS");
+    isEvalPath &&
+    (c.req.method === "OPTIONS" ||
+      c.req.method === (isStreamPath ? "GET" : "POST"));
   if (
     (hostname === PUBLIC_EVAL_HOST && !isPublicEvalRequest) ||
-    (hostname === ADMIN_HOST && c.req.path === PUBLIC_EVAL_PATH)
+    (hostname === ADMIN_HOST && isEvalPath)
   ) {
     return c.json({ error: "not_found" }, 404);
   }
@@ -93,6 +87,21 @@ app.use(
   }),
 );
 
+// OFREP clients (OpenFeature web SDKs) get the same open CORS policy.
+app.use(
+  "/ofrep/*",
+  cors({
+    origin: "*",
+    allowHeaders: ["authorization", "content-type", "if-none-match"],
+    // Browsers hide non-safelisted response headers on CORS requests;
+    // without this the SDK can never send If-None-Match.
+    exposeHeaders: ["ETag", "Server-Timing"],
+    // The public eval API has a stable CORS policy, so avoid a preflight
+    // round-trip on every browser poll.
+    maxAge: 86_400,
+  }),
+);
+
 // better-auth owns /api/auth/* (session lookup, sign-out, future providers).
 app.on(["GET", "POST"], "/api/auth/*", (c) => {
   const auth = createAuth(c.env, {
@@ -102,6 +111,8 @@ app.on(["GET", "POST"], "/api/auth/*", (c) => {
 });
 
 app.route("/admin", adminRoutes);
+app.route("/ofrep", ofrepRoutes);
+app.route("/", streamRoutes);
 
 app.post("/v1/eval", async (c) => {
   const requestStart = performance.now();
@@ -130,7 +141,11 @@ app.post("/v1/eval", async (c) => {
   const evalStart = performance.now();
   const evaluated: Record<string, FlagEvaluation> = {};
   for (const flagConfig of config.flags) {
-    evaluated[flagConfig.key] = evaluateFlag(flagConfig, context);
+    evaluated[flagConfig.key] = evaluateFlag(
+      flagConfig,
+      context,
+      config.segments,
+    );
   }
   const evalMs = performance.now() - evalStart;
 
@@ -143,6 +158,10 @@ app.post("/v1/eval", async (c) => {
       `total;dur=${(performance.now() - requestStart).toFixed(3)}`,
     ].join(", "),
   );
+
+  // SDK freshness bookkeeping happens after the response; a lost write only
+  // understates the count.
+  c.executionCtx.waitUntil(recordEvalStats(c.env.DB, config.environmentId));
 
   const body: EvalResponseBody = { flags: evaluated };
   const serialized = JSON.stringify(body);

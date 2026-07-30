@@ -22,7 +22,7 @@ function JsonBlock({
 }) {
   return (
     <div className="change-detail-block">
-      <span className="field-label">{label}</span>
+      <span className="oc-field-label">{label}</span>
       <pre className={`change-detail-json change-detail-json-${tone}`}>
         <code>{JSON.stringify(value, null, 2)}</code>
       </pre>
@@ -43,7 +43,7 @@ export function ChangeLogEntryPage() {
 
   return (
     <section>
-      <header className="page-header">
+      <header className="oc-page-header">
         <div>
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <Link to="/changelog">Change log</Link>
@@ -56,32 +56,38 @@ export function ChangeLogEntryPage() {
       {entryQuery.isError && <p role="alert">That entry no longer exists.</p>}
       {entry && (
         <div className="form-page">
-          <div className="field">
-            <span className="field-label">When</span>
+          <div className="oc-field">
+            <span className="oc-field-label">When</span>
             <span className="field-value">{formatWhen(entry.createdAt)}</span>
           </div>
-          <div className="field">
-            <span className="field-label">Actor</span>
+          <div className="oc-field">
+            <span className="oc-field-label">Actor</span>
             <span className="field-value">{entry.actorName}</span>
           </div>
+          {entry.comment && (
+            <div className="oc-field">
+              <span className="oc-field-label">Comment</span>
+              <span className="field-value">{entry.comment}</span>
+            </div>
+          )}
           {entry.projectKey && (
-            <div className="field">
-              <span className="field-label">Project</span>
+            <div className="oc-field">
+              <span className="oc-field-label">Project</span>
               <span className="field-value">
                 <code>{entry.projectKey}</code>
               </span>
             </div>
           )}
           {entry.flagKey && (
-            <div className="field">
-              <span className="field-label">Flag</span>
+            <div className="oc-field">
+              <span className="oc-field-label">Flag</span>
               <span className="field-value">
                 <code>{entry.flagKey}</code>
               </span>
             </div>
           )}
-          <div className="field">
-            <span className="field-label">Target</span>
+          <div className="oc-field">
+            <span className="oc-field-label">Target</span>
             <span className="field-value">
               <code className="change-detail-target">{entry.target}</code>
             </span>
@@ -93,7 +99,10 @@ export function ChangeLogEntryPage() {
             <JsonBlock label="After" value={entry.after} tone="after" />
           )}
           <div className="form-actions">
-            <Link className="btn btn-quiet btn-link" to="/changelog">
+            <Link
+              className="oc-action oc-action-ghost btn-link"
+              to="/changelog"
+            >
               Back to change log
             </Link>
           </div>

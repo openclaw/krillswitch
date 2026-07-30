@@ -1,5 +1,5 @@
 import { evaluateFlag, type FlagEvaluation } from "@openclaw/krillswitch-core";
-import { count, max } from "drizzle-orm";
+import { count, eq, gt, max } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
   type AdminRole,
   changeLog,
   environments,
+  evalStatsDaily,
   flags,
   projects,
   roleGrants,
@@ -39,6 +40,8 @@ import {
   createFlag,
   deleteFlag,
   loadFlagDetail,
+  setFlagArchived,
+  setFlagPermanent,
   updateFlagDetail,
 } from "./flagDetail";
 import {
@@ -58,12 +61,27 @@ import {
   setUserRole,
 } from "./management";
 import {
+  createSegment,
+  deleteSegment,
+  listSegments,
+  segmentBodySchema,
+  segmentCreateSchema,
+  updateSegment,
+} from "./segments";
+import {
   authenticateToken,
   countTokens,
   listTokens,
   mintToken,
   revokeToken,
 } from "./tokens";
+import {
+  createWebhook,
+  deleteWebhook,
+  drainWebhooks,
+  listWebhooks,
+  setWebhookEnabled,
+} from "./webhooks";
 
 // One identity shape for both session users and access tokens. Handlers read
 // `actor` for change-log attribution and /me; only the session path also has a
@@ -80,6 +98,9 @@ type AdminContext = {
   Variables: {
     actor: Actor;
     role: AdminRole | null;
+    /** Set when the session came from Cloudflare Access: app-level sign-out
+     *  cannot end it, only the Access logout endpoint can. */
+    accessSession: boolean;
   };
 };
 
@@ -206,6 +227,7 @@ adminRoutes.use("*", async (c, next) => {
 
   const accessUser = await cloudflareAccessUser(db, c.env, c.req.raw.headers);
   if (accessUser) {
+    c.set("accessSession", true);
     c.set("actor", {
       kind: "session",
       id: accessUser.id,
@@ -257,6 +279,8 @@ adminRoutes.get("/me", (c) => {
   return c.json({
     user: { id: actor.id, name: actor.name, email: actor.email },
     role: c.get("role"),
+    // Access-issued identities sign out through Cloudflare, not better-auth.
+    signOutUrl: c.get("accessSession") ? "/cdn-cgi/access/logout" : null,
   });
 });
 
@@ -267,6 +291,108 @@ adminRoutes.use("*", async (c, next) => {
     return c.json({ error: "no_access" }, 403);
   }
   await next();
+});
+
+// Webhook fan-out: any successful mutation may have appended change-log
+// entries; drain them to subscribers after the response is sent.
+adminRoutes.use("*", async (c, next) => {
+  await next();
+  const method = c.req.method;
+  if (method !== "GET" && method !== "HEAD" && c.res.status < 400) {
+    // Swallowed rejection: notify-only fan-out must never become a worker
+    // error (e.g. storage already torn down when the drain runs).
+    c.executionCtx.waitUntil(drainWebhooks(drizzle(c.env.DB)).catch(() => {}));
+  }
+});
+
+// --- Webhooks (admin-only): notify external systems of every change. ---
+
+const webhookCreateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  url: z.string().trim().url().max(500),
+});
+
+adminRoutes.get("/webhooks", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  return c.json({ webhooks: await listWebhooks(drizzle(c.env.DB)) });
+});
+
+adminRoutes.post("/webhooks", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = webhookCreateSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const actor = c.get("actor");
+  const id = await createWebhook(drizzle(c.env.DB), {
+    name: parsed.data.name,
+    url: parsed.data.url,
+    actor: { id: actor.id, name: actor.name },
+  });
+  return c.json({ created: id }, 201);
+});
+
+adminRoutes.patch("/webhooks/:id", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = z
+    .object({ enabled: z.boolean() })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const actor = c.get("actor");
+  const updated = await setWebhookEnabled(drizzle(c.env.DB), {
+    id: c.req.param("id"),
+    enabled: parsed.data.enabled,
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ enabled: parsed.data.enabled });
+});
+
+adminRoutes.delete("/webhooks/:id", async (c) => {
+  if (c.get("role") !== "admin") {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const actor = c.get("actor");
+  const deleted = await deleteWebhook(drizzle(c.env.DB), {
+    id: c.req.param("id"),
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ deleted: c.req.param("id") });
+});
+
+// Usage series for the console sparklines: per-environment daily eval
+// request counts, joined to keys so the client can slice by project or env.
+adminRoutes.get("/eval-stats", async (c) => {
+  const db = drizzle(c.env.DB);
+  const since = Math.floor(Date.now() / 86_400_000) - 30;
+  const rows = await db
+    .select({
+      projectKey: projects.key,
+      environmentKey: environments.key,
+      day: evalStatsDaily.day,
+      count: evalStatsDaily.count,
+    })
+    .from(evalStatsDaily)
+    .innerJoin(environments, eq(evalStatsDaily.environmentId, environments.id))
+    .innerJoin(projects, eq(environments.projectId, projects.id))
+    .where(gt(evalStatsDaily.day, since))
+    .all();
+  return c.json({ stats: rows });
 });
 
 adminRoutes.get("/projects", async (c) => {
@@ -431,7 +557,14 @@ adminRoutes.get("/users", async (c) => {
   const db = drizzle(c.env.DB);
   const { limit, offset } = parsePage(c);
   const [users, total] = await Promise.all([
-    listUsers(db, { limit, offset }),
+    listUsers(
+      db,
+      { limit, offset },
+      {
+        bootstrapAdminEmail: c.env.BOOTSTRAP_ADMIN_EMAIL,
+        githubViewerOrg: c.env.GITHUB_VIEWER_ORG,
+      },
+    ),
     countUsers(db),
   ]);
   return c.json({ users, total });
@@ -440,7 +573,10 @@ adminRoutes.get("/users", async (c) => {
 adminRoutes.get("/users/:userId", async (c) => {
   const forbidden = forbidNonAdmin(c);
   if (forbidden) return forbidden;
-  const member = await loadUser(drizzle(c.env.DB), c.req.param("userId"));
+  const member = await loadUser(drizzle(c.env.DB), c.req.param("userId"), {
+    bootstrapAdminEmail: c.env.BOOTSTRAP_ADMIN_EMAIL,
+    githubViewerOrg: c.env.GITHUB_VIEWER_ORG,
+  });
   if (!member) {
     return c.json({ error: "not_found" }, 404);
   }
@@ -691,7 +827,13 @@ adminRoutes.get(
     if (!environment) {
       return c.json({ error: "not_found" }, 404);
     }
-    return c.json({ flags: await loadFlagList(db, environment.environmentId) });
+    return c.json({
+      flags: await loadFlagList(
+        db,
+        environment.environmentId,
+        c.req.param("projectKey"),
+      ),
+    });
   },
 );
 
@@ -832,6 +974,152 @@ adminRoutes.post("/projects/:projectKey/flags", async (c) => {
   }
 });
 
+// --- Segments: reusable project-scoped audiences (editors may manage). ---
+
+adminRoutes.get("/projects/:projectKey/segments", async (c) => {
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json({ segments: await listSegments(db, projectId) });
+});
+
+adminRoutes.post("/projects/:projectKey/segments", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = segmentCreateSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const { key, ...draft } = parsed.data;
+  const outcome = await createSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key,
+    draft: { ...draft, description: draft.description ?? null },
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (outcome === "conflict") {
+    return c.json({ error: "conflict" }, 409);
+  }
+  clearConfigCache();
+  return c.json({ created: key }, 201);
+});
+
+adminRoutes.put("/projects/:projectKey/segments/:segmentKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = segmentBodySchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const updated = await updateSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key: c.req.param("segmentKey"),
+    draft: { ...parsed.data, description: parsed.data.description ?? null },
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  clearConfigCache();
+  return c.json({ updated: c.req.param("segmentKey") });
+});
+
+adminRoutes.delete("/projects/:projectKey/segments/:segmentKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const deleted = await deleteSegment(db, {
+    projectId,
+    projectKey: c.req.param("projectKey"),
+    key: c.req.param("segmentKey"),
+    actor: { id: actor.id, name: actor.name },
+  });
+  if (!deleted) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  clearConfigCache();
+  return c.json({ deleted: c.req.param("segmentKey") });
+});
+
+// One lifecycle field per PATCH: archived (reversible hide) or permanent
+// (staleness exemption). Both are editor-level; delete stays admin.
+const lifecycleFlagSchema = z
+  .object({
+    archived: z.boolean().optional(),
+    permanent: z.boolean().optional(),
+  })
+  .refine(
+    (body) => (body.archived === undefined) !== (body.permanent === undefined),
+    { message: "send exactly one of archived or permanent" },
+  );
+
+adminRoutes.patch("/projects/:projectKey/flags/:flagKey", async (c) => {
+  const role = c.get("role");
+  if (role === null || !canEditFlags(role)) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  const parsed = lifecycleFlagSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
+  if (!parsed.success) {
+    return c.json({ error: "invalid_request" }, 400);
+  }
+  const db = drizzle(c.env.DB);
+  const projectId = await resolveProjectId(db, c.req.param("projectKey"));
+  if (!projectId) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  const actor = c.get("actor");
+  const base = {
+    projectId,
+    flagKey: c.req.param("flagKey"),
+    actor: { id: actor.id, name: actor.name },
+    projectKey: c.req.param("projectKey"),
+  };
+  const updated =
+    parsed.data.archived !== undefined
+      ? await setFlagArchived(db, { ...base, archived: parsed.data.archived })
+      : await setFlagPermanent(db, {
+          ...base,
+          permanent: parsed.data.permanent ?? false,
+        });
+  if (!updated) {
+    return c.json({ error: "not_found" }, 404);
+  }
+  return c.json(parsed.data);
+});
+
 adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
   if (c.get("role") !== "admin") {
     return c.json({ error: "forbidden" }, 403);
@@ -855,7 +1143,10 @@ adminRoutes.delete("/projects/:projectKey/flags/:flagKey", async (c) => {
   return c.json({ deleted: c.req.param("flagKey") });
 });
 
-const toggleFlagSchema = z.object({ enabled: z.boolean() });
+const toggleFlagSchema = z.object({
+  enabled: z.boolean(),
+  comment: z.string().trim().max(500).optional(),
+});
 
 adminRoutes.patch(
   "/projects/:projectKey/environments/:environmentKey/flags/:flagKey",
@@ -887,6 +1178,7 @@ adminRoutes.patch(
       actor: { id: actor.id, name: actor.name },
       projectKey: c.req.param("projectKey"),
       environmentKey: c.req.param("environmentKey"),
+      comment: parsed.data.comment || undefined,
     });
     if (!flag) {
       return c.json({ error: "not_found" }, 404);

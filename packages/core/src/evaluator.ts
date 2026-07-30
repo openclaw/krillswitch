@@ -1,10 +1,23 @@
 import { rolloutBucket } from "./hash";
+import { attributeRuleMatches } from "./operators";
 import type {
   EvalContext,
   FlagConfig,
   FlagEvaluation,
+  SegmentConfig,
   Variation,
 } from "./types";
+
+export type SegmentMap = Record<string, SegmentConfig>;
+
+function segmentMatches(segment: SegmentConfig, context: EvalContext): boolean {
+  if (segment.contextKeys.includes(context.key)) {
+    return true;
+  }
+  return segment.rules.some((rule) =>
+    attributeRuleMatches(rule, context.attributes),
+  );
+}
 
 function variationById(flag: FlagConfig, variationId: string): Variation {
   const variation = flag.variations.find((v) => v.id === variationId);
@@ -28,6 +41,7 @@ function serve(
 type EvaluationStep = (
   flag: FlagConfig,
   context: EvalContext,
+  segments: SegmentMap,
 ) => FlagEvaluation | null;
 
 const offVariation: EvaluationStep = (flag) =>
@@ -38,18 +52,27 @@ const targetMatch: EvaluationStep = (flag, context) => {
   return target ? serve(flag, target.variationId, { kind: "target" }) : null;
 };
 
-const ruleMatch: EvaluationStep = (flag, context) => {
-  const attributes = context.attributes;
-  if (!attributes) {
-    return null;
+const ruleMatch: EvaluationStep = (flag, context, segments) => {
+  for (const rule of flag.rules) {
+    if ("segment" in rule) {
+      // Unknown segment keys (e.g. a deleted segment) never match.
+      const segment = segments[rule.segment];
+      if (segment && segmentMatches(segment, context)) {
+        return serve(flag, rule.variationId, {
+          kind: "segment",
+          segment: rule.segment,
+        });
+      }
+      continue;
+    }
+    if (attributeRuleMatches(rule, context.attributes)) {
+      return serve(flag, rule.variationId, {
+        kind: "rule",
+        attribute: rule.attribute,
+      });
+    }
   }
-  const rule = flag.rules.find((r) => {
-    const actual = attributes[r.attribute];
-    return actual !== undefined && r.values.includes(actual);
-  });
-  return rule
-    ? serve(flag, rule.variationId, { kind: "rule", attribute: rule.attribute })
-    : null;
+  return null;
 };
 
 // Placeholder split: serves the first weighted variation. Replaced by a
@@ -85,9 +108,10 @@ const steps: readonly EvaluationStep[] = [
 export function evaluateFlag(
   flag: FlagConfig,
   context: EvalContext,
+  segments: SegmentMap = {},
 ): FlagEvaluation {
   for (const step of steps) {
-    const result = step(flag, context);
+    const result = step(flag, context, segments);
     if (result) {
       return result;
     }

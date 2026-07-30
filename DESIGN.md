@@ -20,11 +20,24 @@ components — so both themes stay correct.
 
 ## CSS architecture
 
-Two layers on one token system:
+Three layers on one token system:
 
-- `app.css` — hand-authored CSS holding the OKLCH design tokens and all the
-  bespoke layout/component styles. This is the source of truth for the visual
-  language and global resets.
+- **Carapace** (`@openclaw/carapace`) — the shared OpenClaw design system, and
+  the source of truth for the `--oc-*` contract: tokens, light/dark themes,
+  typography, the stable component layer, and the candidate control, feedback,
+  data, and application layers. `app.css` imports it first, unlayered, so
+  everything below is an override rather than a transcription. Its `base.css`
+  is deliberately skipped because `app.css` owns the global resets.
+
+  Consume it, never copy it. If a value or a component box already exists
+  upstream, use the `oc-*` class and delete the local rule. Anything that stays
+  local should be a deliberate product delta with a comment saying why — brand
+  accent, rounded console chrome, the viewport-filling frame, fixed table
+  layout for long flag keys.
+- `app.css` — KrillSwitch's own layer: the brand overrides listed above, the
+  short aliases (`--bg`, `--ink`, `--accent`, …) that the Tailwind bridge and
+  existing components read, plus the layout and components Carapace has no peer
+  for (topbar, identity cluster, theme toggle, persona cards, auth screens).
 - Tailwind v4 (`index.css`, via `@tailwindcss/vite`) — utilities for new
   component work and the `shadcn/ui` primitives. Preflight is **not** imported
   (`app.css` owns resets; preflight's `* { margin: 0 }` would clobber existing
@@ -37,14 +50,21 @@ Two layers on one token system:
 `shadcn/ui` components live under `src/components/ui`, use the `@/` alias and
 the `cn()` helper (`clsx` + `tailwind-merge`), and are styled with the bridged
 tokens so they look native in both themes. `components.json` lets the CLI add
-more later.
+more later. Where Carapace has the matching control, compose onto it rather
+than restyling: the select trigger carries `oc-select` and keeps only the
+Radix-specific delta.
+
+Upgrading Carapace is a version bump in `apps/admin/package.json` (it installs
+from a Git tag, not npm). Because the console consumes the package rather than
+copying it, upstream fixes arrive with the bump.
 
 ## Color
 
 OKLCH, restrained strategy: layered neutral surfaces, one cobalt accent for
 primary actions/selection/focus, semantic state colors only where state
-exists. Cobalt (not OpenClaw red) stays the functional accent so red keeps
-meaning "destructive" and green keeps meaning "flag ON".
+exists. The KrillSwitch ember accent is pinned over Carapace's coral so the
+product keeps its identity; green still means "flag ON" and the danger tone
+still means destructive.
 
 Surface layering (three depths): `--bg` is the canvas, `--surface` is a raised
 panel/table/input that lifts off it with `--shadow-panel`, `--surface-muted`

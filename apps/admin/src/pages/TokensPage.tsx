@@ -39,16 +39,23 @@ export function TokensPage() {
 
   return (
     <section>
-      <header className="page-header">
-        <h1>Access tokens</h1>
-        <Link className="btn btn-primary btn-link" to="/access/tokens/new">
-          Mint token
-        </Link>
+      <header className="oc-page-header">
+        <div className="oc-page-header-content">
+          <h1 className="oc-page-header-title">Access tokens</h1>
+          <p className="oc-page-header-description">
+            Role-scoped tokens for the CLI and agents. Editor or viewer only,
+            never admin.
+          </p>
+        </div>
+        <div className="oc-page-header-actions">
+          <Link
+            className="oc-action oc-action-primary btn-link"
+            to="/access/tokens/new"
+          >
+            Mint token
+          </Link>
+        </div>
       </header>
-      <p className="section-hint">
-        Role-scoped tokens for the CLI and agents. Editor or viewer only, never
-        admin.
-      </p>
 
       {revoke.isError && (
         <p role="alert" className="save-error">
@@ -59,7 +66,7 @@ export function TokensPage() {
         <TableSkeleton
           columns={5}
           rows={PAGE_SIZE}
-          frameClassName="table-frame-tokens"
+          frameClassName="oc-table-wrap-tokens"
         />
       )}
       {tokensQuery.isError && <p role="alert">Failed to load tokens.</p>}
@@ -71,8 +78,8 @@ export function TokensPage() {
       )}
       {tokensQuery.isSuccess && tokens.length > 0 && (
         <>
-          <TableFrame className="table-frame-tokens">
-            <table className="data-table">
+          <TableFrame className="oc-table-wrap-tokens">
+            <table className="oc-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -105,7 +112,7 @@ export function TokensPage() {
                           trigger={
                             <button
                               type="button"
-                              className="btn btn-quiet"
+                              className="oc-action oc-action-secondary"
                               aria-label={`Revoke ${token.name}`}
                             >
                               Revoke

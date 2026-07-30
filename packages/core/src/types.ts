@@ -23,11 +23,44 @@ export interface UserTarget {
   contextKeys: string[];
 }
 
-/** Matches a context attribute against a value list (e.g. role in [admin]). */
-export interface TargetingRule {
-  variationId: string;
+/** How an attribute rule compares the context value against `values`.
+ *  Comparison and date operators use values[0]; list/string operators match
+ *  any entry. Stored rules without an operator are `in` — the shipped
+ *  shape predating operators. */
+export type RuleOperator =
+  | "in"
+  | "not_in"
+  | "contains"
+  | "starts_with"
+  | "ends_with"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "semver_gt"
+  | "semver_lt"
+  | "before"
+  | "after";
+
+export interface AttributeRule {
   attribute: string;
+  operator?: RuleOperator;
   values: AttributeValue[];
+}
+
+/** Matches a context attribute against a value list (e.g. role in [admin]),
+ *  or membership of a named project segment. Stored rules without a
+ *  `segment` field are attribute rules — the shipped shape. */
+export type TargetingRule =
+  | ({ variationId: string } & AttributeRule)
+  | { variationId: string; segment: string };
+
+/** Reusable, project-scoped audience: pinned context keys plus attribute
+ *  rules. A context is in the segment when either matches. */
+export interface SegmentConfig {
+  key: string;
+  contextKeys: string[];
+  rules: AttributeRule[];
 }
 
 export interface RolloutVariation {
@@ -64,6 +97,7 @@ export type EvalReason =
   | { kind: "off" }
   | { kind: "target" }
   | { kind: "rule"; attribute: string }
+  | { kind: "segment"; segment: string }
   | { kind: "rollout" }
   | { kind: "default" };
 

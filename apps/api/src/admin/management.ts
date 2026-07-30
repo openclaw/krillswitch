@@ -20,16 +20,41 @@ export type UserWithRole = {
   role: AdminRole | null;
 };
 
+/** Env-derived roles (bootstrap admin email, org viewer) must show in the
+ *  member list exactly as resolveRole grants them at request time —
+ *  otherwise the signed-in bootstrap admin reads as "no access". */
+function effectiveRole(
+  row: UserWithRole & { orgViewer: boolean | null },
+  env: RoleEnv,
+): UserWithRole {
+  const { orgViewer, ...entry } = row;
+  if (entry.role) return entry;
+  if (env.bootstrapAdminEmail && entry.email === env.bootstrapAdminEmail) {
+    return { ...entry, role: "admin" };
+  }
+  if (env.githubViewerOrg?.trim() && orgViewer) {
+    return { ...entry, role: "viewer" };
+  }
+  return entry;
+}
+
+export type RoleEnv = {
+  bootstrapAdminEmail: string | undefined;
+  githubViewerOrg: string | undefined;
+};
+
 export async function listUsers(
   db: DrizzleD1Database,
   page: { limit: number; offset: number },
+  env: RoleEnv,
 ): Promise<UserWithRole[]> {
-  return db
+  const rows = await db
     .select({
       id: user.id,
       name: user.name,
       email: user.email,
       role: roleGrants.role,
+      orgViewer: user.orgViewer,
     })
     .from(user)
     .leftJoin(roleGrants, eq(roleGrants.userId, user.id))
@@ -37,6 +62,7 @@ export async function listUsers(
     .limit(page.limit)
     .offset(page.offset)
     .all();
+  return rows.map((row) => effectiveRole(row, env));
 }
 
 export async function countUsers(db: DrizzleD1Database): Promise<number> {
@@ -47,6 +73,7 @@ export async function countUsers(db: DrizzleD1Database): Promise<number> {
 export async function loadUser(
   db: DrizzleD1Database,
   userId: string,
+  env: RoleEnv,
 ): Promise<UserWithRole | null> {
   const row = await db
     .select({
@@ -54,12 +81,13 @@ export async function loadUser(
       name: user.name,
       email: user.email,
       role: roleGrants.role,
+      orgViewer: user.orgViewer,
     })
     .from(user)
     .leftJoin(roleGrants, eq(roleGrants.userId, user.id))
     .where(eq(user.id, userId))
     .get();
-  return row ?? null;
+  return row ? effectiveRole(row, env) : null;
 }
 
 export type SetRoleOutcome = "ok" | "not_found" | "last_admin";

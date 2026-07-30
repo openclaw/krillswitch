@@ -4,6 +4,49 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.4.0] - 2026-07-29
+
+### Added
+
+- Serve OpenFeature Remote Evaluation Protocol (OFREP) single and bulk evaluations through the public Worker, including ETag and CORS support.
+- Support negation, string, numeric, semantic-version, and date operators in flag and segment targeting rules.
+- Stream configuration changes over server-sent events and let the React SDK opt in to immediate refetches when changes arrive.
+- Mark flags as permanent, surface stale temporary flags in the dashboard, and scan source trees for flag-key references with the CLI.
+
+### Fixed
+
+- Keep dashboard navigation and layouts usable in mobile webviews, including safe-area spacing and compact rule controls.
+
+## [v0.3.0] - 2026-07-29
+
+### Added
+
+- Complete Connect guidance with copyable SDK examples and live first-request status.
+
+### Fixed
+
+- Derive member roles consistently for Cloudflare Access identities and end Access sessions during sign-out.
+- Keep the light dashboard hero legible and table scroll edges visually flat.
+
+### Changed
+
+- Update to Carapace v0.6.0, use its plain identity badges and theme-toggle primitive, and consume the canonical OKLCH application themes without a copied local palette.
+
+## [v0.2.0] - 2026-07-29
+
+### Added
+
+- Production guardrail: saves and toggles in production require a confirm dialog with an audit comment; change-log entries carry optional operator comments end to end.
+- Segments: reusable project-scoped audiences (pinned context keys plus attribute rules) referenced from any flag's targeting rules, with typed `segment` evaluation reasons.
+- Flag archive lifecycle: archived flags leave the admin list but keep serving evaluations, with restore and full audit coverage.
+- Usage analytics: per-environment eval counters and daily request series power SDK-freshness badges, a home usage chart, and per-project and per-flag sparklines.
+- Webhooks: admin-managed URLs receive every change-log entry as JSON through a cursor-driven outbox drained after each mutation.
+- Command palette (⌘K) over pages, projects, and flags; a Connect page with copyable curl/JavaScript eval snippets and a live first-request status; scoped log-stream viewers on project and flag pages; a tabbed Settings page.
+
+### Changed
+
+- The admin console now consumes the Carapace design system (`@openclaw/carapace`) as a dependency — tokens, themes, and components — with a collapsible navigation rail, the krillswitch brand mark, environment and variation color identity, inline flag toggles, copy-first keys, and a LaunchDarkly-density visual pass across every page.
+
 ## [v0.1.2] - 2026-07-27
 
 ### Fixed
@@ -64,7 +107,10 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.4.0...HEAD
+[v0.4.0]: https://github.com/openclaw/krillswitch/compare/v0.3.0...v0.4.0
+[v0.3.0]: https://github.com/openclaw/krillswitch/compare/v0.2.0...v0.3.0
+[v0.2.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.2.0
 [v0.1.2]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/openclaw/krillswitch/releases/tag/v0.1.0

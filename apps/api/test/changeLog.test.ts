@@ -44,6 +44,7 @@ type LogEntry = {
   target: string;
   before: unknown;
   after: unknown;
+  comment: string | null;
 };
 
 async function fetchLog(cookie: string, query = ""): Promise<LogEntry[]> {
@@ -59,10 +60,13 @@ describe("change log writes", () => {
     const editor = await devLogin("editor");
     const admin = await devLogin("admin");
 
-    // flag.toggle
+    // flag.toggle (with an operator comment for the audit log)
     await SELF.fetch(
       `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
-      jsonInit(editor, "PATCH", { enabled: false }),
+      jsonInit(editor, "PATCH", {
+        enabled: false,
+        comment: "Pausing souls during incident drill",
+      }),
     );
     // flag.update (re-enable through the full editor)
     await SELF.fetch(
@@ -134,6 +138,13 @@ describe("change log writes", () => {
     ]) {
       expect(actions).toContain(expected);
     }
+
+    // Comments are stored with the entry and returned verbatim; entries
+    // written without one stay null.
+    const toggleEntry = entries.find((entry) => entry.action === "flag.toggle");
+    expect(toggleEntry?.comment).toBe("Pausing souls during incident drill");
+    const createEntry = entries.find((entry) => entry.action === "flag.create");
+    expect(createEntry?.comment).toBeNull();
 
     const toggle = entries.find((entry) => entry.action === "flag.toggle");
     expect(toggle).toMatchObject({

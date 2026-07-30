@@ -28,10 +28,18 @@ export function NoAccess({ me }: { me: Me }) {
             <p className="muted">Ask an administrator to grant access.</p>
           </div>
           <div className="auth-actions">
-            <button type="button" className="btn btn-primary" onClick={signOut}>
+            <button
+              type="button"
+              className="oc-action oc-action-primary"
+              onClick={signOut}
+            >
               Sign out
             </button>
-            <button type="button" className="btn btn-quiet" onClick={signOut}>
+            <button
+              type="button"
+              className="oc-action oc-action-secondary"
+              onClick={signOut}
+            >
               Back to persona picker
             </button>
           </div>

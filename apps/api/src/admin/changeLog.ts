@@ -13,6 +13,7 @@ export type ChangeEntry = {
   target: string;
   before?: JsonValue;
   after?: JsonValue;
+  comment?: string;
 };
 
 /**
@@ -30,6 +31,7 @@ export function changeLogInsert(db: DrizzleD1Database, entry: ChangeEntry) {
     target: entry.target,
     before: entry.before ?? null,
     after: entry.after ?? null,
+    comment: entry.comment ?? null,
     createdAt: new Date(),
   });
 }

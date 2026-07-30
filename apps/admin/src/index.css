@@ -18,7 +18,7 @@
   --color-foreground: var(--ink);
   --color-card: var(--surface);
   --color-card-foreground: var(--ink);
-  --color-popover: var(--surface);
+  --color-popover: var(--surface-pop);
   --color-popover-foreground: var(--ink);
   --color-primary: var(--accent);
   --color-primary-foreground: var(--accent-ink);

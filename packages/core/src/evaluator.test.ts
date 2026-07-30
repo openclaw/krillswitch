@@ -196,3 +196,55 @@ describe("evaluateFlag precedence", () => {
     });
   });
 });
+
+describe("segment rules", () => {
+  const flag: FlagConfig = {
+    ...theme,
+    rules: [
+      { variationId: "var_theme_dark", segment: "beta-testers" },
+      { variationId: "var_theme_system", attribute: "role", values: ["ops"] },
+    ],
+  };
+  const segments = {
+    "beta-testers": {
+      key: "beta-testers",
+      contextKeys: ["beta-user"],
+      rules: [{ attribute: "plan", values: ["beta"] }],
+    },
+  };
+
+  it("matches by segment context key", () => {
+    const result = evaluateFlag(flag, { key: "beta-user" }, segments);
+    expect(result.reason).toEqual({
+      kind: "segment",
+      segment: "beta-testers",
+    });
+    expect(result.value).toBe("dark");
+  });
+
+  it("matches by segment attribute rule", () => {
+    const result = evaluateFlag(
+      flag,
+      { key: "someone", attributes: { plan: "beta" } },
+      segments,
+    );
+    expect(result.reason).toEqual({
+      kind: "segment",
+      segment: "beta-testers",
+    });
+  });
+
+  it("falls through to later attribute rules when the segment misses", () => {
+    const result = evaluateFlag(
+      flag,
+      { key: "someone", attributes: { role: "ops" } },
+      segments,
+    );
+    expect(result.reason).toEqual({ kind: "rule", attribute: "role" });
+  });
+
+  it("an unknown or deleted segment never matches", () => {
+    const result = evaluateFlag(flag, { key: "beta-user" }, {});
+    expect(result.reason).toEqual({ kind: "default" });
+  });
+});

@@ -33,6 +33,8 @@ export type FlagDetail = {
     name: string;
     kind: FlagKind;
     description: string | null;
+    archived: boolean;
+    permanent: boolean;
   };
   variations: {
     id: string;
@@ -253,11 +255,16 @@ export async function updateFlagDetail(
       variationId: indexToId(target.variationIndex),
       contextKeys: target.contextKeys,
     })),
-    rules: draft.rules.map((rule) => ({
-      variationId: indexToId(rule.variationIndex),
-      attribute: rule.attribute,
-      values: rule.values,
-    })),
+    rules: draft.rules.map((rule) =>
+      "segment" in rule
+        ? { variationId: indexToId(rule.variationIndex), segment: rule.segment }
+        : {
+            variationId: indexToId(rule.variationIndex),
+            attribute: rule.attribute,
+            operator: rule.operator,
+            values: rule.values,
+          },
+    ),
     rollout: draft.rollout
       ? {
           variations: draft.rollout.variations.map((rolloutVariation) => ({
@@ -305,6 +312,7 @@ export async function updateFlagDetail(
       projectKey: options.projectKey,
       flagKey: options.flagKey,
       target: `${options.projectKey}/${options.environmentKey}/${options.flagKey}`,
+      comment: draft.comment || undefined,
       before: diff.before,
       after: diff.after,
     }),
@@ -408,6 +416,81 @@ export async function createFlag(
   ] as const;
   await db.batch([statements[0], ...statements.slice(1)]);
   return { kind: "ok" };
+}
+
+/** Reversible lifecycle step before deletion: archived flags leave admin
+ *  lists but keep serving evaluations, so SDKs never lose a value. */
+export async function setFlagArchived(
+  db: DrizzleD1Database,
+  options: {
+    projectId: string;
+    flagKey: string;
+    archived: boolean;
+    actor: Actor;
+    projectKey: string;
+  },
+): Promise<boolean> {
+  const flag = await loadFlagRow(db, options.projectId, options.flagKey);
+  if (!flag) {
+    return false;
+  }
+  if (flag.archived === options.archived) {
+    return true;
+  }
+  await db.batch([
+    db
+      .update(flags)
+      .set({ archived: options.archived })
+      .where(eq(flags.id, flag.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: options.archived ? "flag.archive" : "flag.restore",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.flagKey}`,
+      before: { archived: flag.archived },
+      after: { archived: options.archived },
+    }),
+  ]);
+  return true;
+}
+
+/** Lifecycle marking: permanent flags (kill switches, config knobs) are
+ *  exempt from staleness reporting; temporary is the default expectation
+ *  that a flag eventually leaves the codebase. */
+export async function setFlagPermanent(
+  db: DrizzleD1Database,
+  options: {
+    projectId: string;
+    flagKey: string;
+    permanent: boolean;
+    actor: Actor;
+    projectKey: string;
+  },
+): Promise<boolean> {
+  const flag = await loadFlagRow(db, options.projectId, options.flagKey);
+  if (!flag) {
+    return false;
+  }
+  if (flag.permanent === options.permanent) {
+    return true;
+  }
+  await db.batch([
+    db
+      .update(flags)
+      .set({ permanent: options.permanent })
+      .where(eq(flags.id, flag.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: options.permanent ? "flag.permanent" : "flag.temporary",
+      projectKey: options.projectKey,
+      flagKey: options.flagKey,
+      target: `${options.projectKey}/${options.flagKey}`,
+      before: { permanent: flag.permanent },
+      after: { permanent: options.permanent },
+    }),
+  ]);
+  return true;
 }
 
 export async function deleteFlag(

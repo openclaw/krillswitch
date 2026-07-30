@@ -1,78 +1,127 @@
+/* Carapace is the source of truth for the --oc-* contract: tokens, themes,
+   typography, and the stable plus candidate component layers. Import it
+   first so everything below is an override, never a transcription. base.css
+   is deliberately skipped — app.css owns the global resets (see index.css).
+   Imported unlayered so these rules sit alongside app.css in the cascade and
+   lose to the app rules that follow. */
+@import "@openclaw/carapace/tokens.css";
+@import "@openclaw/carapace/themes.css";
+@import "@openclaw/carapace/themes/product.css";
+@import "@openclaw/carapace/typography.css";
+@import "@openclaw/carapace/components.css";
+@import "@openclaw/carapace/candidate/controls.css";
+@import "@openclaw/carapace/candidate/feedback.css";
+@import "@openclaw/carapace/candidate/data.css";
+@import "@openclaw/carapace/candidate/application.css";
+
 /* ============================================================
-   Tokens — themeable. :root holds the light theme; the dark
-   theme overrides under [data-theme="dark"]. The resolved
-   theme is set on <html data-theme> by an inline script in
-   index.html (no flash) and kept in sync by useThemeMode.
-   Every surface, line, and control reads from a token so both
-   themes work with no hard-coded colors.
+   Tokens — themeable. Carapace themes.css supplies the --oc-*
+   palette for html[data-theme="light"|"dark"]; this file only
+   sets KrillSwitch brand identity and the short local aliases
+   existing components and the Tailwind bridge read from.
+   The resolved theme is set on <html data-theme> by an inline
+   script in index.html (no flash) and kept in sync by
+   useThemeMode.
    ============================================================ */
 
 :root {
   color-scheme: light;
 
-  /* Surface layering: canvas behind everything, raised panels
-     that lift off it, recessed chrome for nav and headers. */
-  --bg: oklch(0.967 0.004 250);
-  --surface: oklch(0.996 0.001 250);
-  --surface-muted: oklch(0.978 0.004 250);
-  --surface-hover: oklch(0.952 0.005 250);
+  /* KrillSwitch brand identity over the Carapace palette. Everything else
+     (spacing, type scale, surfaces, borders, shadows, motion) comes from the
+     imported tokens; only these carry product identity. */
+  --oc-accent-secondary: #14806e;
+  --oc-accent-secondary-deep: #0f6355;
+  --oc-surface-secondary-soft: rgb(20 128 110 / 0.13);
 
-  --ink: oklch(0.27 0.02 262);
-  --ink-muted: oklch(0.45 0.02 262);
-  /* Small uppercase labels and placeholders use --ink-faint; kept dark
-     enough to clear WCAG AA (≥4.5:1) on every surface, not a light gray. */
-  --ink-faint: oklch(0.52 0.018 262);
+  /* Brand accent. Carapace ships coral; KrillSwitch pins its own ember pair. */
+  --oc-accent-primary: #c24028;
+  --oc-accent-primary-hover: #9c3222;
+  --oc-accent-primary-deep: #9c3222;
+  --oc-text-link: #9c3222;
+
+  /* Rounded console chrome; Carapace leaves radius to the product. */
+  --oc-radius-surface: 0.5rem;
+  --oc-radius-control: 0.5rem;
+  --oc-radius-inset: 0.25rem;
+
+  /* Translucent card surfaces are local: Carapace only defines these in its
+     clawhub compat layer, which this app does not use. */
+  --oc-surface-card: rgb(255 255 255 / 0.8);
+  --oc-surface-card-strong: rgb(255 255 255 / 0.95);
+
+  /* Product type stack; Carapace ships fallback stacks, not font binaries. */
+  --oc-font-display: var(--font-ui);
+  --oc-font-body: var(--font-ui);
+  --oc-font-mono: var(--font-mono);
+
+  /* Local shadow aliases: Carapace names its elevation sm/md/lg. */
+  --oc-shadow-surface: var(--oc-shadow-sm);
+  --oc-shadow-elevated: var(--oc-shadow-md);
+  --oc-shadow-pop: var(--oc-shadow-lg);
+
+  --bg: var(--oc-bg-recessed);
+  --surface: var(--oc-surface-card);
+  --surface-muted: var(--oc-bg-surface);
+  --surface-hover: var(--oc-control-bg-hover);
+  /* Floating menus need full opacity: --surface (oc-surface-card) is
+     deliberately translucent for resting cards, which lets table rows show
+     through popovers. */
+  --surface-pop: var(--oc-bg-elevated);
+
+  --ink: var(--oc-text-primary);
+  --ink-muted: var(--oc-text-secondary);
+  --ink-faint: var(--oc-text-muted);
   /* Hairline outline that crisps the brand mark on the light surface. */
-  --brand-outline: oklch(0.27 0.05 262 / 0.5);
+  --brand-outline: rgb(23 23 26 / 0.5);
 
-  /* Cobalt accent. -fill backs primary buttons/active states,
-     -text is the accent-colored text on bg (kept ≥4.5:1),
-     -soft tints selected rows and active nav. */
-  --accent: oklch(0.54 0.2 262);
-  --accent-hover: oklch(0.48 0.21 262);
-  --accent-ink: oklch(0.99 0 0);
-  --accent-text: oklch(0.51 0.21 262);
-  --accent-soft: color-mix(in oklch, var(--accent), transparent 90%);
-  --accent-ring: color-mix(in oklch, var(--accent), transparent 50%);
+  --accent: var(--oc-accent-primary);
+  --accent-hover: var(--oc-accent-primary-hover);
+  --accent-ink: var(--oc-text-on-accent);
+  --accent-text: var(--oc-text-link);
+  --accent-soft: var(--oc-surface-accent-soft);
+  --accent-ring: var(--oc-focus-ring);
 
   /* viewer role accent (purple) */
-  --viewer: oklch(0.52 0.19 295);
-  --viewer-bg: color-mix(in oklch, var(--viewer), transparent 88%);
+  --viewer: #6f3db8;
+  --viewer-bg: rgb(111 61 184 / 0.12);
 
-  /* decorative backdrop: faint blue glow + dot grid */
-  --bg-glow: color-mix(in oklch, var(--accent), transparent 84%);
-  --dot: color-mix(in oklch, var(--ink) 9%, transparent);
-
-  --line: oklch(0.9 0.005 250);
-  --line-strong: oklch(0.83 0.007 250);
+  --line: var(--oc-border-subtle);
+  --line-strong: var(--oc-border-strong);
 
   /* State. -fg is the legible text/icon color, -bg the tint
      behind it. Off (flag, neutral) is never red. */
-  --ok: oklch(0.52 0.13 150);
-  --ok-bg: color-mix(in oklch, var(--ok), transparent 90%);
-  --warn: oklch(0.56 0.12 75);
-  --warn-bg: color-mix(in oklch, var(--warn), transparent 90%);
-  --danger: oklch(0.53 0.2 25);
-  --danger-bg: color-mix(in oklch, var(--danger), transparent 90%);
-  --danger-solid: oklch(0.53 0.2 25);
-  --danger-ink: oklch(0.99 0 0);
+  --ok: #166534;
+  --ok-bg: rgb(34 197 94 / 0.1);
+  --warn: #92400e;
+  --warn-bg: rgb(245 158 11 / 0.1);
+  --danger: #b91c1c;
+  --danger-bg: rgb(239 68 68 / 0.1);
+  --danger-solid: #dc2626;
+  --danger-ink: #ffffff;
 
   /* Controls (replace former hard-coded white). */
-  --control-track: oklch(0.82 0.012 255);
-  --control-knob: oklch(1 0 0);
-  --row-hover: oklch(0.964 0.005 255);
+  --control-track: rgb(23 23 26 / 0.2);
+  --control-knob: #ffffff;
+  --row-hover: var(--oc-surface-interactive);
+  --chrome-bg: #19191d;
+  --chrome-bg-hover: #24242a;
+  --chrome-bg-active: rgb(216 74 49 / 0.16);
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-text: #f4f1ea;
+  --chrome-muted: #aaa7a0;
+  --chrome-accent: #ff8d77;
 
-  --shadow-sm: 0 1px 2px oklch(0.2 0.02 262 / 0.06);
-  --shadow-panel:
-    0 1px 2px oklch(0.2 0.02 262 / 0.05),
-    0 4px 14px -6px oklch(0.2 0.02 262 / 0.08);
-  --shadow-pop:
-    0 10px 30px -8px oklch(0.2 0.02 262 / 0.18), 0 0 0 1px var(--line);
+  --shadow-sm: var(--oc-shadow-surface);
+  /* carapace.design depth: raised panels carry the md elevation instead of
+     sitting flat on the recessed canvas. */
+  --shadow-panel: var(--oc-shadow-md);
+  --shadow-pop: var(--oc-shadow-pop), 0 0 0 1px var(--line);
 
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 11px;
-  --r-pill: 999px;
+  --r-sm: var(--oc-radius-control);
+  --r-md: var(--oc-radius-surface);
+  --r-lg: var(--oc-radius-surface);
+  --r-pill: var(--oc-radius-round);
 
   --font-ui: "Manrope", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
@@ -89,48 +138,42 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: oklch(0.2 0.013 262);
-  --surface: oklch(0.245 0.015 262);
-  --surface-muted: oklch(0.175 0.012 262);
-  --surface-hover: oklch(0.29 0.016 262);
+  /* Dark palette comes from Carapace themes.css; only the brand secondary,
+     which Carapace does not define, is set per theme here. */
+  --oc-accent-primary: #f5654a;
+  --oc-accent-primary-hover: #e05540;
+  --oc-accent-primary-deep: #b23a28;
+  --oc-text-link: #ff8d77;
+  --oc-accent-secondary: #4fc8ae;
+  --oc-accent-secondary-deep: #2fa48d;
+  --oc-surface-secondary-soft: rgb(79 200 174 / 0.14);
+  --oc-surface-card: rgb(25 25 28 / 0.72);
+  --oc-surface-card-strong: rgb(25 25 28 / 0.9);
 
-  --ink: oklch(0.95 0.004 262);
-  --ink-muted: oklch(0.73 0.013 262);
-  --ink-faint: oklch(0.66 0.013 262);
+  --viewer: #c4a0ff;
+  --viewer-bg: rgb(196 160 255 / 0.16);
 
-  --accent: oklch(0.62 0.19 262);
-  --accent-hover: oklch(0.68 0.18 262);
-  --accent-ink: oklch(0.99 0 0);
-  --accent-text: oklch(0.8 0.13 262);
-  --accent-soft: color-mix(in oklch, var(--accent), transparent 82%);
-  --accent-ring: color-mix(in oklch, var(--accent), transparent 40%);
+  --ok: #22c55e;
+  --ok-bg: rgb(34 197 94 / 0.12);
+  --warn: #fbbf24;
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --danger: #fca5a5;
+  --danger-bg: rgb(239 68 68 / 0.12);
+  --danger-solid: #ef4444;
+  --danger-ink: #101012;
 
-  --viewer: oklch(0.76 0.15 298);
-  --viewer-bg: color-mix(in oklch, var(--viewer), transparent 84%);
+  --accent-text: #ff9b87;
 
-  --bg-glow: color-mix(in oklch, var(--accent), transparent 88%);
-  --dot: color-mix(in oklch, var(--ink) 12%, transparent);
-
-  --line: oklch(1 0 0 / 0.1);
-  --line-strong: oklch(1 0 0 / 0.18);
-
-  --ok: oklch(0.74 0.15 150);
-  --ok-bg: color-mix(in oklch, var(--ok), transparent 86%);
-  --warn: oklch(0.8 0.13 82);
-  --warn-bg: color-mix(in oklch, var(--warn), transparent 86%);
-  --danger: oklch(0.69 0.19 25);
-  --danger-bg: color-mix(in oklch, var(--danger), transparent 84%);
-  --danger-solid: oklch(0.55 0.2 25);
-  --danger-ink: oklch(0.99 0 0);
-
-  --control-track: oklch(0.42 0.015 262);
-  --control-knob: oklch(0.93 0.004 262);
-  --row-hover: oklch(0.29 0.016 262);
-
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
-  --shadow-panel:
-    0 1px 2px oklch(0 0 0 / 0.45), 0 8px 22px -8px oklch(0 0 0 / 0.55);
-  --shadow-pop: 0 14px 36px -10px oklch(0 0 0 / 0.65), 0 0 0 1px var(--line);
+  --control-track: rgb(237 237 237 / 0.2);
+  --control-knob: #ededed;
+  --row-hover: var(--oc-surface-interactive);
+  --chrome-bg: #202024;
+  --chrome-bg-hover: #2a2a30;
+  --chrome-bg-active: rgb(245 101 74 / 0.14);
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-text: #f4f1ea;
+  --chrome-muted: #aaa7a0;
+  --chrome-accent: #ff9b87;
 }
 
 * {
@@ -141,41 +184,27 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 400 15px / 1.55 var(--font-ui);
-  letter-spacing: -0.005em;
+  font: 400 14px / 1.55 var(--font-ui);
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Decorative backdrop behind the whole app: a faint blue glow (top-right)
-   plus a dot grid, masked to fade toward the edges. */
+body {
+  background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--bg), white 2%),
+      var(--bg)
+    )
+    fixed;
+}
+
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background: radial-gradient(
-    70rem 52rem at 78% -10%,
-    var(--bg-glow),
-    transparent 62%
-  );
+  content: none;
 }
 
 body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
-  background-size: 26px 26px;
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 36%,
-    #000 38%,
-    transparent 85%
-  );
-  mask-image: radial-gradient(circle at 50% 36%, #000 38%, transparent 85%);
+  content: none;
 }
 
 code {
@@ -185,9 +214,9 @@ code {
 }
 
 h1 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.022em;
+  letter-spacing: 0;
   margin: 0;
 }
 
@@ -197,7 +226,9 @@ h1 {
 
 /* Native checkbox/radio tied to the cobalt accent in both themes
    (variation default/off, rollout + enabled toggles). */
-input[type="checkbox"],
+/* :not(.oc-switch) keeps this off Carapace's switch, whose own sizing an
+   element+attribute selector would otherwise outrank. */
+input[type="checkbox"]:not(.oc-switch),
 input[type="radio"] {
   accent-color: var(--accent);
   width: 15px;
@@ -227,117 +258,40 @@ input[type="radio"]:focus-visible {
 
 /* --- buttons --- */
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 13px;
-  border-radius: var(--r-sm);
-  font: 500 14px var(--font-ui);
-  letter-spacing: -0.005em;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    border-color 150ms ease-out,
-    color 150ms ease-out,
-    box-shadow 150ms ease-out;
-}
-
-.btn-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.btn:active {
-  transform: translateY(0.5px);
-}
-
-.btn-quiet {
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-quiet:hover {
-  border-color: var(--ink-faint);
-  background: var(--surface-hover);
-}
-
-.btn:focus-visible,
 .persona-button:focus-visible,
-.rail-link:focus-visible,
-.theme-tab:focus-visible {
-  outline: 2px solid var(--accent);
+.oc-app-navigation-item:focus-visible {
+  outline: 2px solid var(--oc-focus-ring);
   outline-offset: 1px;
 }
 
-.btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: var(--accent-ink);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.btn-danger {
+.oc-action.btn-danger {
   background: var(--danger-solid);
   border: 1px solid var(--danger-solid);
   color: var(--danger-ink);
 }
 
-.btn-danger:hover {
+.oc-action.btn-danger:hover {
   background: color-mix(in oklch, var(--danger-solid), black 10%);
 }
 
-.btn-link {
+.oc-action.btn-link {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
 }
 
-/* --- chips --- */
-
-.chip {
-  display: inline-block;
-  padding: 1px 9px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  background: var(--surface-muted);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: -0.003em;
-  color: var(--ink-muted);
-}
-
-.chip-role-admin {
+/* Roles and environments use Carapace's plain identity badge; only the
+   product-specific role colors remain local. */
+.oc-badge.chip-role-admin {
   color: var(--accent-text);
-  background: var(--accent-soft);
-  border-color: var(--accent-ring);
 }
 
-.chip-role-editor {
+.oc-badge.chip-role-editor {
   color: var(--ok);
-  background: var(--ok-bg);
-  border-color: color-mix(in oklch, var(--ok), transparent 60%);
 }
 
-.chip-role-viewer {
+.oc-badge.chip-role-viewer {
   color: var(--viewer);
-  background: var(--viewer-bg);
-  border-color: color-mix(in oklch, var(--viewer), transparent 60%);
 }
 
 /* --- theme toggle --- */
@@ -352,50 +306,6 @@ input[type="radio"]:focus-visible {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-.theme-toggle {
-  display: inline-flex;
-  gap: 1px;
-  min-inline-size: 0;
-  padding: 2px;
-  margin: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--bg);
-}
-
-.theme-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 26px;
-  width: 26px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-}
-
-.theme-tab svg {
-  width: 14px;
-  height: 14px;
-}
-
-.theme-tab:hover {
-  color: var(--ink);
-}
-
-.theme-tab[aria-pressed="true"] {
-  background: var(--surface);
-  color: var(--accent-text);
-  box-shadow: var(--shadow-sm);
 }
 
 /* --- auth + boot screens (sign-in, no-access, errors) --- */
@@ -422,10 +332,56 @@ input[type="radio"]:focus-visible {
 }
 
 .auth-screen {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
+  overflow: hidden;
   padding: 24px;
+}
+
+/* The Carapace banner becomes a full-viewport backdrop: krill artwork rising
+   from the bottom edge, dissolved upward so the card floats above it. It is
+   decorative chrome — no border, no min-height, no content slot. */
+.oc-brand-banner.auth-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Ground the artwork on its own near-black band, rising from the bottom
+   like the sea floor. In dark mode it deepens the canvas; in light mode it
+   makes the band a deliberate dark hero strip instead of gray mush under a
+   dark image. */
+.oc-brand-banner.auth-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(10 10 12 / 0.9),
+    rgb(10 10 12 / 0.5) 45%,
+    transparent 78%
+  );
+}
+
+.auth-banner .oc-brand-banner-art img {
+  opacity: 0.55;
+}
+
+[data-theme="light"] .auth-banner .oc-brand-banner-art img {
+  opacity: 0.7;
+}
+
+.auth {
+  position: relative;
+  z-index: 1;
 }
 
 /* centered brand lockup + card column */
@@ -444,11 +400,9 @@ input[type="radio"]:focus-visible {
   gap: 18px;
   padding: 32px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--oc-radius-surface);
   background: var(--surface);
-  box-shadow:
-    0 1px 2px oklch(0.2 0.02 262 / 0.05),
-    0 18px 50px -18px oklch(0.2 0.04 262 / 0.22);
+  box-shadow: var(--shadow-panel);
 }
 
 .auth-card-centered {
@@ -461,9 +415,9 @@ input[type="radio"]:focus-visible {
 }
 
 .auth-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .auth-subtitle {
@@ -472,7 +426,7 @@ input[type="radio"]:focus-visible {
   color: var(--ink-muted);
 }
 
-.btn-github {
+.oc-action.btn-github {
   height: 40px;
   width: 100%;
 }
@@ -483,7 +437,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
+  border-radius: var(--oc-radius-surface);
 }
 
 .status-disc svg {
@@ -506,7 +460,7 @@ input[type="radio"]:focus-visible {
   text-align: left;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-inset);
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -541,7 +495,7 @@ input[type="radio"]:focus-visible {
   border-top: 1px solid var(--line);
 }
 
-.auth-actions .btn {
+.auth-actions .oc-action {
   width: 100%;
   height: 40px;
 }
@@ -559,7 +513,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-control);
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--accent-text);
@@ -594,7 +548,7 @@ input[type="radio"]:focus-visible {
   gap: 14px;
   padding: 13px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--oc-radius-control);
   background: var(--surface);
   text-align: left;
   cursor: pointer;
@@ -607,6 +561,7 @@ input[type="radio"]:focus-visible {
 .persona-card:hover {
   border-color: var(--accent-ring);
   box-shadow: var(--shadow-panel);
+  transform: translateY(-1px);
 }
 
 .persona-card:active {
@@ -728,13 +683,13 @@ input[type="radio"]:focus-visible {
    tight to the artwork, so this renders compact, no padding gaps). Auth
    screens: a compact stacked hero. */
 .brandmark-long .brandmark-img {
-  width: 100%;
-  height: auto;
+  width: auto;
+  height: 34px;
 }
 
 .brandmark-stacked .brandmark-img {
   width: auto;
-  height: 120px;
+  height: 96px;
 }
 
 /* Show the variant that matches the theme resolved on <html> before paint;
@@ -753,13 +708,68 @@ input[type="radio"]:focus-visible {
     drop-shadow(0 -0.7px 0 var(--brand-outline));
 }
 
-/* --- app shell --- */
-
-.shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: row;
+/* Colophon under the auth card: quiet provenance line, carapace.design's
+   "An OpenClaw project" footer in KrillSwitch clothes. */
+.auth-colophon {
+  color: var(--ink-faint);
+  font-size: var(--oc-font-size-xs);
+  text-align: center;
 }
+
+.auth-colophon p {
+  margin: 0;
+}
+
+.auth-colophon a {
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-colophon a:hover {
+  color: var(--accent-text);
+}
+
+/* --- Motion ---
+   Small, consistent movement on the carapace timing tokens. The global
+   prefers-reduced-motion rule collapses all of it. */
+.oc-app-content > section {
+  animation: page-enter 220ms var(--oc-ease-out);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.oc-app-navigation-item,
+.oc-table tr,
+.oc-summary-metric,
+.oc-badge,
+.oc-empty {
+  transition:
+    background var(--oc-duration-fast) var(--oc-ease-out),
+    border-color var(--oc-duration-fast) var(--oc-ease-out),
+    color var(--oc-duration-fast) var(--oc-ease-out),
+    box-shadow var(--oc-duration-fast) var(--oc-ease-out);
+}
+
+/* Resting surfaces (tables, strips, empty states) sit flat on the canvas —
+   their border is enough. Shadows are reserved for things that float:
+   popovers, modals, and the save bar. */
+
+/* Tighter control scale for pointer input: Carapace's 2.5rem actions read
+   oversized in a dense console. Touch keeps the full tap target. */
+@media (pointer: fine) {
+  .oc-app-content .oc-action {
+    min-height: 2.25rem;
+    padding-block: var(--oc-space-1);
+  }
+}
+
+/* --- app shell --- */
 
 /* Controls bar over the content column; the brand now lives in the rail. */
 .topbar {
@@ -767,10 +777,11 @@ input[type="radio"]:focus-visible {
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  height: 72px;
+  height: 56px;
   padding: 0 24px;
   border-bottom: 1px solid var(--line);
-  background: var(--surface-muted);
+  background: color-mix(in oklch, var(--surface), transparent 3%);
+  backdrop-filter: blur(10px);
 }
 
 .identity {
@@ -792,7 +803,7 @@ input[type="radio"]:focus-visible {
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: var(--oc-radius-round);
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 11.5px;
@@ -809,171 +820,102 @@ input[type="radio"]:focus-visible {
   text-overflow: ellipsis;
 }
 
-.main-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.rail {
-  width: 280px;
-  flex-shrink: 0;
-  padding: 0 14px 18px;
-  border-right: 1px solid var(--line);
-  background: var(--surface-muted);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
 /* Generous brand header at the top of the rail; its bottom border lines up
    with the topbar's so a single divider runs across the app. */
-.rail-header {
+.oc-app-navigation-header {
   display: flex;
   align-items: center;
-  height: 72px;
-  margin: 0 -14px 12px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--line);
+  height: 56px;
+  margin: 0 -12px 14px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--chrome-line);
 }
 
-.rail-header:hover .brandmark-img {
-  opacity: 0.85;
-}
-
-.rail-group {
-  margin: 16px 8px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.rail-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 11px;
-  border-radius: var(--r-md);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--ink-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-}
-
-.rail-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.rail-link:hover {
-  background: var(--surface-hover);
-  color: var(--ink);
-}
-
-.rail-link.active {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-
-.content {
-  flex: 1;
-  min-width: 0;
-  padding: 30px 36px 64px;
+/* The content column owns the page gutter and the vertical rhythm between
+   header, summary, and body. Carapace leaves oc-app-content unpadded because
+   its own specimens sit inside a framed pane. */
+.oc-app-content {
+  padding: var(--oc-space-4) var(--oc-space-5) var(--oc-space-6);
 }
 
 /* Cap and center the working area so tables and rows don't sprawl across
    ultra-wide monitors (keys would float far from their actions). */
-.content > section {
-  max-width: 1160px;
-  margin: 0 auto;
+.oc-app-content > section {
+  display: grid;
+  width: 100%;
+  max-width: 1088px;
+  align-content: start;
+  /* justify-self, not `margin: 0 auto`: oc-app-content is a grid, and an auto
+     margin on a grid item cancels stretch and shrinks it to its content. */
+  justify-self: center;
+  gap: var(--oc-space-3);
+}
+
+/* LD-density type scale: the console is an operations surface, so titles,
+   section headings, and table type sit under Carapace's document scale. */
+.oc-app-content h1 {
+  font-size: 22px;
+}
+
+/* Carapace insets the page header for pane-flush use. Here the content column
+   already provides the gutter, so the inset would push the title 16px right of
+   the table beneath it. */
+.oc-page-header {
+  padding-inline: 0;
 }
 
 /* Form and single-record pages are a narrower centered column so the header
    and body align and the content sits balanced, not pinned to the left of a
    wide table-width section. */
-.content > section:has(.form-page) {
+.oc-app-content > section:has(.form-page) {
   max-width: 720px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.page-eyebrow {
-  display: inline-block;
-  margin-bottom: 3px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent-text);
-  text-decoration: none;
-}
-
-.page-eyebrow:hover {
-  text-decoration: underline;
 }
 
 /* --- tables --- */
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
+/* Fixed layout keeps long flag keys wrapping inside their column instead of
+   widening it and pushing KIND/STATE off screen; Carapace leaves table-layout
+   to the product because its own specimens use short cells. */
+.oc-table {
   table-layout: fixed;
+  font-size: 13px;
 }
 
-.table-frame {
-  position: relative;
-  width: 100%;
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: var(--shadow-panel);
-  transition: box-shadow 150ms ease-out;
+.oc-table-wrap::before {
+  content: "";
+  position: sticky;
+  left: 0;
+  display: block;
+  height: 2px;
+  background: var(--accent);
 }
 
-.table-frame.can-scroll-left.can-scroll-right {
+.oc-table-wrap.can-scroll-left.can-scroll-right {
   box-shadow:
-    var(--shadow-panel),
     inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%),
     inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame.can-scroll-left:not(.can-scroll-right) {
-  box-shadow:
-    var(--shadow-panel),
-    inset 14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
+.oc-table-wrap.can-scroll-left:not(.can-scroll-right) {
+  box-shadow: inset 14px 0 10px -12px
+    color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame.can-scroll-right:not(.can-scroll-left) {
-  box-shadow:
-    var(--shadow-panel),
-    inset -14px 0 10px -12px color-mix(in oklch, var(--ink), transparent 70%);
+.oc-table-wrap.can-scroll-right:not(.can-scroll-left) {
+  box-shadow: inset -14px 0 10px -12px
+    color-mix(in oklch, var(--ink), transparent 70%);
 }
 
-.table-frame:focus-visible {
+.oc-table-wrap:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.table-frame .data-table {
+.oc-table-wrap .oc-table {
   min-width: 560px;
 }
 
-.data-table th {
+.oc-table th {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -984,79 +926,84 @@ input[type="radio"]:focus-visible {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding: 10px 14px;
+  padding: 7px 12px;
   border-bottom: 1px solid var(--line-strong);
 }
 
-.data-table td {
-  height: 42px;
-  padding: 6px 14px;
+.oc-table td {
+  height: 40px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+  transition: background-color 120ms ease-out;
 }
 
-.data-table tbody tr:hover td {
-  background: var(--row-hover);
+/* Hover tint only where hover exists: touch browsers stick :hover after a
+   tap, which left every td in the tapped card banded grey. */
+@media (hover: hover) {
+  .oc-table tbody tr:hover td {
+    background: var(--row-hover);
+  }
+
+  .oc-table tbody tr:hover td:first-child {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
 }
 
-.data-table tbody tr:last-child td {
+.oc-table tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* The projects list has only name + key; keep it tight so a short list
    doesn't stretch a single row across the whole pane. */
-.table-frame-compact {
+.oc-table-wrap-compact {
   max-width: 680px;
 }
 
-.table-frame-compact .data-table {
+.oc-table-wrap-compact .oc-table {
   min-width: 420px;
 }
 
-.table-frame-access .data-table,
-.table-frame-tokens .data-table {
+.oc-table-wrap-access .oc-table,
+.oc-table-wrap-tokens .oc-table {
   min-width: 620px;
 }
 
-.table-frame-flags .data-table {
+.oc-table-wrap-flags .oc-table {
   min-width: 820px;
 }
 
-.table-frame-keys .data-table {
+.oc-table-wrap-keys .oc-table {
   min-width: 100%;
-}
-
-.table-frame-changelog .data-table {
-  min-width: 1040px;
 }
 
 /* Member profile audit table: When/Action fixed, Target takes the rest and
    ellipsizes (the row links through to the full entry). */
-.table-frame-audit .data-table {
+.oc-table-wrap-audit .oc-table {
   min-width: 640px;
 }
 
-.table-frame-audit td {
+.oc-table-wrap-audit td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.table-frame-audit th:nth-child(1),
-.table-frame-audit td:nth-child(1) {
+.oc-table-wrap-audit th:nth-child(1),
+.oc-table-wrap-audit td:nth-child(1) {
   width: 170px;
 }
 
-.table-frame-audit th:nth-child(2),
-.table-frame-audit td:nth-child(2) {
+.oc-table-wrap-audit th:nth-child(2),
+.oc-table-wrap-audit td:nth-child(2) {
   width: 170px;
 }
 
-.table-frame-variations .data-table {
+.oc-table-wrap-variations .oc-table {
   min-width: 760px;
 }
 
-.table-frame-projects .data-table {
+.oc-table-wrap-projects .oc-table {
   min-width: 720px;
 }
 
@@ -1069,21 +1016,6 @@ input[type="radio"]:focus-visible {
 }
 
 /* Subtle count beside the page title (e.g. number of projects). */
-.title-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 7px;
-  border-radius: var(--r-pill);
-  background: var(--surface-muted);
-  border: 1px solid var(--line);
-  color: var(--ink-muted);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .projects-search {
   width: 248px;
@@ -1109,9 +1041,18 @@ input[type="radio"]:focus-visible {
   white-space: nowrap;
 }
 
+/* Rollout-debt marker beside the last-change date. */
+.stale-badge {
+  margin-left: 6px;
+}
+
 @media (max-width: 720px) {
+  /* Shares the row with the New-project button; flex-none + width:100%
+     overflowed the row and pushed the input off the left edge. */
   .projects-search {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 }
 
@@ -1124,13 +1065,14 @@ input[type="radio"]:focus-visible {
 }
 
 .table-link:hover {
-  text-decoration: underline;
+  color: var(--accent);
+  text-decoration: none;
 }
 
 /* Whole-row click: the primary link's hit area stretches over the row (the
    accessible "stretched link" pattern — still a real, focusable anchor).
    Other in-row controls lift above it with .row-control. */
-.data-table tr.row-link {
+.oc-table tr.row-link {
   position: relative;
   cursor: pointer;
 }
@@ -1164,8 +1106,56 @@ input[type="radio"]:focus-visible {
 
 .th-state,
 .td-state {
-  width: 104px;
+  width: 128px;
   white-space: nowrap;
+}
+
+.th-last-change,
+.td-last-change {
+  width: 118px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.th-activity,
+.td-activity {
+  width: 104px;
+}
+
+/* Inline per-row step chart: tighter than oc-sparkline's default scale so
+   it sits inside fixed table columns. */
+.oc-sparkline.cell-spark {
+  width: 90px;
+  height: 16px;
+  margin-bottom: 2px;
+}
+
+/* Key + copy button as one inline unit; the copy control lifts above the
+   row's stretched link via .row-control on the wrapper. */
+.key-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+/* Inline flag toggle beside the open-detail chevron. */
+.row-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-error {
+  display: block;
+  font-size: 11px;
+  color: var(--danger);
+}
+
+/* Archived flags fold away under the table; the toggle reveals them. */
+.oc-action.archived-toggle {
+  margin: 6px 8px;
+  color: var(--ink-muted);
 }
 
 /* Flags table: state is read-only; for editors it links to the flag page
@@ -1199,62 +1189,16 @@ input[type="radio"]:focus-visible {
 
 /* --- flag toggle --- */
 
-.flag-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  background: none;
-  font: 500 13px var(--font-ui);
+/* Carapace owns the switch box (oc-switch-label + oc-switch). KrillSwitch
+   adds the state word beside it, which carries the on/off color. */
+.flag-toggle .flag-toggle-copy {
   color: var(--ink-muted);
-  cursor: pointer;
+  font-size: var(--oc-font-size-sm);
+  font-weight: 500;
 }
 
-.flag-toggle.is-on {
+.flag-toggle.is-on .flag-toggle-copy {
   color: var(--ok);
-}
-
-.flag-toggle:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.flag-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 3px;
-}
-
-.flag-toggle-track {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: var(--r-pill);
-  background: var(--control-track);
-  transition: background-color 150ms ease-out;
-}
-
-.flag-toggle-track::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--control-knob);
-  box-shadow: var(--shadow-sm);
-  transition: transform 150ms ease-out;
-}
-
-.flag-toggle.is-on .flag-toggle-track {
-  background: var(--ok);
-}
-
-.flag-toggle.is-on .flag-toggle-track::after {
-  transform: translateX(14px);
 }
 
 /* --- flag detail --- */
@@ -1289,7 +1233,7 @@ input[type="radio"]:focus-visible {
 .disclosure-title {
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.012em;
+  letter-spacing: 0;
 }
 
 .disclosure-meta {
@@ -1308,9 +1252,148 @@ input[type="radio"]:focus-visible {
 }
 
 .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   margin-bottom: 2px;
   color: var(--ink-muted);
+}
+
+/* Page title + environment badge on one line (see EnvBadge.tsx). */
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* --- Home hero (maintainer-reports recipe) ---
+   A deliberate dark band in both themes, krill artwork bleeding in from
+   the right behind a legibility gradient. */
+.page-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #0d0d10;
+}
+
+.page-hero-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+/* Scoped under .page-hero to keep specificity level with the auth-banner
+   img rules above (biome noDescendingSpecificity). The mask feathers the
+   artwork's left edge so it never shows as a hard seam on either theme. */
+.page-hero .page-hero-backdrop img {
+  position: absolute;
+  top: 50%;
+  right: -4%;
+  width: 58%;
+  mask-image: linear-gradient(to right, transparent, #000 38%);
+  transform: translateY(-46%);
+  opacity: 0.5;
+}
+
+.page-hero-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgb(13 13 16 / 0.96) 34%,
+    rgb(13 13 16 / 0.55) 62%,
+    transparent 100%
+  );
+}
+
+.page-hero-content {
+  position: relative;
+  max-width: 60ch;
+}
+
+.page-hero-kicker {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* Fixed dark-band hero: the dark-theme ember reads on it in both themes. */
+  color: #f5654a;
+}
+
+.page-hero h1 {
+  margin: 0 0 8px;
+  color: #f5f5f6;
+}
+
+.page-hero-sub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(245 245 246 / 0.72);
+}
+
+/* --- Dateline (change activity step chart) --- */
+.dateline {
+  padding: 12px 18px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.dateline-label {
+  margin: 0 0 8px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.dateline-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* Light mode gets a clean typographic hero: the krill artwork has a dark
+   background baked into the asset, so over a light band it reads as a
+   dirty smear no gradient can save. Artwork stays a dark-mode treat. */
+[data-theme="light"] .page-hero {
+  background: var(--surface-muted);
+}
+
+[data-theme="light"] .page-hero-backdrop {
+  display: none;
+}
+
+[data-theme="light"] .page-hero h1 {
+  color: var(--ink);
+}
+
+[data-theme="light"] .page-hero-sub {
+  color: var(--ink-muted);
+}
+
+[data-theme="light"] .page-hero-kicker {
+  color: var(--accent-text);
+}
+
+/* Filter + primary action row under the hero. */
+.page-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
 }
 
 .breadcrumb a {
@@ -1324,13 +1407,9 @@ input[type="radio"]:focus-visible {
 
 .flag-meta {
   margin: 2px 0 0;
-}
-
-.header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .changelog-filters {
@@ -1373,7 +1452,11 @@ input[type="radio"]:focus-visible {
   position: fixed;
   inset: 0;
   z-index: var(--z-modal-backdrop);
-  background: oklch(0.2 0.02 262 / 0.5);
+  /* carapace scrim: deep ink plus blur so the console recedes as a layer
+     instead of just dimming. */
+  background: oklch(0.13 0.01 262 / 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: modal-overlay-in 150ms ease-out;
 }
 
@@ -1396,7 +1479,7 @@ input[type="radio"]:focus-visible {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 
@@ -1454,26 +1537,25 @@ input[type="radio"]:focus-visible {
   gap: 16px;
 }
 
-.badge-soft {
-  display: inline-block;
-  padding: 1px 9px;
+/* Accent-tinted count pill; the neutral tone drops Carapace's status dot,
+   which a bare number does not want. */
+.oc-badge.badge-soft {
   border-radius: var(--r-pill);
   background: var(--accent-soft);
   color: var(--accent-text);
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .flag-meta-sep {
-  margin: 0 7px;
+  /* .flag-meta's flex gap provides the spacing. */
+  margin: 0;
   color: var(--ink-faint);
 }
 
 .detail-section h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.014em;
+  letter-spacing: 0;
 }
 
 .section-hint {
@@ -1483,54 +1565,20 @@ input[type="radio"]:focus-visible {
   max-width: 68ch;
 }
 
-.detail-section .data-table {
+.detail-section .oc-table {
   margin-bottom: 0;
 }
 
-.detail-section .table-frame {
+.detail-section .oc-table-wrap {
   margin-bottom: 10px;
 }
 
-.input {
-  height: 32px;
-  padding: 0 11px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  font: 400 14px var(--font-ui);
-  color: var(--ink);
-  min-width: 0;
-  transition:
-    border-color 120ms ease-out,
-    box-shadow 120ms ease-out;
-}
-
-.input::placeholder {
-  color: var(--ink-faint);
-}
-
-.input:hover {
-  border-color: var(--ink-faint);
-}
-
-.input:focus-visible {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-.input:disabled {
-  background: var(--surface-muted);
-  color: var(--ink-muted);
-  cursor: not-allowed;
-}
-
-.input-mono {
+.oc-input.input-mono {
   font-family: var(--font-mono);
   font-size: 13px;
 }
 
-.input-json {
+.oc-input.input-json {
   height: auto;
   padding: 6px 9px;
   font-family: var(--font-mono);
@@ -1539,7 +1587,7 @@ input[type="radio"]:focus-visible {
   width: 100%;
 }
 
-.variations-table td .input {
+.variations-table td .oc-input {
   width: 100%;
 }
 
@@ -1646,7 +1694,7 @@ input[type="radio"]:focus-visible {
   list-style: none;
   max-height: 268px;
   overflow-y: auto;
-  background: var(--surface);
+  background: var(--surface-pop);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
@@ -1656,10 +1704,10 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 9px;
+  padding: 4px 8px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .combobox-option.is-active {
@@ -1712,8 +1760,14 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 34px;
+  /* Dense: two radios per row must not dominate the row height. */
+  min-height: 24px;
   font-size: 13px;
+}
+
+/* Variations rows read as a dense grid, not padded cards. */
+.variations-table td {
+  padding-block: var(--oc-space-2);
 }
 
 .serve-choice + .serve-choice {
@@ -1764,6 +1818,15 @@ input[type="radio"]:focus-visible {
   max-width: 780px;
 }
 
+/* Sentence layout: row selects size to their content. Carapace's unlayered
+   `.oc-select { width: 100% }` outranks the Tailwind width utilities the
+   triggers carry (layered), which flattened every rule into a full-width
+   stack. */
+.targeting-row .oc-select.select-trigger {
+  width: auto;
+  min-width: 120px;
+}
+
 .targeting-subsection {
   padding: 12px;
   border: 1px solid var(--line);
@@ -1789,17 +1852,24 @@ input[type="radio"]:focus-visible {
   font-size: 13px;
 }
 
-/* Detail-header enable: a deliberate, weighted control for the loudest
-   action on the page, not a stray checkbox. The switch label turns green
-   when on (state earns color). */
+/* Detail-header enable: the switch itself carries the weight; the state
+   word turns green when on (state earns color). No box — a bordered pill
+   next to a bordered button read as two competing buttons. */
 .enable-switch {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px 5px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+}
+
+/* Destructive-but-guarded header action: quiet until hovered. */
+.oc-action.danger-ghost {
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+
+.oc-action.danger-ghost:hover {
+  background: var(--danger-bg);
+  border-color: color-mix(in oklch, var(--danger), transparent 60%);
 }
 
 .targeting-keys,
@@ -1811,10 +1881,32 @@ input[type="radio"]:focus-visible {
   flex: 1 1 120px;
 }
 
+/* Rule rows read as a sentence: IF attribute IN values SERVES variation.
+   The connectives are set as small caps so the operands carry the weight. */
 .targeting-arrow {
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-faint);
   flex-shrink: 0;
+}
+
+/* Deterministic variation color dot (VariationDot.tsx supplies the color). */
+.variation-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: baseline;
+}
+
+.variation-name-wrap {
+  /* Dot + name input on one line (inside the cell, never on the <td>). */
+  display: flex;
+  align-items: center;
 }
 
 .rollout-enable {
@@ -1826,38 +1918,11 @@ input[type="radio"]:focus-visible {
   margin-bottom: 10px;
 }
 
-/* Proportional split bar: see the distribution, not just read numbers. */
-.rollout-bar {
-  display: flex;
-  gap: 2px;
-  height: 10px;
+/* Proportional split bar: carapace oc-split with segment colors driven by
+   variationColor() so the bar matches the variation dots. */
+.oc-split.rollout-split {
   max-width: 480px;
   margin-bottom: 14px;
-  border-radius: var(--r-pill);
-  overflow: hidden;
-  background: var(--surface-muted);
-}
-
-.rollout-bar-seg {
-  min-width: 3px;
-  background: var(--accent);
-  transition: flex-grow 150ms ease-out;
-}
-
-.rollout-bar-seg:nth-child(2) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 45%);
-}
-
-.rollout-bar-seg:nth-child(3) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 65%);
-}
-
-.rollout-bar-seg:nth-child(4) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 80%);
-}
-
-.rollout-bar-seg:nth-child(n + 5) {
-  background: color-mix(in oklch, var(--accent), var(--surface) 88%);
 }
 
 .rollout-weights {
@@ -1879,7 +1944,7 @@ input[type="radio"]:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.input-weight {
+.oc-input.input-weight {
   width: 72px;
 }
 
@@ -1899,7 +1964,8 @@ input[type="radio"]:focus-visible {
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  width: min(560px, calc(100vw - 32px));
+  flex-wrap: wrap;
+  width: min(680px, calc(100vw - 32px));
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -1912,6 +1978,40 @@ input[type="radio"]:focus-visible {
   margin-right: auto;
   color: var(--ink);
   font-size: 13px;
+}
+
+/* Change-log comment ride-along: fills the room between status and actions,
+   wraps to its own line when the bar gets narrow. */
+.save-comment {
+  flex: 1 1 200px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* Production guardrail dialog (GuardrailDialog.tsx). */
+.guardrail-env {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.guardrail-comment {
+  margin: 10px 0 4px;
+}
+
+/* "View all" link under scoped log streams. */
+.history-more {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.history-more:hover {
+  text-decoration: underline;
 }
 
 .save-label-short {
@@ -1958,27 +2058,10 @@ input[type="radio"]:focus-visible {
   gap: 20px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field > label,
-.field-label {
+.oc-field > label,
+.oc-field-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--ink-muted);
-}
-
-.field .input {
-  width: 100%;
-}
-
-.field-hint {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
   color: var(--ink-muted);
 }
 
@@ -2010,13 +2093,6 @@ input[type="radio"]:focus-visible {
   margin-top: 4px;
 }
 
-.form-note {
-  margin: 16px 0 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--ink-muted);
-}
-
 .form-grid > label:not(.enabled-control) {
   color: var(--ink-muted);
   font-weight: 500;
@@ -2034,7 +2110,7 @@ input[type="radio"]:focus-visible {
   }
 }
 
-.table-frame-tokens {
+.oc-table-wrap-tokens {
   margin-top: 16px;
 }
 
@@ -2149,49 +2225,9 @@ tr.is-revoked td {
   transform: rotate(180deg);
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  padding: 48px 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: var(--shadow-panel);
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.empty-state-icon {
-  margin-bottom: 16px;
-}
-
-.empty-state-glyph {
+.oc-empty-glyph {
   width: 26px;
   height: 26px;
-}
-
-.empty-state-title {
-  margin: 0 0 5px;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.empty-state-desc {
-  margin: 0;
-  max-width: 46ch;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ink-muted);
-}
-
-.empty-state-actions {
-  margin-top: 18px;
-  display: flex;
-  gap: 10px;
 }
 
 /* Quiet hint for empty sub-sections inside a form (no allowlist, no rules). */
@@ -2212,7 +2248,7 @@ tr.is-revoked td {
   border: 1px solid var(--line);
   background: var(--surface-muted);
   font: 500 11.5px var(--font-mono);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: var(--ink-muted);
 }
 
@@ -2269,51 +2305,41 @@ tr.is-revoked td {
 
 /* --- change log --- */
 
+/* Also used by the member-profile audit table. */
 .td-when {
   white-space: nowrap;
   font-size: 12px;
   color: var(--ink-muted);
 }
 
-.changelog-table td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Fixed layout: keep timestamp/actor/action tight so the long target and
-   change columns get the remaining width instead of overflowing. */
-.changelog-table th:nth-child(1),
-.changelog-table td:nth-child(1) {
-  width: 150px;
-}
-.changelog-table th:nth-child(2),
-.changelog-table td:nth-child(2) {
-  width: 120px;
-}
-.changelog-table th:nth-child(3),
-.changelog-table td:nth-child(3) {
-  width: 168px;
-}
-.changelog-table th:nth-child(5),
-.changelog-table td:nth-child(5) {
-  width: 300px;
-}
-
 .td-action {
   font-weight: 500;
 }
 
-.td-change {
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Change log rendered as a Carapace log stream (oc-log-*): verb chip,
+   project/flag subsystem, message with inline before → after and comment.
+   Rows are links; the stream owns the mono styling. */
+.changelog-stream .oc-log-row {
+  /* Carapace's 7rem subsystem truncates project/flag pairs. */
+  grid-template-columns: auto 4.5rem 12rem minmax(0, 1fr);
+  padding-block: 1px;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  text-decoration: none;
 }
 
-.td-change code {
-  display: inline;
-  max-width: 100%;
-  font-size: 12px;
-  white-space: nowrap;
+/* Project- and flag-scoped streams drop the subsystem column. */
+.changelog-stream-scoped .oc-log-row {
+  grid-template-columns: auto 4.5rem minmax(0, 1fr);
+}
+
+.changelog-stream .oc-log-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
 }
 
 .change-before {
@@ -2324,12 +2350,6 @@ tr.is-revoked td {
 
 .change-after {
   color: var(--ink);
-}
-
-.change-sep {
-  margin: 0 6px;
-  color: var(--ink-faint);
-  font-size: 12px;
 }
 
 /* --- Change-log entry detail page: full target and before/after, no
@@ -2357,62 +2377,24 @@ tr.is-revoked td {
   overflow-wrap: anywhere;
 }
 
-.change-detail-json-before {
-  color: var(--ink-muted);
-}
-
-.change-detail-json-after {
-  color: var(--ink);
-}
-
 /* --- narrow widths: rail collapses to a top strip --- */
 
 @media (max-width: 768px) {
-  .shell {
-    flex-direction: column;
-  }
+  /* Carapace already stacks the frame to a single column at this width; the
+     old flex-direction override is gone with the flex layout it belonged to. */
 
-  .rail {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-    padding: 6px 8px;
-    overflow-x: auto;
+  /* The stacked mobile layout has no rail to collapse. */
+  .oc-app-navigation-collapse {
+    display: none;
   }
 
   /* In the strip the logo sits inline, not as a full-width header box. */
-  .rail-header {
+  .oc-app-navigation-header {
     height: auto;
     margin: 0 6px 0 4px;
     padding: 4px 6px;
     border-bottom: none;
     flex-shrink: 0;
-  }
-
-  .rail-header .brandmark-img {
-    width: auto;
-    height: 26px;
-  }
-
-  .rail-group {
-    flex: 0 0 auto;
-    margin: 0 4px 0 12px;
-    white-space: nowrap;
-  }
-
-  .content {
-    padding: 16px;
-  }
-
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .header-actions {
-    width: 100%;
   }
 
   .token-reveal-header,
@@ -2425,27 +2407,183 @@ tr.is-revoked td {
     flex-basis: auto;
   }
 
-  .btn,
-  .btn-github,
-  .input,
-  .persona-button,
-  .rail-link {
+  .oc-action.btn-github,
+  .oc-app-navigation-item {
     min-height: 44px;
   }
 
-  .btn,
-  .btn-link,
-  .rail-link {
+  .oc-action.btn-link,
+  .oc-app-navigation-item {
     display: inline-flex;
     align-items: center;
   }
 
-  .rail-link {
-    flex: 0 0 auto;
+  .oc-table td {
+    height: 44px;
   }
 
-  .data-table td {
-    height: 44px;
+  .oc-table-wrap-projects,
+  .oc-table-wrap-flags {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .oc-table-wrap-projects::before,
+  .oc-table-wrap-flags::before {
+    content: none;
+  }
+
+  .oc-table-wrap-projects .oc-table,
+  .oc-table-wrap-projects thead,
+  .oc-table-wrap-projects tbody,
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-projects th,
+  .oc-table-wrap-projects td,
+  .oc-table-wrap-flags .oc-table,
+  .oc-table-wrap-flags thead,
+  .oc-table-wrap-flags tbody,
+  .oc-table-wrap-flags tr,
+  .oc-table-wrap-flags th,
+  .oc-table-wrap-flags td {
+    display: block;
+  }
+
+  .oc-table-wrap-projects thead,
+  .oc-table-wrap-flags thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .oc-table-wrap-projects .oc-table,
+  .oc-table-wrap-flags .oc-table {
+    min-width: 0;
+  }
+
+  .oc-table-wrap-projects tbody,
+  .oc-table-wrap-flags tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* One column per card: paired columns overlapped once the wide
+     last-change/state cells landed on the same grid row. */
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-flags tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 18px 32px -28px rgb(0 0 0 / 0.45);
+  }
+
+  .oc-table-wrap-projects td,
+  .oc-table-wrap-flags td {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .oc-table-wrap-projects tbody tr:hover td,
+  .oc-table-wrap-flags tbody tr:hover td {
+    background: transparent;
+  }
+
+  .oc-table-wrap-projects tbody tr:hover td:first-child,
+  .oc-table-wrap-flags tbody tr:hover td:first-child {
+    box-shadow: none;
+  }
+
+  .oc-table-wrap-projects .oc-table tbody tr td:first-child,
+  .oc-table-wrap-flags .oc-table tbody tr td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .oc-table-wrap-projects td:nth-child(n + 2),
+  .oc-table-wrap-flags td:nth-child(n + 2) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .oc-table-wrap-projects td:nth-child(n + 2)::before,
+  .oc-table-wrap-flags td:nth-child(n + 2)::before {
+    color: var(--ink-faint);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .oc-table-wrap-projects td:nth-child(2)::before {
+    content: "Key";
+  }
+
+  .oc-table-wrap-projects td:nth-child(3)::before {
+    content: "Flags";
+  }
+
+  .oc-table-wrap-projects .td-activity::before {
+    content: "Usage";
+  }
+
+  .oc-table-wrap-projects td:nth-child(5)::before {
+    content: "Last change";
+  }
+
+  .oc-table-wrap-flags td:nth-child(2)::before {
+    content: "Key";
+  }
+
+  .oc-table-wrap-flags td:nth-child(3)::before {
+    content: "Kind";
+  }
+
+  .oc-table-wrap-flags .td-last-change::before {
+    content: "Last change";
+  }
+
+  .oc-table-wrap-flags .td-state::before {
+    content: "State";
+  }
+
+  /* The flag card's last-change row keeps the date; the 90px sparkline is
+     desktop texture and would fight the label for the narrow row. */
+  .oc-table-wrap-flags .td-last-change .cell-spark {
+    display: none;
+  }
+
+  .oc-table-wrap-flags .td-state,
+  .oc-table-wrap-flags .th-state {
+    width: auto;
+  }
+
+  /* Flag keys run long; stack the label above the key so the code never
+     wraps letter-by-letter against the label. */
+  .oc-table-wrap-flags td:nth-child(2) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .oc-table-wrap-flags td:nth-child(2) .key-cell code {
+    overflow-wrap: anywhere;
+  }
+
+  .cell-sub,
+  .flag-description {
+    max-width: none;
   }
 
   .flag-toggle {
@@ -2461,21 +2599,6 @@ tr.is-revoked td {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-  }
-
-  .rail-header {
-    min-height: 44px;
-  }
-
-  .theme-tab {
-    flex-basis: 44px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .theme-tab svg {
-    width: 16px;
-    height: 16px;
   }
 
   .disclosure {
@@ -2514,7 +2637,7 @@ tr.is-revoked td {
     border: 0;
   }
 
-  .save-bar .btn {
+  .save-bar .oc-action {
     justify-content: center;
     min-width: 112px;
     min-height: 44px;
@@ -2534,7 +2657,7 @@ tr.is-revoked td {
     padding-bottom: 84px;
   }
 
-  .table-frame-variations {
+  .oc-table-wrap-variations {
     display: none;
   }
 
@@ -2549,7 +2672,7 @@ tr.is-revoked td {
     flex-direction: column;
   }
 
-  .targeting-empty-row .btn {
+  .targeting-empty-row .oc-action {
     width: 100%;
   }
 
@@ -2562,8 +2685,9 @@ tr.is-revoked td {
     display: none;
   }
 
-  .targeting-row .btn,
-  .targeting-row [role="combobox"] {
+  .targeting-row .oc-action,
+  .targeting-row [role="combobox"],
+  .targeting-row .oc-select.select-trigger {
     width: 100%;
   }
 
@@ -2585,20 +2709,695 @@ tr.is-revoked td {
 /* Touch input (any viewport width): enlarge the small segmented and pagination
    controls to a comfortable tap size. Pointer-based UIs keep the dense size. */
 @media (pointer: coarse) {
-  .theme-tab {
-    flex-basis: 44px;
-    width: 44px;
-    height: 44px;
-  }
-
-  .theme-tab svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .page-btn {
     min-width: 40px;
     height: 40px;
+  }
+}
+
+/* The page-header kicker is a router link here, not the static <p> Carapace
+   previews, so the app's global anchor underline has to be cleared. */
+.oc-page-header-kicker {
+  text-decoration: none;
+}
+
+/* --- Console frame deltas over Carapace ---
+   Carapace sizes .oc-app-frame for embedded specimens (min-height: 38rem);
+   the console owns the viewport, so it pins the frame to the window and lets
+   the content column scroll on its own. */
+.oc-app-frame {
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--oc-bg-recessed);
+  color: var(--oc-text-primary);
+}
+
+.oc-app-content {
+  min-height: 0;
+  overflow: auto;
+}
+
+/* --- Carapace application parity ---
+   App-surface anatomy: app frame, workspace context, compact nav rows, and
+   table wrappers. Tokens all resolve from the imports at the top of this file;
+   this layer is structure only. */
+
+body {
+  background: var(--oc-bg-recessed);
+}
+
+.topbar {
+  min-height: 3.25rem;
+  height: auto;
+  padding: var(--oc-space-2) var(--oc-space-4);
+  border-bottom: 1px solid var(--oc-border-subtle);
+  background: var(--oc-bg-recessed);
+  backdrop-filter: none;
+}
+
+.page-title-row {
+  gap: var(--oc-space-2);
+}
+
+h1 {
+  color: var(--oc-text-primary);
+  font-size: var(--oc-font-size-2xl);
+  line-height: 1.1;
+}
+
+.oc-summary-metric-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.oc-summary-metric strong {
+  color: var(--oc-text-primary);
+  font-size: var(--oc-font-size-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.oc-summary-metric small {
+  overflow: hidden;
+  color: var(--oc-text-muted);
+  font-size: var(--oc-font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oc-action.btn-danger {
+  border-color: var(--danger-solid);
+}
+
+/* --- Dense row actions ---
+   oc-action is sized for page-level buttons (2.5rem tall, 1rem side padding).
+   Inside a table row that overflows its column and clips, so row actions get a
+   compact size while keeping the shared tone and focus behaviour. */
+.oc-table .oc-action {
+  min-height: 2rem;
+  padding: var(--oc-space-1) var(--oc-space-3);
+  font-size: var(--oc-font-size-xs);
+}
+
+/* Icon-only copy affordance next to keys; sized to sit inline with <code>
+   in table cells and page headers without stretching the line. */
+.oc-action.copy-button {
+  min-height: 0;
+  padding: 3px;
+  color: var(--ink-muted);
+}
+
+.oc-action.copy-button.is-copied {
+  color: var(--ok);
+}
+
+.copy-glyph {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+/* --- Navigation footer identity ---
+   One flex row like Carapace's own footer: identity fills, then the theme
+   cycle control and sign-out sit as quiet icon buttons. Role and theme
+   choices live on the Settings page, not in the rail. */
+.oc-app-navigation-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
+  padding: var(--oc-space-3);
+}
+
+.nav-identity {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--oc-space-2);
+}
+
+/* Sign-out is a navigation action, separate from the shared theme toggle. */
+.nav-signout {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.nav-signout:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.nav-signout-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+/* Rail header logo: wordmark when expanded, krill mark when compact
+   (Carapace already hides -title in compact; we hide the mark when the
+   wordmark is showing so the krill doesn't render twice). The mark is the
+   real brand artwork — wide pill — so it sizes by width, not the 1.5rem
+   glyph height Carapace assumes. */
+.oc-app-navigation-brand img {
+  width: 34px;
+  height: auto;
+}
+
+.oc-app-frame[data-navigation="expanded"]
+  .oc-app-navigation-header
+  .oc-app-navigation-brand {
+  display: none;
+}
+
+.oc-app-navigation-title .brandmark-img {
+  /* Sizing only — the theme swap rules own display. */
+  height: 20px;
+  width: auto;
+}
+
+/* Compact rail: center the krill mark in the narrow column and keep it
+   clear of the collapse control below. */
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-header {
+  padding-block: var(--oc-space-3);
+}
+
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
+  display: grid;
+  width: 100%;
+  place-items: center;
+  height: auto;
+}
+
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand img {
+  width: 30px;
+  height: auto;
+}
+
+/* Compact rail: the collapse chevrons point back out, and the footer's
+   avatar + icon controls stack in the 3.25rem column. */
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-collapse svg {
+  transform: rotate(180deg);
+}
+
+.oc-app-frame[data-navigation="compact"] .oc-app-navigation-footer {
+  flex-direction: column;
+  gap: var(--oc-space-2);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-identity {
+  flex: 0 0 auto;
+  grid-template-columns: auto;
+}
+
+/* --- ⌘K search (CommandPalette.tsx) ---
+   Rail trigger styled like the carapace.design search field, palette as a
+   top-anchored dialog over the standard modal overlay. */
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 var(--oc-space-3) var(--oc-space-2);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-muted);
+  color: var(--ink-faint);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-search:hover {
+  border-color: var(--line-strong);
+  color: var(--ink-muted);
+}
+
+.nav-search-glyph {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.nav-search-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-search-kbd,
+.palette-kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--oc-font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-search {
+  justify-content: center;
+  padding: 6px;
+  margin-inline: var(--oc-space-2);
+}
+
+.oc-app-frame[data-navigation="compact"] .nav-search-label,
+.oc-app-frame[data-navigation="compact"] .nav-search-kbd {
+  display: none;
+}
+
+/* Palette surface comes from carapace (oc-command-palette on a native
+   <dialog>). Upstream bug workaround: the package sets display:flex on the
+   class, which outranks the UA's dialog:not([open]) { display:none }, so a
+   closed palette would render inline as a stray strip. */
+.oc-command-palette:not([open]) {
+  display: none;
+}
+
+/* Connect page: copyable snippets in a recessed mono block. */
+.connect-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.snippet {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.snippet-label {
+  font-family: var(--oc-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.snippet-code {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* Connect steps: numbered cards with a live status loader. */
+.step-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.step-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--oc-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.step-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.step-body h2 {
+  margin: 0;
+}
+
+.step-hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-dot {
+    animation: none;
+  }
+}
+
+.connect-docs summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
+.connect-docs[open] summary {
+  margin-bottom: 8px;
+}
+
+.connect-notes {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Segments page: each segment is a disclosure card. */
+.segment-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.segment-summary code {
+  font-size: 12px;
+}
+
+.segment-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.segment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Profile facts: form-page spacing without form-page's narrow section
+   layout (settings tabs should all share the full column width). */
+.settings-fields {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+}
+
+/* Settings tabs: LD-style underline tabs, section state in the URL. */
+.settings-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-tab {
+  margin-bottom: -1px;
+  padding: 4px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  color: var(--ink);
+}
+
+.settings-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+/* Settings → Webhooks (admin). */
+.webhook-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.webhook-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.webhook-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+  font-size: 13px;
+}
+
+.webhook-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.webhook-status {
+  font-size: 12px;
+}
+
+.webhook-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.webhook-name-input {
+  flex: 1 1 160px;
+}
+
+.webhook-url-input {
+  flex: 2 1 260px;
+}
+
+/* Settings → Appearance: the explicit three-way choice (the rail control
+   only cycles the same setting). */
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Keyboard focus lands on the hidden radio; ring the visible label. */
+.theme-picker-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-picker-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.theme-picker-option:hover {
+  color: var(--ink);
+}
+
+.theme-picker-option.is-active {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Carapace lays the summary strip out with auto-fit minmax(9rem), which at
+   narrow widths fits two columns and leaves a blank cell when the count is
+   odd. Three metrics should stack cleanly on a phone instead. */
+@media (max-width: 640px) {
+  .oc-summary-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* oc-select is full-width by default (form context). As a page-header action
+   it must size to its content, or it consumes the whole flex line and wraps
+   the sibling button onto the next row. */
+.oc-page-header-actions .oc-select {
+  width: auto;
+}
+
+/* LD-density controls: selects and filter inputs sit at 2rem, not the
+   2.5rem form scale, everywhere in the console. */
+.oc-select.select-trigger,
+.combobox-input {
+  min-height: 2rem;
+  padding-block: 2px;
+  font-size: 13px;
+}
+
+/* Radix draws its own chevron, so drop the right padding oc-select reserves
+   for the native one. Everything else about the box comes from Carapace. */
+.oc-select.select-trigger {
+  padding-right: var(--oc-space-3);
+}
+
+.oc-badge.badge-soft,
+.badge-kind {
+  border-radius: var(--oc-radius-control);
+}
+
+.oc-table-wrap::before {
+  content: none;
+}
+
+.oc-table th {
+  background: transparent;
+  color: var(--oc-text-muted);
+  font-family: var(--oc-font-mono);
+  font-size: var(--oc-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.oc-table td {
+  height: auto;
+}
+
+@media (hover: hover) {
+  .oc-table tbody tr:hover td {
+    background: var(--oc-surface-interactive);
+  }
+
+  .oc-table tbody tr:hover td:first-child {
+    box-shadow: none;
+  }
+}
+
+.table-link {
+  color: var(--oc-text-link);
+}
+
+.flag-toggle {
+  display: inline-flex;
+  min-height: var(--oc-control-min-height);
+  align-items: center;
+  gap: var(--oc-space-3);
+  color: var(--oc-text-primary);
+  font-size: var(--oc-font-size-base);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.flag-toggle:hover .flag-toggle-track {
+  border-color: var(--oc-border-strong);
+}
+
+.flag-toggle-control:focus-visible + .flag-toggle-track {
+  outline: 2px solid var(--oc-focus-ring);
+  outline-offset: 2px;
+}
+
+.flag-toggle.is-on .flag-toggle-track {
+  border-color: var(--oc-accent-primary);
+  background: var(--oc-accent-primary);
+}
+
+.flag-toggle.is-on .flag-toggle-track::after {
+  background: var(--oc-text-on-accent);
+  transform: translateX(1rem);
+}
+
+.flag-toggle:has(.flag-toggle-control:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.oc-empty,
+.auth-card,
+.modal-content,
+.targeting-subsection,
+.variation-card {
+  border-radius: var(--oc-radius-surface);
+}
+
+@media (max-width: 768px) {
+  .oc-app-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .topbar {
+    padding: var(--oc-space-2) var(--oc-space-3);
+    overflow-x: auto;
+  }
+
+  .identity {
+    width: max-content;
+  }
+
+  .oc-table-wrap-projects tr,
+  .oc-table-wrap-flags tr {
+    border-radius: var(--oc-radius-surface);
+    background: var(--oc-surface-card);
+    box-shadow: none;
+  }
+
+  .oc-summary-metric + .oc-summary-metric {
+    border-top: 1px solid var(--oc-border-subtle);
+    border-left: 0;
   }
 }
 
@@ -2608,5 +3407,280 @@ tr.is-revoked td {
     transition-duration: 0.01ms !important;
     /* biome-ignore lint/complexity/noImportantStyles: same kill switch for animations */
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* --- Tooltips ---
+   Token-styled tooltip for icon-only controls (Carapace ships no tooltip
+   surface yet). data-tip is the label; shown on hover and keyboard focus. */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: var(--z-dropdown);
+  padding: var(--oc-space-1) var(--oc-space-2);
+  border: 1px solid var(--oc-border-subtle);
+  border-radius: var(--oc-radius-inset);
+  background: var(--oc-bg-elevated);
+  color: var(--oc-text-primary);
+  font-size: var(--oc-font-size-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: var(--oc-shadow-md);
+  opacity: 0;
+  transform: translate(-50%, 2px);
+  transition:
+    opacity var(--oc-duration-fast) var(--oc-ease-out),
+    transform var(--oc-duration-fast) var(--oc-ease-out);
+  pointer-events: none;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Inside the navigation rail the tooltip anchors to the control's left edge:
+   the rail clips overflow, and a centered tooltip on the first tab would
+   extend past its boundary and be cut. */
+.oc-app-navigation [data-tip]::after {
+  left: 0;
+  transform: translate(0, 2px);
+}
+
+.oc-app-navigation [data-tip]:hover::after,
+.oc-app-navigation [data-tip]:focus-visible::after {
+  transform: translate(0, 0);
+}
+
+/* Footer icons sit at the rail's right edge; anchor their tooltips right so
+   they stay inside the clipped rail. */
+.oc-app-navigation-footer [data-tip]::after {
+  left: auto;
+  right: 0;
+}
+
+/* --- mobile navigation: brand strip + slide-over menu (MobileMenu in
+   Shell.tsx) ---
+   Kept after the compact rail rules on purpose: several selectors share
+   specificity with them, so cascade order is what lets the phone layout win
+   when the user left the rail collapsed on desktop. */
+
+/* Desktop: the phone-only header buttons stay out of the rail. */
+.mobile-nav-button {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.mobile-nav-button:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.mobile-nav-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Slide-over: right-anchored sheet over the standard dialog backdrop. The
+   :not([open]) guard mirrors the command palette — display:flex on the open
+   dialog would otherwise outrank the UA's closed-dialog hiding. */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  margin: 0 0 0 auto;
+  width: min(320px, 86vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.mobile-menu:not([open]) {
+  display: none;
+}
+
+.mobile-menu[open] {
+  display: flex;
+}
+
+.mobile-menu::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.mobile-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-menu-head .mobile-nav-button {
+  display: grid;
+}
+
+.mobile-menu-head .brandmark-img {
+  height: 20px;
+  width: auto;
+}
+
+.mobile-menu-body {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 18px;
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+
+.mobile-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--oc-space-1);
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  /* The rail reduces to a one-row brand strip; links, search bar, and the
+     footer all live in the slide-over instead. */
+  .nav-search,
+  .oc-app-navigation-body,
+  .oc-app-navigation-footer {
+    display: none;
+  }
+
+  /* Carapace only guarantees 32rem; short pages otherwise end in a band of
+     frame background under the content surface. */
+  .oc-app-frame {
+    min-height: 100dvh;
+  }
+
+  .oc-app-navigation {
+    grid-template-rows: auto;
+  }
+
+  .oc-app-navigation-header,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 8px 10px 8px 14px;
+  }
+
+  /* Wordmark only in the strip (Carapace re-shows -title at this width; our
+     compact rules would otherwise center the krill mark). */
+  .oc-app-navigation-header .oc-app-navigation-brand,
+  .oc-app-frame[data-navigation="compact"] .oc-app-navigation-brand {
+    display: none;
+  }
+
+  .oc-app-navigation-title {
+    margin-right: auto;
+  }
+
+  .mobile-nav-button {
+    display: grid;
+  }
+
+  /* Inside the slide-over the nav sections keep their vertical rail layout;
+     Carapace's stacked-strip rules would otherwise flow them horizontally.
+     Frame-qualified so these outrank the compact-rail hiding rules, which
+     also match inside the dialog. */
+  .oc-app-frame .mobile-menu .oc-app-navigation-section {
+    display: block;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-label {
+    display: block;
+    margin: 0 0 6px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-list {
+    display: grid;
+    width: auto;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-item {
+    min-height: 44px;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-item-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+  }
+
+  .oc-app-frame .mobile-menu .oc-app-navigation-footer-copy {
+    display: grid;
+  }
+
+  .oc-app-frame .mobile-menu .nav-identity {
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Badge + long eval key + copy button share this row; wrapping beats
+     truncating the environment name. */
+  .flag-meta {
+    flex-wrap: wrap;
+  }
+
+  /* Eval-key and token tables keep their columns and scroll sideways;
+     letting them squeeze wraps the mono keys one character per line. */
+  .oc-table-wrap-keys,
+  .oc-table-wrap-tokens {
+    overflow-x: auto;
+  }
+
+  .oc-table-wrap-keys .key-cell code {
+    white-space: nowrap;
+  }
+
+  /* Log streams: drop the subsystem column and let messages wrap; the
+     12rem column plus inline before→after JSON overflows a phone. */
+  .changelog-stream .oc-log-row,
+  .changelog-stream-scoped .oc-log-row {
+    grid-template-columns: auto 4rem minmax(0, 1fr);
+  }
+
+  .changelog-stream .oc-log-subsystem {
+    display: none;
+  }
+
+  .changelog-stream .oc-log-message {
+    /* Carapace truncates to one line; phones wrap instead (nowrap inherits
+       into the before→after segments, which then clip mid-token). */
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
