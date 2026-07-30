@@ -5,6 +5,12 @@ description: Evaluate typed flags for SSR, hydrate without a variant flash, then
 
 # React SDK
 
+Install the React SDK and its React peer dependency:
+
+```sh
+npm install @openclaw/krillswitch-react react
+```
+
 ## Declare a manifest
 
 ```ts

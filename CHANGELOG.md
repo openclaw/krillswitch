@@ -4,6 +4,11 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Prepare the core and React SDKs as public npm packages with compiled ESM,
+  TypeScript declarations, package documentation, and tarball smoke checks.
+
 ## [v0.5.0] - 2026-07-30
 
 ### Added

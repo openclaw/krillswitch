@@ -1,4 +1,4 @@
-import type { AttributeRule, AttributeValue } from "./types";
+import type { AttributeRule, AttributeValue } from "./types.js";
 
 /** A missing attribute never matches, for every operator — negations
  *  included. Serving a variation because data was absent is the classic

@@ -1,12 +1,12 @@
-import { rolloutBucket } from "./hash";
-import { attributeRuleMatches } from "./operators";
+import { rolloutBucket } from "./hash.js";
+import { attributeRuleMatches } from "./operators.js";
 import type {
   EvalContext,
   FlagConfig,
   FlagEvaluation,
   SegmentConfig,
   Variation,
-} from "./types";
+} from "./types.js";
 
 export type SegmentMap = Record<string, SegmentConfig>;
 
