@@ -1,9 +1,4 @@
-import type {
-  AttributeValue,
-  EvalRequestBody,
-  EvalResponseBody,
-  FlagValue,
-} from "@openclaw/krillswitch-core";
+import type { AttributeValue } from "@openclaw/krillswitch-core";
 import {
   createContext,
   type ReactNode,
@@ -13,28 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  createFlagEvaluator,
+  type EvaluateFlagsOptions,
+  type FlagManifest,
+  mergeIntoManifest,
+  requestEvaluation,
+  type WidenManifest,
+} from "./evaluation";
 
-/** Per-app flag declaration: key → code default. Value types drive the hooks. */
-export type FlagManifest = Record<string, FlagValue>;
-
-type WidenFlagValue<T> = T extends boolean
-  ? boolean
-  : T extends number
-    ? number
-    : T extends string
-      ? string
-      : T;
-
-/**
- * Inline manifest literals infer literal types (`souls: false` → `false`);
- * hooks must report the wider primitive since the server can serve any
- * variation of that type.
- */
-export type WidenManifest<M extends FlagManifest> = {
-  [K in keyof M]: WidenFlagValue<M[K]>;
-};
-
-export interface FeatureFlagProviderProps {
+export interface FeatureFlagProviderProps<
+  M extends FlagManifest = FlagManifest,
+> {
   /** Public eval key identifying the project + environment flag set. */
   evalKey: string;
   /** Krillswitch service origin, e.g. https://krillswitch.example.workers.dev */
@@ -42,6 +27,8 @@ export interface FeatureFlagProviderProps {
   /** Stable identity (GitHub user id). Falls back to a persisted anonymous key. */
   contextKey?: string;
   attributes?: Record<string, AttributeValue>;
+  /** Server-evaluated values used for SSR and the matching hydration render. */
+  initialValues?: Partial<M> | null;
   /** Background poll cadence; idle polls are ~free via ETag/304. */
   pollIntervalMs?: number;
   /** Subscribe to /v1/stream and refetch on its change events. Polling
@@ -53,7 +40,8 @@ export interface FeatureFlagProviderProps {
 const DEFAULT_POLL_INTERVAL_MS = 60_000;
 
 export interface KrillswitchClient<M extends FlagManifest> {
-  FeatureFlagProvider: (props: FeatureFlagProviderProps) => ReactNode;
+  evaluateFlags: (options: EvaluateFlagsOptions) => Promise<M>;
+  FeatureFlagProvider: (props: FeatureFlagProviderProps<M>) => ReactNode;
   useFeatureFlag: <K extends Extract<keyof M, string>>(key: K) => M[K];
   useFeatureFlags: () => M;
 }
@@ -98,30 +86,6 @@ function storageSet(key: string, value: string): void {
   }
 }
 
-/** A cached value is only trusted while its type still matches the manifest. */
-function matchesManifestType(defaultValue: FlagValue, value: unknown): boolean {
-  if (typeof defaultValue === "object") {
-    // json-kind flag (object, array, or null default): any JSON value is valid.
-    return value !== undefined;
-  }
-  return typeof value === typeof defaultValue;
-}
-
-function mergeIntoManifest<M extends FlagManifest>(
-  manifest: M,
-  candidate: Record<string, unknown>,
-): M {
-  const merged: FlagManifest = { ...manifest };
-  for (const [key, defaultValue] of Object.entries(manifest)) {
-    const value = candidate[key];
-    if (value !== undefined && matchesManifestType(defaultValue, value)) {
-      merged[key] = value as FlagValue;
-    }
-  }
-  // Keys and value types were validated against the manifest above.
-  return merged as M;
-}
-
 function readCachedValues<M extends FlagManifest>(
   manifest: M,
   storageKey: string,
@@ -138,6 +102,28 @@ function readCachedValues<M extends FlagManifest>(
     return mergeIntoManifest(manifest, parsed as Record<string, unknown>);
   } catch {
     return manifest;
+  }
+}
+
+function readBootstrapValues<M extends FlagManifest>(
+  manifest: M,
+  initialValuesJson: string | null,
+): M | null {
+  if (initialValuesJson === null) {
+    return null;
+  }
+  try {
+    const parsed: unknown = JSON.parse(initialValuesJson);
+    if (
+      parsed === null ||
+      typeof parsed !== "object" ||
+      Array.isArray(parsed)
+    ) {
+      return null;
+    }
+    return mergeIntoManifest(manifest, parsed as Record<string, unknown>);
+  } catch {
+    return null;
   }
 }
 
@@ -162,13 +148,15 @@ function createClient<M extends FlagManifest>(
   manifest: M,
 ): KrillswitchClient<M> {
   const FlagContext = createContext<M>(manifest);
+  const evaluateFlags = createFlagEvaluator(manifest);
 
-  function FeatureFlagProvider(props: FeatureFlagProviderProps): ReactNode {
+  function FeatureFlagProvider(props: FeatureFlagProviderProps<M>): ReactNode {
     const {
       evalKey,
       baseUrl,
       contextKey,
       attributes,
+      initialValues,
       pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
       stream = false,
       children,
@@ -187,30 +175,52 @@ function createClient<M extends FlagManifest>(
       resolvedContextKey,
       attributesJson,
     );
+    const initialValuesJson =
+      initialValues === undefined
+        ? null
+        : JSON.stringify(initialValues ?? manifest);
+    const bootstrapStorageKey = useRef<string | null>(storageKey);
+    // Bootstrap belongs to the SSR/hydration identity only. Once this mounted
+    // provider changes scope, it must use that scope's cache or defaults.
+    const scopedInitialValuesJson =
+      storageKey === bootstrapStorageKey.current ? initialValuesJson : null;
+    const scopeKey = JSON.stringify([storageKey, scopedInitialValuesJson]);
     const [state, setState] = useState(() => ({
-      storageKey,
-      values: readCachedValues(manifest, storageKey),
+      scopeKey,
+      values:
+        readBootstrapValues(manifest, scopedInitialValuesJson) ??
+        readCachedValues(manifest, storageKey),
     }));
     // A new identity or context must never render the previous scope's flags
     // while its fetch is still pending.
     const values =
-      state.storageKey === storageKey
+      state.scopeKey === scopeKey
         ? state.values
-        : readCachedValues(manifest, storageKey);
+        : (readBootstrapValues(manifest, scopedInitialValuesJson) ??
+          readCachedValues(manifest, storageKey));
 
     useEffect(() => {
       let disposed = false;
       let activeController: AbortController | null = null;
+      if (storageKey !== bootstrapStorageKey.current) {
+        bootstrapStorageKey.current = null;
+      }
       const parsedAttributes = JSON.parse(attributesJson) as Record<
         string,
         AttributeValue
       > | null;
       // Scoped to this identity/config; a refetch with the same tag can 304.
       let etag: string | null = null;
-      setState({
-        storageKey,
-        values: readCachedValues(manifest, storageKey),
-      });
+      setState((current) =>
+        current.scopeKey === scopeKey
+          ? current
+          : {
+              scopeKey,
+              values:
+                readBootstrapValues(manifest, scopedInitialValuesJson) ??
+                readCachedValues(manifest, storageKey),
+            },
+      );
 
       // Single fetch path for mount, refocus, and poll.
       async function refresh(): Promise<void> {
@@ -218,44 +228,29 @@ function createClient<M extends FlagManifest>(
         const controller = new AbortController();
         activeController = controller;
         try {
-          const body: EvalRequestBody = {
-            context: {
-              key: resolvedContextKey,
-              ...(parsedAttributes ? { attributes: parsedAttributes } : {}),
+          const result = await requestEvaluation(
+            manifest,
+            {
+              evalKey,
+              baseUrl,
+              context: {
+                key: resolvedContextKey,
+                ...(parsedAttributes ? { attributes: parsedAttributes } : {}),
+              },
+              signal: controller.signal,
             },
-          };
-          const headers: Record<string, string> = {
-            authorization: `Bearer ${evalKey}`,
-            "content-type": "application/json",
-          };
-          if (etag) {
-            headers["if-none-match"] = etag;
-          }
-          const response = await fetch(`${baseUrl}/v1/eval`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(body),
-            signal: controller.signal,
-          });
+            etag,
+          );
           if (
             disposed ||
             controller.signal.aborted ||
-            response.status === 304 ||
-            !response.ok
+            result.kind === "not-modified"
           ) {
             return;
           }
-          etag = response.headers.get("etag");
-          const payload = (await response.json()) as EvalResponseBody;
-          const remoteValues = Object.fromEntries(
-            Object.entries(payload.flags).map(([key, flag]) => [
-              key,
-              flag.value,
-            ]),
-          );
-          const merged = mergeIntoManifest(manifest, remoteValues);
-          setState({ storageKey, values: merged });
-          storageSet(storageKey, JSON.stringify(merged));
+          etag = result.etag;
+          setState({ scopeKey, values: result.values });
+          storageSet(storageKey, JSON.stringify(result.values));
         } catch {
           // Unreachable service: keep rendering last-known values.
         } finally {
@@ -299,6 +294,8 @@ function createClient<M extends FlagManifest>(
       pollIntervalMs,
       stream,
       storageKey,
+      scopeKey,
+      scopedInitialValuesJson,
     ]);
 
     const value = useMemo(() => values, [values]);
@@ -315,5 +312,10 @@ function createClient<M extends FlagManifest>(
     return useFeatureFlags()[key];
   }
 
-  return { FeatureFlagProvider, useFeatureFlag, useFeatureFlags };
+  return {
+    evaluateFlags,
+    FeatureFlagProvider,
+    useFeatureFlag,
+    useFeatureFlags,
+  };
 }
