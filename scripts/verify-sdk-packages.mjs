@@ -104,6 +104,17 @@ try {
       ),
       `${definition.name} includes source or test files`,
     );
+    for (const entry of entries.filter((candidate) =>
+      candidate.endsWith(".map"),
+    )) {
+      const sourceMap = JSON.parse(
+        execFileSync("tar", ["-xOf", tarball, entry], { encoding: "utf8" }),
+      );
+      assert(
+        sourceMap.sourcesContent?.every((source) => typeof source === "string"),
+        `${definition.name} includes a source map without embedded sources`,
+      );
+    }
 
     const manifest = readPackedManifest(tarball);
     assert.equal(manifest.name, definition.name);
@@ -126,7 +137,38 @@ try {
     react.manifest.exports?.["./server"]?.import,
     "./dist/server.js",
   );
+  assert.equal(
+    react.manifest.exports?.["./server"]?.["react-server"],
+    "./dist/server.js",
+  );
   assert.equal(react.manifest.imports?.["#evaluation"], "./dist/evaluation.js");
+  assert.equal(
+    react.manifest.peerDependencies?.react,
+    "^18.0.0 || ^19.0.0",
+    "the packed React SDK must support the documented React versions",
+  );
+  const reactClientModule = execFileSync(
+    "tar",
+    ["-xOf", react.tarball, "package/dist/krillswitch.js"],
+    { encoding: "utf8" },
+  );
+  assert(
+    reactClientModule.startsWith('"use client";'),
+    "the packed React hooks must preserve their client-module boundary",
+  );
+  const reactServerDeclaration = execFileSync(
+    "tar",
+    ["-xOf", react.tarball, "package/dist/server.d.ts"],
+    { encoding: "utf8" },
+  );
+  assert(
+    reactServerDeclaration.includes('from "./evaluation.js"'),
+    "the packed server declaration must use a relative type import",
+  );
+  assert(
+    !reactServerDeclaration.includes("#evaluation"),
+    "the packed server declaration must not expose internal package imports",
+  );
 
   const consumerDirectory = path.join(temporaryDirectory, "consumer");
   const consumerModules = path.join(consumerDirectory, "node_modules");
@@ -137,6 +179,22 @@ try {
   extractTarball(
     react.tarball,
     path.join(consumerModules, "@openclaw", "krillswitch-react"),
+  );
+  const reactServerSmoke = path.join(
+    consumerDirectory,
+    "smoke-react-server.mjs",
+  );
+  writeFileSync(
+    reactServerSmoke,
+    `import { createKrillswitchEvaluator } from "@openclaw/krillswitch-react/server";
+
+if (typeof createKrillswitchEvaluator !== "function") throw new Error("react-server entry failed");
+`,
+  );
+  execFileSync(
+    process.execPath,
+    ["--conditions=react-server", reactServerSmoke],
+    { cwd: consumerDirectory, stdio: "inherit" },
   );
   linkReactDependency("react", path.join(consumerModules, "react"));
   mkdirSync(path.join(consumerModules, "@types"), { recursive: true });

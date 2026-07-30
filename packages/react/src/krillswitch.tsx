@@ -1,3 +1,5 @@
+"use client";
+
 import type { AttributeValue } from "@openclaw/krillswitch-core";
 import {
   createContext,
