@@ -3,9 +3,8 @@
 Pure TypeScript feature-flag evaluation and shared wire contracts for
 [Krill Switch](https://krillswitch.com).
 
-```sh
-npm install @openclaw/krillswitch-core
-```
+Registry publication is pending. Until the package is minted, test it from the
+workspace or a verified packed tarball.
 
 ```ts
 import { evaluateFlag, type FlagConfig } from "@openclaw/krillswitch-core";

@@ -7,9 +7,9 @@ description: Use the pure TypeScript evaluator and shared flag contracts without
 
 `@openclaw/krillswitch-core` contains the wire types, flag model, rollout hash, and pure `evaluateFlag` function. It performs no I/O and has no framework dependency.
 
-```sh
-npm install @openclaw/krillswitch-core
-```
+This page documents the prepared package contract. The package has not been
+published to npm yet; use the workspace or a verified packed tarball for
+pre-release testing.
 
 ## Evaluate one flag
 

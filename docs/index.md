@@ -42,4 +42,4 @@ The evaluation host cannot serve dashboard assets or admin routes. The admin hos
 
 ## Source and status
 
-KrillSwitch is developed at [openclaw/krillswitch](https://github.com/openclaw/krillswitch). The root changelog records shipped behavior. Application releases are versioned GitHub releases; the core and React SDKs are independently versioned npm packages.
+KrillSwitch is developed at [openclaw/krillswitch](https://github.com/openclaw/krillswitch). The root changelog records shipped behavior. Application releases are versioned GitHub releases. The core and React SDK artifacts are prepared for independent npm versioning, but the packages have not been published yet.

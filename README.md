@@ -87,16 +87,17 @@ pnpm typecheck  # tsc across workspaces (generates worker types first)
 pnpm lint       # biome check
 pnpm lint:fix   # biome check --write
 pnpm docs:build # render and validate the documentation site
-pnpm verify:sdk-packages # pack and load the public SDK artifacts
+pnpm verify:sdk-packages # pack and load the publishable SDK artifacts
 ```
 
 ## Releases
 
 Krillswitch application releases are versioned GitHub releases, with the
 application version declared in the root `package.json`. The core and React
-SDKs are independently versioned public npm packages. Their `prepack` scripts
-compile ESM and TypeScript declarations; `pnpm verify:sdk-packages` checks the
-exact tarballs before publication.
+SDK artifacts are prepared for independent npm versioning, but the packages
+have not been published yet. Their `prepack` scripts compile ESM and TypeScript
+declarations; `pnpm verify:sdk-packages` checks the exact tarballs before
+publication.
 
 ## Security
 
