@@ -7,77 +7,137 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-punchcard-domains:
-    name: Diagnose Punchcard Worker domains
+  diagnose-access:
+    name: Compare OpenClaw Access applications
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - name: Inspect Worker custom domains
+      - name: Inspect Access applications and policies
         shell: bash
         run: |
           python3 <<'PY'
+          import hashlib
           import json
           import os
-          import socket
           import urllib.error
+          import urllib.parse
           import urllib.request
 
           account_id = os.environ["CLOUDFLARE_ACCOUNT_ID"]
           api_token = os.environ["CLOUDFLARE_API_TOKEN"]
           targets = {
-              "api.punchcard.openclaw.ai",
+              "clawrouter.openclaw.ai",
               "punchcard.openclaw.ai",
+              "switch.openclaw.ai",
           }
 
-          request = urllib.request.Request(
-              f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/domains",
-              headers={"Authorization": f"Bearer {api_token}"},
-          )
-          try:
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  payload = json.load(response)
-          except urllib.error.HTTPError as error:
-              payload = json.load(error)
-              print(f"Cloudflare API returned HTTP {error.code}")
-
-          if not payload.get("success"):
-              for error in payload.get("errors", []):
-                  print(f"Cloudflare error {error.get('code')}: {error.get('message')}")
-              raise SystemExit("Cloudflare domain lookup failed")
-
-          domains = {
-              domain["hostname"]: domain
-              for domain in payload.get("result", [])
-              if domain.get("hostname") in targets
-          }
-          for hostname in sorted(targets):
-              domain = domains.get(hostname)
-              if domain:
-                  print(
-                      f"{hostname}: configured "
-                      f"service={domain.get('service')} "
-                      f"environment={domain.get('environment')} "
-                      f"zone={domain.get('zone_name')}"
-                  )
-              else:
-                  print(f"{hostname}: absent from Worker custom domains")
-
+          def request(path):
+              request = urllib.request.Request(
+                  f"https://api.cloudflare.com/client/v4{path}",
+                  headers={"Authorization": f"Bearer {api_token}"},
+              )
               try:
-                  addresses = sorted(
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      payload = json.load(response)
+              except urllib.error.HTTPError as error:
+                  payload = json.load(error)
+                  print(f"{path}: Cloudflare API returned HTTP {error.code}")
+              if not payload.get("success"):
+                  for error in payload.get("errors", []):
+                      print(
+                          f"{path}: Cloudflare error "
+                          f"{error.get('code')}: {error.get('message')}"
+                      )
+                  raise SystemExit(f"Cloudflare lookup failed for {path}")
+              return payload.get("result", [])
+
+          def rule_summary(rule):
+              if "email" in rule:
+                  email = rule["email"].get("email", "").lower()
+                  local, _, domain = email.partition("@")
+                  digest = hashlib.sha256(email.encode()).hexdigest()[:12]
+                  return {
+                      "type": "email",
+                      "domain": domain,
+                      "local_length": len(local),
+                      "sha256_12": digest,
+                  }
+              if "email_domain" in rule:
+                  return {
+                      "type": "email_domain",
+                      "domain": rule["email_domain"].get("domain"),
+                  }
+              if "github-organization" in rule:
+                  github = rule["github-organization"]
+                  return {
+                      "type": "github-organization",
+                      "name": github.get("name"),
+                      "team": github.get("team"),
+                      "identity_provider_id": github.get(
+                          "identity_provider_id"
+                      ),
+                  }
+              return {"type": next(iter(rule), "unknown")}
+
+          providers = request(
+              f"/accounts/{account_id}/access/identity_providers"
+          )
+          print(
+              "identity_providers="
+              + json.dumps(
+                  [
                       {
-                          address[4][0]
-                          for address in socket.getaddrinfo(
-                              hostname,
-                              443,
-                              type=socket.SOCK_STREAM,
-                          )
+                          "id": provider.get("id"),
+                          "name": provider.get("name"),
+                          "type": provider.get("type"),
                       }
-                  )
-              except socket.gaierror as error:
-                  print(f"{hostname}: DNS unresolved ({error})")
-              else:
-                  print(f"{hostname}: DNS {','.join(addresses)}")
+                      for provider in providers
+                  ],
+                  sort_keys=True,
+              )
+          )
+
+          applications = request(
+              f"/accounts/{account_id}/access/apps?per_page=100"
+          )
+          for app in sorted(
+              (
+                  app
+                  for app in applications
+                  if app.get("domain") in targets
+              ),
+              key=lambda app: app.get("domain", ""),
+          ):
+              app_id = app["id"]
+              policies = request(
+                  f"/accounts/{account_id}/access/apps/"
+                  f"{urllib.parse.quote(app_id)}/policies?per_page=100"
+              )
+              summary = {
+                  "name": app.get("name"),
+                  "domain": app.get("domain"),
+                  "type": app.get("type"),
+                  "session_duration": app.get("session_duration"),
+                  "auto_redirect_to_identity": app.get(
+                      "auto_redirect_to_identity"
+                  ),
+                  "allowed_idps": app.get("allowed_idps", []),
+                  "destinations": app.get("destinations", []),
+                  "policies": [
+                      {
+                          "name": policy.get("name"),
+                          "decision": policy.get("decision"),
+                          "precedence": policy.get("precedence"),
+                          "include": [
+                              rule_summary(rule)
+                              for rule in policy.get("include", [])
+                          ],
+                      }
+                      for policy in policies
+                  ],
+              }
+              print(json.dumps(summary, sort_keys=True))
           PY
