@@ -1,7 +1,7 @@
-export { CONFIG_CACHE_TTL_MS } from "./config";
-export { evaluateFlag, type SegmentMap } from "./evaluator";
-export { rolloutBucket } from "./hash";
-export { attributeRuleMatches } from "./operators";
+export { CONFIG_CACHE_TTL_MS } from "./config.js";
+export { evaluateFlag, type SegmentMap } from "./evaluator.js";
+export { rolloutBucket } from "./hash.js";
+export { attributeRuleMatches } from "./operators.js";
 export type {
   AttributeRule,
   AttributeValue,
@@ -21,4 +21,4 @@ export type {
   TargetingRule,
   UserTarget,
   Variation,
-} from "./types";
+} from "./types.js";

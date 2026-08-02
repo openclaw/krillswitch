@@ -24,12 +24,13 @@ pnpm typecheck
 pnpm lint
 pnpm lint:fix
 pnpm docs:build
+pnpm verify:sdk-packages
 pnpm --dir apps/admin build
 pnpm --dir apps/demo build
 pnpm --dir packages/cli build
 ```
 
-API tests use Wrangler's local Workers pool and apply the real D1 migrations. Core and React tests run in Vitest.
+API tests use Wrangler's local Workers pool and apply the real D1 migrations. Core and React tests run in Vitest. The SDK package check builds and packs both publishable packages, validates their tarball metadata and contents, and loads every package entry point from the packed artifacts.
 
 ## Database changes
 
