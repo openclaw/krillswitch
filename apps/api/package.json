@@ -21,8 +21,8 @@
     "@openclaw/krillswitch-core": "workspace:*",
     "better-auth": "1.6.25",
     "drizzle-orm": "^0.45.2",
-    "hono": "4.12.32",
-    "jose": "^6.2.4",
+    "hono": "4.12.33",
+    "jose": "^6.2.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
