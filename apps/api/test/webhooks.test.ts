@@ -125,4 +125,70 @@ describe("drainWebhooks", () => {
       headers: { cookie },
     });
   });
+
+  it("aborts a hung subscriber POST so drain can finish", async () => {
+    const cookie = await devLogin("admin");
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "Hang test",
+        url: "https://hang.example/hook",
+      }),
+    });
+    const { created: id } = await created.json<{ created: string }>();
+
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: false,
+          comment: "webhook hang abort test",
+        }),
+      },
+    );
+
+    const hangingFetch = (async (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      if (!String(input).startsWith("https://hang.example/")) {
+        return new Response("ok", { status: 200 });
+      }
+      const signal = init?.signal;
+      if (!signal) {
+        return await new Promise<Response>(() => {});
+      }
+      return await new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          reject(new DOMException("The operation was aborted.", "AbortError"));
+        };
+        if (signal.aborted) {
+          abort();
+          return;
+        }
+        signal.addEventListener("abort", abort, { once: true });
+      });
+    }) as typeof fetch;
+
+    const db = drizzle(env.DB);
+    await drainWebhooks(db, hangingFetch, 20);
+
+    const listed = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      headers: { cookie },
+    });
+    const body = await listed.json<{
+      webhooks: { id: string; lastStatus: string | null }[];
+    }>();
+    expect(body.webhooks.find((hook) => hook.id === id)?.lastStatus).toBe(
+      "unreachable",
+    );
+
+    await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+  }, 3_000);
 });

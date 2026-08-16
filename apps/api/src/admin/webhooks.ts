@@ -4,6 +4,8 @@ import { changeLog, webhooks } from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
 
 const DRAIN_BATCH = 10;
+/** Bound each subscriber POST so a stalled URL cannot pin waitUntil. */
+export const WEBHOOK_DRAIN_FETCH_TIMEOUT_MS = 2_000;
 
 export type WebhookRow = {
   id: string;
@@ -121,6 +123,7 @@ export async function deleteWebhook(
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
+  timeoutMs = WEBHOOK_DRAIN_FETCH_TIMEOUT_MS,
 ): Promise<void> {
   const hooks = await db
     .select()
@@ -129,7 +132,7 @@ export async function drainWebhooks(
     .all();
   for (const hook of hooks) {
     try {
-      await drainOneWebhook(db, fetcher, hook);
+      await drainOneWebhook(db, fetcher, hook, timeoutMs);
     } catch {
       // Notification must never surface as a worker error; the cursor simply
       // stays put and the next mutation retries the drain.
@@ -141,6 +144,7 @@ async function drainOneWebhook(
   db: DrizzleD1Database,
   fetcher: typeof fetch,
   hook: typeof webhooks.$inferSelect,
+  timeoutMs: number,
 ): Promise<void> {
   {
     const entries = await db
@@ -172,6 +176,7 @@ async function drainOneWebhook(
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ type: "change", entry }),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (!response.ok) {
           status = `http ${response.status}`;

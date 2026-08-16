@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Abort hung admin webhook deliveries so one stalled subscriber cannot block the post-mutation drain.
+
 ## [v0.5.0] - 2026-07-30
 
 ### Added
