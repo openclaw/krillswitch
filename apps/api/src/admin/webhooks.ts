@@ -118,10 +118,9 @@ export async function deleteWebhook(
 
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
- *  Delivery is notify-only for HTTP and network failures: the cursor
- *  advances so a dead subscriber cannot stall the queue. A timeout does
- *  not advance the cursor, so a slow subscriber is retried on the next
- *  drain instead of permanently skipping the batch. */
+ *  Delivery is notify-only: HTTP, network, and timeout failures all
+ *  advance the cursor so a dead or slow subscriber cannot stall the
+ *  queue or duplicate a post that already completed after cutoff. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
@@ -188,6 +187,7 @@ async function drainOneWebhook(
       } catch (error) {
         if (isFetchTimeout(error)) {
           status = "timeout";
+          cursor = rowid;
           break;
         }
         status = "unreachable";
