@@ -5,6 +5,71 @@ import { type Actor, changeLogInsert } from "./changeLog";
 
 const DRAIN_BATCH = 10;
 
+export class WebhookUrlError extends Error {
+  constructor() {
+    super("invalid webhook url");
+    this.name = "WebhookUrlError";
+  }
+}
+
+const blockedHostnames = new Set(["localhost", "metadata.google.internal"]);
+
+/** Public HTTPS only. Blocks private, link-local, and metadata hosts. */
+export function assertPublicHttpsWebhookUrl(raw: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new WebhookUrlError();
+  }
+  if (parsed.protocol !== "https:") {
+    throw new WebhookUrlError();
+  }
+  if (parsed.username || parsed.password) {
+    throw new WebhookUrlError();
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (blockedHostnames.has(host) || host.endsWith(".localhost")) {
+    throw new WebhookUrlError();
+  }
+  if (isPrivateOrLinkLocalHost(host)) {
+    throw new WebhookUrlError();
+  }
+  return parsed;
+}
+
+function isPrivateOrLinkLocalHost(host: string): boolean {
+  if (host === "::1" || host === "0.0.0.0") {
+    return true;
+  }
+  if (host.includes(":")) {
+    return (
+      host.startsWith("fe80:") || host.startsWith("fc") || host.startsWith("fd")
+    );
+  }
+  const parts = host.split(".").map((part) => Number(part));
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return false;
+  }
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) {
+    return true;
+  }
+  if (a === 169 && b === 254) {
+    return true;
+  }
+  if (a === 172 && b >= 16 && b <= 31) {
+    return true;
+  }
+  if (a === 192 && b === 168) {
+    return true;
+  }
+  return a === 100 && b >= 64 && b <= 127;
+}
+
 export type WebhookRow = {
   id: string;
   name: string;
@@ -37,6 +102,7 @@ export async function createWebhook(
   db: DrizzleD1Database,
   options: { name: string; url: string; actor: Actor },
 ): Promise<string> {
+  assertPublicHttpsWebhookUrl(options.url);
   const id = crypto.randomUUID();
   // New webhooks start at the current change-log tail so they only receive
   // changes made after they were added.
@@ -163,6 +229,20 @@ async function drainOneWebhook(
       .limit(DRAIN_BATCH)
       .all();
     if (entries.length === 0) {
+      return;
+    }
+    try {
+      assertPublicHttpsWebhookUrl(hook.url);
+    } catch {
+      const lastRowid = entries[entries.length - 1]?.rowid ?? hook.cursor;
+      await db
+        .update(webhooks)
+        .set({
+          cursor: lastRowid,
+          lastStatus: "blocked",
+          lastSentAt: new Date(),
+        })
+        .where(eq(webhooks.id, hook.id));
       return;
     }
     let status = "ok";

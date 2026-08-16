@@ -3,7 +3,11 @@ import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import { beforeAll, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
-import { drainWebhooks } from "../src/admin/webhooks";
+import {
+  assertPublicHttpsWebhookUrl,
+  drainWebhooks,
+  WebhookUrlError,
+} from "../src/admin/webhooks";
 
 const BASE = "http://localhost";
 
@@ -28,6 +32,29 @@ async function devLogin(persona: string): Promise<string> {
     .map((entry) => entry.split(";")[0])
     .join("; ");
 }
+
+describe("assertPublicHttpsWebhookUrl", () => {
+  it("accepts public https URLs", () => {
+    expect(assertPublicHttpsWebhookUrl("https://example.com/hook").href).toBe(
+      "https://example.com/hook",
+    );
+  });
+
+  it("rejects http, userinfo, loopback, and metadata hosts", () => {
+    for (const url of [
+      "http://example.com/hook",
+      "https://user:pass@example.com/hook",
+      "https://127.0.0.1/hook",
+      "https://10.0.0.5/hook",
+      "https://192.168.1.9/hook",
+      "https://169.254.169.254/latest/meta-data",
+      "https://localhost/hook",
+      "https://metadata.google.internal/",
+    ]) {
+      expect(() => assertPublicHttpsWebhookUrl(url)).toThrow(WebhookUrlError);
+    }
+  });
+});
 
 describe("webhook admin API", () => {
   it("admin can create, list, disable, and delete a webhook", async () => {
@@ -63,6 +90,19 @@ describe("webhook admin API", () => {
       headers: { cookie },
     });
     expect(deleted.status).toBe(200);
+  });
+
+  it("admin cannot create a private or http webhook", async () => {
+    const cookie = await devLogin("admin");
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "Metadata",
+        url: "https://169.254.169.254/latest/meta-data",
+      }),
+    });
+    expect(created.status).toBe(400);
   });
 
   it("editors cannot manage webhooks", async () => {

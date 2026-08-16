@@ -81,6 +81,7 @@ import {
   drainWebhooks,
   listWebhooks,
   setWebhookEnabled,
+  WebhookUrlError,
 } from "./webhooks";
 
 // One identity shape for both session users and access tokens. Handlers read
@@ -330,12 +331,19 @@ adminRoutes.post("/webhooks", async (c) => {
     return c.json({ error: "invalid_request" }, 400);
   }
   const actor = c.get("actor");
-  const id = await createWebhook(drizzle(c.env.DB), {
-    name: parsed.data.name,
-    url: parsed.data.url,
-    actor: { id: actor.id, name: actor.name },
-  });
-  return c.json({ created: id }, 201);
+  try {
+    const id = await createWebhook(drizzle(c.env.DB), {
+      name: parsed.data.name,
+      url: parsed.data.url,
+      actor: { id: actor.id, name: actor.name },
+    });
+    return c.json({ created: id }, 201);
+  } catch (error) {
+    if (error instanceof WebhookUrlError) {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    throw error;
+  }
 });
 
 adminRoutes.patch("/webhooks/:id", async (c) => {
