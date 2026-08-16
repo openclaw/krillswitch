@@ -187,17 +187,14 @@ describe("drainWebhooks", () => {
     );
 
     const retried: string[] = [];
-    const countingFetch = (async (
-      input: RequestInfo | URL,
-      init?: RequestInit,
-    ) => {
+    const countingFetch = (async (input: RequestInfo | URL) => {
       retried.push(String(input));
-      return hangingFetch(input, init);
+      return new Response("ok", { status: 200 });
     }) as typeof fetch;
     await drainWebhooks(db, countingFetch, 20);
     expect(
-      retried.filter((url) => url.startsWith("https://hang.example/")).length,
-    ).toBeGreaterThan(0);
+      retried.filter((url) => url.startsWith("https://hang.example/")),
+    ).toHaveLength(0);
 
     await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
       method: "DELETE",

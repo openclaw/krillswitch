@@ -118,9 +118,8 @@ export async function deleteWebhook(
 
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
- *  Delivery is notify-only for HTTP and unreachable failures: the cursor
- *  advances so a bad host cannot block the outbox. A request timeout is
- *  retryable: last_status becomes "timeout" and the cursor stays put. */
+ *  Delivery is notify-only: the cursor advances even when the POST fails
+ *  or times out, and last_status shows the most recent outcome. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
@@ -171,8 +170,7 @@ async function drainOneWebhook(
       return;
     }
     let status = "ok";
-    let cursor = hook.cursor;
-    for (const { rowid, ...entry } of entries) {
+    for (const { rowid: _rowid, ...entry } of entries) {
       try {
         const response = await fetcher(hook.url, {
           method: "POST",
@@ -183,19 +181,14 @@ async function drainOneWebhook(
         if (!response.ok) {
           status = `http ${response.status}`;
         }
-        cursor = rowid;
       } catch (error) {
-        if (isFetchTimeout(error)) {
-          status = "timeout";
-          break;
-        }
-        status = "unreachable";
-        cursor = rowid;
+        status = isFetchTimeout(error) ? "timeout" : "unreachable";
       }
     }
+    const lastRowid = entries[entries.length - 1]?.rowid ?? hook.cursor;
     await db
       .update(webhooks)
-      .set({ cursor, lastStatus: status, lastSentAt: new Date() })
+      .set({ cursor: lastRowid, lastStatus: status, lastSentAt: new Date() })
       .where(eq(webhooks.id, hook.id));
   }
 }
