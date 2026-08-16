@@ -49,6 +49,8 @@ Token: command flag → `KRILLSWITCH_TOKEN` → secure-storage reference → leg
 
 Base URL: command flag → `KRILLSWITCH_URL` → config file → `http://localhost:8799`.
 
+API requests abort after 30 seconds, or after `KRILLSWITCH_TIMEOUT_MS` milliseconds when that variable is set.
+
 Changing the stored base URL without a new token clears the old token reference. This prevents a credential minted for one origin from being sent to another.
 
 ## Cloudflare Access
