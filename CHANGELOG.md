@@ -4,10 +4,6 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-
-- Abort hung CLI API requests so a silent base URL returns an error instead of hanging.
-
 ## [v0.5.0] - 2026-07-30
 
 ### Added

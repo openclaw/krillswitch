@@ -1,7 +1,22 @@
 import type { CliConfig } from "./config";
 
-/** Bound API calls so a silent base URL cannot hang the process. */
-export const CLI_FETCH_TIMEOUT_MS = 15_000;
+/** Bound API calls so a silent base URL cannot hang the process.
+ *  Operators can raise this with KRILLSWITCH_TIMEOUT_MS. */
+export const CLI_FETCH_TIMEOUT_MS = 30_000;
+
+function fetchTimeoutMsFromEnv(
+  env: Record<string, string | undefined> = process.env,
+): number | undefined {
+  const raw = env.KRILLSWITCH_TIMEOUT_MS;
+  if (raw === undefined || raw.trim() === "") {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed;
+}
 
 export class CliError extends Error {
   readonly exitCode: number;
@@ -19,7 +34,8 @@ type RequestOptions = {
 export class KrillswitchClient {
   constructor(
     private readonly config: CliConfig,
-    private readonly fetchTimeoutMs = CLI_FETCH_TIMEOUT_MS,
+    private readonly fetchTimeoutMs = fetchTimeoutMsFromEnv() ??
+      CLI_FETCH_TIMEOUT_MS,
   ) {}
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
