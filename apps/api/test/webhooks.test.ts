@@ -194,7 +194,7 @@ describe("drainWebhooks", () => {
     await drainWebhooks(db, countingFetch, 20);
     expect(
       retried.filter((url) => url.startsWith("https://hang.example/")),
-    ).toHaveLength(0);
+    ).toHaveLength(1);
 
     await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
       method: "DELETE",
