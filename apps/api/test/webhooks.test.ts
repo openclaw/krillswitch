@@ -183,8 +183,21 @@ describe("drainWebhooks", () => {
       webhooks: { id: string; lastStatus: string | null }[];
     }>();
     expect(body.webhooks.find((hook) => hook.id === id)?.lastStatus).toBe(
-      "unreachable",
+      "timeout",
     );
+
+    const retried: string[] = [];
+    const countingFetch = (async (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      retried.push(String(input));
+      return hangingFetch(input, init);
+    }) as typeof fetch;
+    await drainWebhooks(db, countingFetch, 20);
+    expect(
+      retried.filter((url) => url.startsWith("https://hang.example/")).length,
+    ).toBeGreaterThan(0);
 
     await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
       method: "DELETE",
