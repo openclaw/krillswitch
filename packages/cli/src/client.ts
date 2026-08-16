@@ -1,5 +1,8 @@
 import type { CliConfig } from "./config";
 
+/** Bound API calls so a silent base URL cannot hang the process. */
+export const CLI_FETCH_TIMEOUT_MS = 15_000;
+
 export class CliError extends Error {
   readonly exitCode: number;
   constructor(message: string, exitCode = 1) {
@@ -14,7 +17,10 @@ type RequestOptions = {
 };
 
 export class KrillswitchClient {
-  constructor(private readonly config: CliConfig) {}
+  constructor(
+    private readonly config: CliConfig,
+    private readonly fetchTimeoutMs = CLI_FETCH_TIMEOUT_MS,
+  ) {}
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     if (!this.config.token) {
@@ -34,6 +40,7 @@ export class KrillswitchClient {
           ...(hasBody ? { "content-type": "application/json" } : {}),
         },
         ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
+        signal: AbortSignal.timeout(this.fetchTimeoutMs),
       });
     } catch {
       throw new CliError(
