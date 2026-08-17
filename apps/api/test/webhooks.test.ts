@@ -50,9 +50,22 @@ describe("assertPublicHttpsWebhookUrl", () => {
       "https://169.254.169.254/latest/meta-data",
       "https://localhost/hook",
       "https://metadata.google.internal/",
+      "https://[::1]/hook",
+      "https://[fe80::1]/hook",
+      "https://[fc00::1]/hook",
+      "https://[fd12::1]/hook",
+      "https://[::ffff:127.0.0.1]/hook",
+      "https://[::ffff:7f00:1]/hook",
     ]) {
       expect(() => assertPublicHttpsWebhookUrl(url)).toThrow(WebhookUrlError);
     }
+  });
+
+  it("accepts a public IPv6 literal", () => {
+    expect(
+      assertPublicHttpsWebhookUrl("https://[2001:4860:4860::8888]/hook")
+        .hostname,
+    ).toBe("[2001:4860:4860::8888]");
   });
 });
 
@@ -100,6 +113,19 @@ describe("webhook admin API", () => {
       body: JSON.stringify({
         name: "Metadata",
         url: "https://169.254.169.254/latest/meta-data",
+      }),
+    });
+    expect(created.status).toBe(400);
+  });
+
+  it("admin cannot create a bracketed IPv6 loopback webhook", async () => {
+    const cookie = await devLogin("admin");
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "V6 loopback",
+        url: "https://[::1]/hook",
       }),
     });
     expect(created.status).toBe(400);
