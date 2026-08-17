@@ -8,6 +8,7 @@ import {
   drainWebhooks,
   WebhookUrlError,
 } from "../src/admin/webhooks";
+import { webhooks } from "../src/db/schema";
 
 const BASE = "http://localhost";
 
@@ -56,6 +57,10 @@ describe("assertPublicHttpsWebhookUrl", () => {
       "https://[fd12::1]/hook",
       "https://[::ffff:127.0.0.1]/hook",
       "https://[::ffff:7f00:1]/hook",
+      "https://[::127.0.0.1]/hook",
+      "https://[::7f00:1]/hook",
+      "https://localhost./hook",
+      "https://metadata.google.internal./",
     ]) {
       expect(() => assertPublicHttpsWebhookUrl(url)).toThrow(WebhookUrlError);
     }
@@ -116,6 +121,22 @@ describe("webhook admin API", () => {
       }),
     });
     expect(created.status).toBe(400);
+  });
+
+  it("admin cannot create IPv4-compatible IPv6 or trailing-dot aliases", async () => {
+    const cookie = await devLogin("admin");
+    for (const url of [
+      "https://[::127.0.0.1]/hook",
+      "https://localhost./hook",
+      "https://metadata.google.internal./hook",
+    ]) {
+      const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({ name: "Alias", url }),
+      });
+      expect(created.status, url).toBe(400);
+    }
   });
 
   it("admin cannot create a bracketed IPv6 loopback webhook", async () => {
@@ -190,5 +211,58 @@ describe("drainWebhooks", () => {
       method: "DELETE",
       headers: { cookie },
     });
+  });
+
+  it("marks stored IPv4-compatible and trailing-dot hooks blocked", async () => {
+    const cookie = await devLogin("admin");
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          comment: "stored alias drain test",
+        }),
+      },
+    );
+
+    const db = drizzle(env.DB);
+    const aliasHooks = [
+      {
+        id: crypto.randomUUID(),
+        name: "Legacy compatible v6",
+        url: "https://[::127.0.0.1]/hook",
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Legacy trailing-dot localhost",
+        url: "https://localhost./hook",
+      },
+    ];
+    for (const hook of aliasHooks) {
+      await db.insert(webhooks).values({
+        ...hook,
+        enabled: true,
+        cursor: 0,
+        createdAt: new Date(),
+      });
+    }
+
+    const posts: string[] = [];
+    const fakeFetch = (async (input: RequestInfo | URL) => {
+      posts.push(String(input));
+      return new Response("ok", { status: 200 });
+    }) as typeof fetch;
+
+    await drainWebhooks(db, fakeFetch);
+    expect(posts.some((url) => url.includes("127.0.0.1"))).toBe(false);
+    expect(posts.some((url) => url.includes("localhost"))).toBe(false);
+
+    const rows = await db.select().from(webhooks).all();
+    for (const hook of aliasHooks) {
+      const row = rows.find((entry) => entry.id === hook.id);
+      expect(row?.lastStatus).toBe("blocked");
+    }
   });
 });

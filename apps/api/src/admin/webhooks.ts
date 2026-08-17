@@ -28,7 +28,7 @@ export function assertPublicHttpsWebhookUrl(raw: string): URL {
   if (parsed.username || parsed.password) {
     throw new WebhookUrlError();
   }
-  const host = unwrapHostname(parsed.hostname);
+  const host = normalizeHostname(parsed.hostname);
   if (blockedHostnames.has(host) || host.endsWith(".localhost")) {
     throw new WebhookUrlError();
   }
@@ -47,6 +47,12 @@ function unwrapHostname(host: string): string {
   return lower;
 }
 
+/** Strip one trailing DNS root label so localhost. matches the denylist. */
+function normalizeHostname(host: string): string {
+  const unwrapped = unwrapHostname(host);
+  return unwrapped.endsWith(".") ? unwrapped.slice(0, -1) : unwrapped;
+}
+
 function isPrivateOrLinkLocalHost(host: string): boolean {
   if (host === "::1" || host === "0.0.0.0") {
     return true;
@@ -63,13 +69,23 @@ function parseIpv4Octets(
   host: string,
 ): [number, number, number, number] | null {
   const parts = host.split(".").map((part) => Number(part));
+  const a = parts[0];
+  const b = parts[1];
+  const c = parts[2];
+  const d = parts[3];
   if (
     parts.length !== 4 ||
-    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+    a === undefined ||
+    b === undefined ||
+    c === undefined ||
+    d === undefined ||
+    [a, b, c, d].some(
+      (part) => !Number.isInteger(part) || part < 0 || part > 255,
+    )
   ) {
     return null;
   }
-  return [parts[0], parts[1], parts[2], parts[3]];
+  return [a, b, c, d];
 }
 
 function isPrivateIpv4([a, b]: [number, number, number, number]): boolean {
@@ -113,9 +129,11 @@ function parseIpv6Groups(addr: string): number[] | null {
   if (sides.length > 2) {
     return null;
   }
-  const left = sides[0] === "" ? [] : sides[0].split(":");
+  const leftRaw = sides[0] ?? "";
+  const rightRaw = sides[1] ?? "";
+  const left = leftRaw === "" ? [] : leftRaw.split(":");
   const right =
-    sides.length === 2 ? (sides[1] === "" ? [] : sides[1].split(":")) : [];
+    sides.length === 2 ? (rightRaw === "" ? [] : rightRaw.split(":")) : [];
   const expected = 8 - (ipv4Tail ? 2 : 0);
   const have = left.length + right.length;
   const groups: number[] = [];
@@ -157,30 +175,27 @@ function parseIpv6Groups(addr: string): number[] | null {
 }
 
 function isNonPublicIpv6(groups: number[]): boolean {
+  const g0 = groups[0] ?? 0;
+  const g5 = groups[5] ?? 0;
+  const g6 = groups[6] ?? 0;
+  const g7 = groups[7] ?? 0;
   const zero = groups.every((group) => group === 0);
-  if (zero || (zeroExceptLast(groups) && groups[7] === 1)) {
+  if (zero || (zeroExceptLast(groups) && g7 === 1)) {
     return true;
   }
-  if ((groups[0] & 0xffc0) === 0xfe80) {
+  if ((g0 & 0xffc0) === 0xfe80) {
     return true;
   }
-  if ((groups[0] & 0xfe00) === 0xfc00) {
+  if ((g0 & 0xfe00) === 0xfc00) {
     return true;
   }
-  const mapped =
-    groups[0] === 0 &&
-    groups[1] === 0 &&
-    groups[2] === 0 &&
-    groups[3] === 0 &&
-    groups[4] === 0 &&
-    groups[5] === 0xffff;
-  if (mapped) {
-    return isPrivateIpv4([
-      groups[6] >> 8,
-      groups[6] & 0xff,
-      groups[7] >> 8,
-      groups[7] & 0xff,
-    ]);
+  // IPv4-mapped (::ffff:a.b.c.d) and deprecated IPv4-compatible (::a.b.c.d).
+  // WHATWG URL rewrites [::127.0.0.1] to [::7f00:1]; group 6 is not 0xffff.
+  const prefixZero = groups.slice(0, 5).every((group) => group === 0);
+  const mapped = prefixZero && g5 === 0xffff;
+  const ipv4Compatible = prefixZero && g5 === 0;
+  if (mapped || ipv4Compatible) {
+    return isPrivateIpv4([g6 >> 8, g6 & 0xff, g7 >> 8, g7 & 0xff]);
   }
   return false;
 }
