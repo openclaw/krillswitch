@@ -6,11 +6,32 @@ import seedSql from "../seed/seed.sql?raw";
 import {
   assertPublicHttpsWebhookUrl,
   drainWebhooks,
+  resolvePublicWebhookAddresses,
   WebhookUrlError,
 } from "../src/admin/webhooks";
 import { webhooks } from "../src/db/schema";
 
 const BASE = "http://localhost";
+const DOH = "https://cloudflare-dns.com/dns-query";
+const PUBLIC_V4 = "93.184.216.34";
+
+function dohAnswer(name: string, data: string, type = 1): Response {
+  return new Response(
+    JSON.stringify({
+      Status: 0,
+      Answer: [{ name, type, TTL: 60, data }],
+    }),
+    { headers: { "content-type": "application/dns-json" } },
+  );
+}
+
+function isDoh(url: string): boolean {
+  return url.startsWith(DOH);
+}
+
+function dohName(url: string): string {
+  return new URL(url).searchParams.get("name") ?? "";
+}
 
 beforeAll(async () => {
   const statements = seedSql
@@ -71,6 +92,21 @@ describe("assertPublicHttpsWebhookUrl", () => {
       assertPublicHttpsWebhookUrl("https://[2001:4860:4860::8888]/hook")
         .hostname,
     ).toBe("[2001:4860:4860::8888]");
+  });
+});
+
+describe("resolvePublicWebhookAddresses", () => {
+  it("fails closed when any DoH answer is private", async () => {
+    const fakeFetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("type=AAAA")) {
+        return dohAnswer(dohName(url), "::1", 28);
+      }
+      return dohAnswer(dohName(url), PUBLIC_V4);
+    }) as typeof fetch;
+    await expect(
+      resolvePublicWebhookAddresses("https://mixed.example/hook", fakeFetch),
+    ).rejects.toBeInstanceOf(WebhookUrlError);
   });
 });
 
@@ -186,7 +222,11 @@ describe("drainWebhooks", () => {
 
     const posts: { url: string; body: string }[] = [];
     const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      posts.push({ url: String(input), body: String(init?.body) });
+      const url = String(input);
+      if (isDoh(url)) {
+        return dohAnswer(dohName(url), PUBLIC_V4);
+      }
+      posts.push({ url, body: String(init?.body) });
       return new Response("ok", { status: 200 });
     }) as typeof fetch;
 
@@ -263,7 +303,129 @@ describe("drainWebhooks", () => {
     for (const hook of aliasHooks) {
       const row = rows.find((entry) => entry.id === hook.id);
       expect(row?.lastStatus).toBe("blocked");
+      expect(row?.cursor).toBe(0);
     }
+  });
+
+  it("does not POST when DNS resolves to a private address", async () => {
+    const cookie = await devLogin("admin");
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "Rebind trap",
+        url: "https://evil-private.example/hook",
+      }),
+    });
+    const { created: id } = await created.json<{ created: string }>();
+
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          comment: "dns private destination",
+        }),
+      },
+    );
+
+    const invoked: string[] = [];
+    const fakeFetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      invoked.push(url);
+      if (isDoh(url)) {
+        return dohAnswer(dohName(url), "169.254.169.254");
+      }
+      return new Response("should-not-post", { status: 200 });
+    }) as typeof fetch;
+
+    const db = drizzle(env.DB);
+    const before = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    await drainWebhooks(db, fakeFetch);
+    expect(
+      invoked.some((url) => url.includes("evil-private.example/hook")),
+    ).toBe(false);
+    const after = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    expect(after?.lastStatus).toBe("blocked");
+    expect(after?.cursor).toBe(before?.cursor);
+
+    await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+  });
+
+  it("keeps pending entries when a stored hook is blocked then URL is patched", async () => {
+    const cookie = await devLogin("admin");
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          comment: "legacy hook pending",
+        }),
+      },
+    );
+
+    const db = drizzle(env.DB);
+    const id = crypto.randomUUID();
+    await db.insert(webhooks).values({
+      id,
+      name: "Legacy HTTP",
+      url: "http://hooks.example/old",
+      enabled: true,
+      cursor: 0,
+      createdAt: new Date(),
+    });
+
+    const firstInvoked: string[] = [];
+    await drainWebhooks(db, (async (input: RequestInfo | URL) => {
+      firstInvoked.push(String(input));
+      return new Response("ok", { status: 200 });
+    }) as typeof fetch);
+    expect(firstInvoked.some((url) => url.includes("hooks.example"))).toBe(
+      false,
+    );
+    const blocked = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    expect(blocked?.lastStatus).toBe("blocked");
+    expect(blocked?.cursor).toBe(0);
+
+    const patched = await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({ url: "https://hooks.example/new" }),
+    });
+    expect(patched.status).toBe(200);
+
+    const posts: string[] = [];
+    await drainWebhooks(db, (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (isDoh(url)) {
+        return dohAnswer(dohName(url), PUBLIC_V4);
+      }
+      posts.push(url);
+      return new Response("ok", { status: 200 });
+    }) as typeof fetch);
+    expect(posts.some((url) => url === "https://hooks.example/new")).toBe(true);
+    const delivered = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    expect(delivered?.cursor).toBeGreaterThan(0);
+
+    await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
   });
 
   it("does not follow a public webhook redirect to a private target", async () => {
@@ -296,6 +458,9 @@ describe("drainWebhooks", () => {
     const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       invoked.push(url);
+      if (isDoh(url)) {
+        return dohAnswer(dohName(url), PUBLIC_V4);
+      }
       const mode = init?.redirect ?? "follow";
       if (url === publicUrl && mode === "follow") {
         invoked.push(privateUrl);

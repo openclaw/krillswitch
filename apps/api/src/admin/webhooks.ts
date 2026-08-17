@@ -53,6 +53,64 @@ function normalizeHostname(host: string): string {
   return unwrapped.endsWith(".") ? unwrapped.slice(0, -1) : unwrapped;
 }
 
+function isIpLiteral(host: string): boolean {
+  return parseIpv4Octets(host) !== null || parseIpv6Groups(host) !== null;
+}
+
+const DOH_ENDPOINT = "https://cloudflare-dns.com/dns-query";
+
+type DohAnswer = { type?: number; data?: string };
+
+async function lookupDnsAddresses(
+  hostname: string,
+  fetcher: typeof fetch,
+): Promise<string[]> {
+  const addrs: string[] = [];
+  for (const recordType of ["A", "AAAA"] as const) {
+    const query = new URL(DOH_ENDPOINT);
+    query.searchParams.set("name", hostname);
+    query.searchParams.set("type", recordType);
+    const response = await fetcher(query, {
+      headers: { accept: "application/dns-json" },
+    });
+    if (!response.ok) {
+      throw new Error("doh lookup failed");
+    }
+    const body = (await response.json()) as { Answer?: DohAnswer[] };
+    for (const answer of body.Answer ?? []) {
+      if (
+        (answer.type === 1 || answer.type === 28) &&
+        typeof answer.data === "string"
+      ) {
+        addrs.push(answer.data);
+      }
+    }
+  }
+  return addrs;
+}
+
+/** Hostname literals plus DoH A/AAAA. Fails closed if any answer is private. */
+export async function resolvePublicWebhookAddresses(
+  raw: string,
+  fetcher: typeof fetch,
+): Promise<string[]> {
+  const parsed = assertPublicHttpsWebhookUrl(raw);
+  const host = normalizeHostname(parsed.hostname);
+  if (isIpLiteral(host)) {
+    return [host];
+  }
+  const addrs = await lookupDnsAddresses(host, fetcher);
+  if (addrs.length === 0) {
+    throw new WebhookUrlError();
+  }
+  for (const addr of addrs) {
+    if (isPrivateOrLinkLocalHost(normalizeHostname(addr))) {
+      throw new WebhookUrlError();
+    }
+  }
+  return addrs;
+}
+
 function isPrivateOrLinkLocalHost(host: string): boolean {
   if (host === "::1" || host === "0.0.0.0") {
     return true;
@@ -262,6 +320,35 @@ export async function createWebhook(
   return id;
 }
 
+export async function setWebhookUrl(
+  db: DrizzleD1Database,
+  options: { id: string; url: string; actor: Actor },
+): Promise<boolean> {
+  assertPublicHttpsWebhookUrl(options.url);
+  const row = await db
+    .select()
+    .from(webhooks)
+    .where(eq(webhooks.id, options.id))
+    .get();
+  if (!row) {
+    return false;
+  }
+  await db.batch([
+    db
+      .update(webhooks)
+      .set({ url: options.url, lastStatus: null })
+      .where(eq(webhooks.id, options.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "webhook.update",
+      target: options.url,
+      before: { url: row.url },
+      after: { url: options.url },
+    }),
+  ]);
+  return true;
+}
+
 export async function setWebhookEnabled(
   db: DrizzleD1Database,
   options: { id: string; enabled: boolean; actor: Actor },
@@ -316,9 +403,10 @@ export async function deleteWebhook(
 
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
- *  Delivery is notify-only: the cursor advances even when the POST fails,
- *  and last_status shows the most recent outcome. POSTs use redirect:
- *  manual so a public URL cannot bounce the body to a private hop. */
+ *  Unsafe destinations (literal or DoH) mark last_status blocked and leave
+ *  the cursor put so queued entries stay recoverable via URL PATCH.
+ *  Successful delivery attempts are notify-only: the cursor advances even
+ *  when the POST fails. POSTs use redirect: manual. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
@@ -367,14 +455,14 @@ async function drainOneWebhook(
       return;
     }
     try {
-      assertPublicHttpsWebhookUrl(hook.url);
-    } catch {
-      const lastRowid = entries[entries.length - 1]?.rowid ?? hook.cursor;
+      await resolvePublicWebhookAddresses(hook.url, fetcher);
+    } catch (error) {
+      const lastStatus =
+        error instanceof WebhookUrlError ? "blocked" : "unreachable";
       await db
         .update(webhooks)
         .set({
-          cursor: lastRowid,
-          lastStatus: "blocked",
+          lastStatus,
           lastSentAt: new Date(),
         })
         .where(eq(webhooks.id, hook.id));
