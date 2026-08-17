@@ -265,4 +265,66 @@ describe("drainWebhooks", () => {
       expect(row?.lastStatus).toBe("blocked");
     }
   });
+
+  it("does not follow a public webhook redirect to a private target", async () => {
+    const cookie = await devLogin("admin");
+    const publicUrl = "https://redirect.example/hook";
+    const privateUrl = "https://169.254.169.254/latest/meta-data";
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "Redirect trap",
+        url: publicUrl,
+      }),
+    });
+    const { created: id } = await created.json<{ created: string }>();
+
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          comment: "webhook redirect trap",
+        }),
+      },
+    );
+
+    const invoked: string[] = [];
+    const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      invoked.push(url);
+      const mode = init?.redirect ?? "follow";
+      if (url === publicUrl && mode === "follow") {
+        invoked.push(privateUrl);
+        return new Response("followed", { status: 200 });
+      }
+      if (url === publicUrl) {
+        return new Response(null, {
+          status: 307,
+          headers: { location: privateUrl },
+        });
+      }
+      return new Response("private", { status: 200 });
+    }) as typeof fetch;
+
+    const db = drizzle(env.DB);
+    await drainWebhooks(db, fakeFetch);
+    expect(invoked.some((url) => url.includes("169.254.169.254"))).toBe(false);
+    expect(invoked.filter((url) => url === publicUrl).length).toBeGreaterThan(
+      0,
+    );
+
+    const row = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    expect(row?.lastStatus).toBe("redirect");
+
+    await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+  });
 });

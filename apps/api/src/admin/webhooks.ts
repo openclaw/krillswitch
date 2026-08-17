@@ -317,7 +317,8 @@ export async function deleteWebhook(
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
  *  Delivery is notify-only: the cursor advances even when the POST fails,
- *  and last_status shows the most recent outcome. */
+ *  and last_status shows the most recent outcome. POSTs use redirect:
+ *  manual so a public URL cannot bounce the body to a private hop. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
@@ -386,8 +387,11 @@ async function drainOneWebhook(
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ type: "change", entry }),
+          redirect: "manual",
         });
-        if (!response.ok) {
+        if (response.status >= 300 && response.status < 400) {
+          status = "redirect";
+        } else if (!response.ok) {
           status = `http ${response.status}`;
         }
       } catch {
