@@ -4,6 +4,8 @@ import { changeLog, webhooks } from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
 
 const DRAIN_BATCH = 10;
+/** Bound each DoH A/AAAA lookup so a stalled resolver cannot pin waitUntil. */
+export const WEBHOOK_DOH_TIMEOUT_MS = 2_000;
 
 export class WebhookUrlError extends Error {
   constructor() {
@@ -64,6 +66,7 @@ type DohAnswer = { type?: number; data?: string };
 async function lookupDnsAddresses(
   hostname: string,
   fetcher: typeof fetch,
+  timeoutMs: number,
 ): Promise<string[]> {
   const addrs: string[] = [];
   for (const recordType of ["A", "AAAA"] as const) {
@@ -72,6 +75,7 @@ async function lookupDnsAddresses(
     query.searchParams.set("type", recordType);
     const response = await fetcher(query, {
       headers: { accept: "application/dns-json" },
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
       throw new Error("doh lookup failed");
@@ -93,13 +97,14 @@ async function lookupDnsAddresses(
 export async function resolvePublicWebhookAddresses(
   raw: string,
   fetcher: typeof fetch,
+  timeoutMs = WEBHOOK_DOH_TIMEOUT_MS,
 ): Promise<string[]> {
   const parsed = assertPublicHttpsWebhookUrl(raw);
   const host = normalizeHostname(parsed.hostname);
   if (isIpLiteral(host)) {
     return [host];
   }
-  const addrs = await lookupDnsAddresses(host, fetcher);
+  const addrs = await lookupDnsAddresses(host, fetcher, timeoutMs);
   if (addrs.length === 0) {
     throw new WebhookUrlError();
   }
@@ -310,6 +315,15 @@ function zeroExceptLast(groups: number[]): boolean {
   return groups.slice(0, 7).every((group) => group === 0);
 }
 
+function isFetchTimeout(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error.name === "TimeoutError" || error.name === "AbortError")
+  );
+}
+
 export type WebhookRow = {
   id: string;
   name: string;
@@ -453,11 +467,13 @@ export async function deleteWebhook(
  *  Runs off the request path (waitUntil) after every admin mutation.
  *  Unsafe destinations (literal or DoH) mark last_status blocked and leave
  *  the cursor put so queued entries stay recoverable via URL PATCH.
+ *  A hung DoH preflight is last_status timeout and also leaves the cursor.
  *  Successful delivery attempts are notify-only: the cursor advances even
  *  when the POST fails. POSTs use redirect: manual. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
+  timeoutMs = WEBHOOK_DOH_TIMEOUT_MS,
 ): Promise<void> {
   const hooks = await db
     .select()
@@ -466,7 +482,7 @@ export async function drainWebhooks(
     .all();
   for (const hook of hooks) {
     try {
-      await drainOneWebhook(db, fetcher, hook);
+      await drainOneWebhook(db, fetcher, hook, timeoutMs);
     } catch {
       // Notification must never surface as a worker error; the cursor simply
       // stays put and the next mutation retries the drain.
@@ -478,6 +494,7 @@ async function drainOneWebhook(
   db: DrizzleD1Database,
   fetcher: typeof fetch,
   hook: typeof webhooks.$inferSelect,
+  timeoutMs: number,
 ): Promise<void> {
   {
     const entries = await db
@@ -503,10 +520,14 @@ async function drainOneWebhook(
       return;
     }
     try {
-      await resolvePublicWebhookAddresses(hook.url, fetcher);
+      await resolvePublicWebhookAddresses(hook.url, fetcher, timeoutMs);
     } catch (error) {
       const lastStatus =
-        error instanceof WebhookUrlError ? "blocked" : "unreachable";
+        error instanceof WebhookUrlError
+          ? "blocked"
+          : isFetchTimeout(error)
+            ? "timeout"
+            : "unreachable";
       await db
         .update(webhooks)
         .set({

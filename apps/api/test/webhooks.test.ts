@@ -171,6 +171,28 @@ describe("resolvePublicWebhookAddresses", () => {
       ).rejects.toBeInstanceOf(WebhookUrlError);
     }
   });
+
+  it("passes an abort signal on each DoH lookup", async () => {
+    const signals: Array<AbortSignal | null | undefined> = [];
+    const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (isDoh(String(input))) {
+        signals.push(init?.signal ?? null);
+        const type = String(input).includes("type=AAAA") ? 28 : 1;
+        return dohAnswer(
+          dohName(String(input)),
+          type === 28 ? "2606:4700:4700::1111" : PUBLIC_V4,
+          type,
+        );
+      }
+      return new Response("ok", { status: 200 });
+    }) as typeof fetch;
+    await resolvePublicWebhookAddresses(
+      "https://signal.example/hook",
+      fakeFetch,
+    );
+    expect(signals).toHaveLength(2);
+    expect(signals.every((signal) => signal instanceof AbortSignal)).toBe(true);
+  });
 });
 
 describe("webhook admin API", () => {
@@ -434,6 +456,74 @@ describe("drainWebhooks", () => {
       (entry) => entry.id === id,
     );
     expect(after?.lastStatus).toBe("blocked");
+    expect(after?.cursor).toBe(before?.cursor);
+
+    await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
+      method: "DELETE",
+      headers: { cookie },
+    });
+  });
+
+  it("aborts a hung DoH lookup so drain can finish", async () => {
+    const cookie = await devLogin("admin");
+    const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie },
+      body: JSON.stringify({
+        name: "Hung resolver",
+        url: "https://hung-doh.example/hook",
+      }),
+    });
+    const { created: id } = await created.json<{ created: string }>();
+
+    await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/souls`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          comment: "hung doh drain test",
+        }),
+      },
+    );
+
+    const posts: string[] = [];
+    const hangingFetch = (async (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      const url = String(input);
+      if (!isDoh(url)) {
+        posts.push(url);
+        return new Response("should-not-post", { status: 200 });
+      }
+      const signal = init?.signal;
+      if (!signal) {
+        throw new Error("no-signal-hang");
+      }
+      return await new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          reject(new DOMException("The operation was aborted.", "AbortError"));
+        };
+        if (signal.aborted) {
+          abort();
+          return;
+        }
+        signal.addEventListener("abort", abort, { once: true });
+      });
+    }) as typeof fetch;
+
+    const db = drizzle(env.DB);
+    const before = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    await drainWebhooks(db, hangingFetch, 20);
+    expect(posts.some((url) => url.includes("hung-doh.example"))).toBe(false);
+    const after = (await db.select().from(webhooks).all()).find(
+      (entry) => entry.id === id,
+    );
+    expect(after?.lastStatus).toBe("timeout");
     expect(after?.cursor).toBe(before?.cursor);
 
     await SELF.fetch(`${BASE}/admin/webhooks/${id}`, {
