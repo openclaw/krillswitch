@@ -82,6 +82,22 @@ describe("assertPublicHttpsWebhookUrl", () => {
       "https://[::7f00:1]/hook",
       "https://localhost./hook",
       "https://metadata.google.internal./",
+      "https://198.18.0.1/hook",
+      "https://224.0.0.1/hook",
+      "https://240.0.0.1/hook",
+      "https://192.0.2.1/hook",
+      "https://[fec0::1]/hook",
+      "https://[ff02::1]/hook",
+      "https://[::ffff:198.18.0.1]/hook",
+      "https://[::ffff:224.0.0.1]/hook",
+      "https://[2001:db8::1]/hook",
+      "https://[100::1]/hook",
+      "https://[2001:2::1]/hook",
+      "https://[3fff::1]/hook",
+      "https://[64:ff9b::c0a8:1]/hook",
+      "https://[64:ff9b:1::c0a8:1]/hook",
+      "https://[5f00::1]/hook",
+      "https://[100:0:0:1::1]/hook",
     ]) {
       expect(() => assertPublicHttpsWebhookUrl(url)).toThrow(WebhookUrlError);
     }
@@ -107,6 +123,53 @@ describe("resolvePublicWebhookAddresses", () => {
     await expect(
       resolvePublicWebhookAddresses("https://mixed.example/hook", fakeFetch),
     ).rejects.toBeInstanceOf(WebhookUrlError);
+  });
+
+  it("fails closed when DoH returns benchmark, multicast, or reserved IPv4", async () => {
+    for (const data of ["198.18.0.1", "224.0.0.1", "240.0.0.1"]) {
+      const fakeFetch = (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("type=AAAA")) {
+          return new Response(JSON.stringify({ Status: 0, Answer: [] }), {
+            headers: { "content-type": "application/dns-json" },
+          });
+        }
+        return dohAnswer(dohName(url), data);
+      }) as typeof fetch;
+      await expect(
+        resolvePublicWebhookAddresses(
+          "https://nonglobal.example/hook",
+          fakeFetch,
+        ),
+        data,
+      ).rejects.toBeInstanceOf(WebhookUrlError);
+    }
+  });
+
+  it("fails closed when DoH returns site-local or multicast IPv6", async () => {
+    for (const data of [
+      "fec0::1",
+      "ff02::1",
+      "2001:2::1",
+      "3fff::1",
+      "64:ff9b::c0a8:1",
+      "5f00::1",
+    ]) {
+      const fakeFetch = (async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("type=AAAA")) {
+          return dohAnswer(dohName(url), data, 28);
+        }
+        return dohAnswer(dohName(url), PUBLIC_V4);
+      }) as typeof fetch;
+      await expect(
+        resolvePublicWebhookAddresses(
+          "https://nonglobal6.example/hook",
+          fakeFetch,
+        ),
+        data,
+      ).rejects.toBeInstanceOf(WebhookUrlError);
+    }
   });
 });
 
@@ -157,6 +220,24 @@ describe("webhook admin API", () => {
       }),
     });
     expect(created.status).toBe(400);
+  });
+
+  it("admin cannot create non-global IPv4 or IPv6 webhook targets", async () => {
+    const cookie = await devLogin("admin");
+    for (const url of [
+      "https://198.18.0.1/hook",
+      "https://224.0.0.1/hook",
+      "https://240.0.0.1/hook",
+      "https://[fec0::1]/hook",
+      "https://[ff02::1]/hook",
+    ]) {
+      const created = await SELF.fetch(`${BASE}/admin/webhooks`, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({ name: "Non-global", url }),
+      });
+      expect(created.status, url).toBe(400);
+    }
   });
 
   it("admin cannot create IPv4-compatible IPv6 or trailing-dot aliases", async () => {

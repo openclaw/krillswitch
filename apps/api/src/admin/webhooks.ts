@@ -14,7 +14,7 @@ export class WebhookUrlError extends Error {
 
 const blockedHostnames = new Set(["localhost", "metadata.google.internal"]);
 
-/** Public HTTPS only. Blocks private, link-local, and metadata hosts. */
+/** Public HTTPS only. Blocks non-global and metadata hosts. */
 export function assertPublicHttpsWebhookUrl(raw: string): URL {
   let parsed: URL;
   try {
@@ -89,7 +89,7 @@ async function lookupDnsAddresses(
   return addrs;
 }
 
-/** Hostname literals plus DoH A/AAAA. Fails closed if any answer is private. */
+/** Hostname literals plus DoH A/AAAA. Fails closed if any answer is non-global. */
 export async function resolvePublicWebhookAddresses(
   raw: string,
   fetcher: typeof fetch,
@@ -146,7 +146,7 @@ function parseIpv4Octets(
   return [a, b, c, d];
 }
 
-function isPrivateIpv4([a, b]: [number, number, number, number]): boolean {
+function isPrivateIpv4([a, b, c]: [number, number, number, number]): boolean {
   if (a === 0 || a === 10 || a === 127) {
     return true;
   }
@@ -159,7 +159,25 @@ function isPrivateIpv4([a, b]: [number, number, number, number]): boolean {
   if (a === 192 && b === 168) {
     return true;
   }
-  return a === 100 && b >= 64 && b <= 127;
+  if (a === 100 && b >= 64 && b <= 127) {
+    return true;
+  }
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) {
+    return true;
+  }
+  if (a === 192 && b === 88 && c === 99) {
+    return true;
+  }
+  if (a === 198 && (b === 18 || b === 19)) {
+    return true;
+  }
+  if (a === 198 && b === 51 && c === 100) {
+    return true;
+  }
+  if (a === 203 && b === 0 && c === 113) {
+    return true;
+  }
+  return a >= 224;
 }
 
 function parseHexGroup(group: string): number | null {
@@ -234,6 +252,9 @@ function parseIpv6Groups(addr: string): number[] | null {
 
 function isNonPublicIpv6(groups: number[]): boolean {
   const g0 = groups[0] ?? 0;
+  const g1 = groups[1] ?? 0;
+  const g2 = groups[2] ?? 0;
+  const g3 = groups[3] ?? 0;
   const g5 = groups[5] ?? 0;
   const g6 = groups[6] ?? 0;
   const g7 = groups[7] ?? 0;
@@ -245,6 +266,33 @@ function isNonPublicIpv6(groups: number[]): boolean {
     return true;
   }
   if ((g0 & 0xfe00) === 0xfc00) {
+    return true;
+  }
+  if ((g0 & 0xffc0) === 0xfec0) {
+    return true;
+  }
+  if ((g0 & 0xff00) === 0xff00) {
+    return true;
+  }
+  if (g0 === 0x0100 && g1 === 0 && g2 === 0 && (g3 === 0 || g3 === 1)) {
+    return true;
+  }
+  if (g0 === 0x2001 && g1 === 0x0db8) {
+    return true;
+  }
+  if (g0 === 0x2001 && g1 === 0x0002) {
+    return true;
+  }
+  if (g0 === 0x3fff && (g1 & 0xf000) === 0) {
+    return true;
+  }
+  if (g0 === 0x0064 && g1 === 0xff9b && (g2 === 0 || g2 === 1)) {
+    return true;
+  }
+  if (g0 === 0x5f00) {
+    return true;
+  }
+  if (g0 === 0x2002) {
     return true;
   }
   // IPv4-mapped (::ffff:a.b.c.d) and deprecated IPv4-compatible (::a.b.c.d).
