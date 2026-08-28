@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a reproducible Krillswitch defect or regression.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report one issue at a time. Redact credentials, eval keys, private paths, hostnames, customer identifiers, and production flag values.
+        Report security issues through the private security advisory link instead.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the observed defect in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the shortest deterministic reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "v0.5.0, @openclaw/krillswitch-core@0.0.1, or commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Public evaluation API
+        - Admin API or authentication
+        - Dashboard
+        - Core SDK
+        - React SDK
+        - CLI
+        - Deployment or documentation
+        - Multiple surfaces
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime, browser, Worker platform, and operating system.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted logs or evidence
+      description: Include only the evidence needed to reproduce and diagnose the issue.
+      render: shell
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Explain severity, frequency, and affected users or systems.
+    validations:
+      required: true

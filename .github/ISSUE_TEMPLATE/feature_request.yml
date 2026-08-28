@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a Krillswitch capability or public contract change.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete operator or developer problem cannot be solved today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired user-facing behavior or public contract.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Explain existing options and why they are insufficient.
+  - type: checkboxes
+    id: surfaces
+    attributes:
+      label: Affected surfaces
+      options:
+        - label: Public evaluation API
+        - label: Admin API or authentication
+        - label: Dashboard
+        - label: Core or React SDK
+        - label: CLI
+        - label: Deployment or operations
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and migration
+      description: Note config, D1, SDK, API, deployment, or upgrade implications.
+    validations:
+      required: true

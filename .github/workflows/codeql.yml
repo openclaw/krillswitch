@@ -13,9 +13,6 @@ concurrency:
   group: codeql-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  CODEQL_ENABLED: ${{ vars.KRILLSWITCH_CODEQL_ENABLED || 'false' }}
-
 permissions:
   actions: read
   contents: read
@@ -27,24 +24,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Report CodeQL availability
-        if: ${{ env.CODEQL_ENABLED != 'true' }}
-        run: |
-          echo "::warning::CodeQL is disabled until GitHub Code Security is licensed for this private repository and KRILLSWITCH_CODEQL_ENABLED=true is configured."
-
       - name: Checkout
-        if: ${{ env.CODEQL_ENABLED == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Initialize CodeQL
-        if: ${{ env.CODEQL_ENABLED == 'true' }}
         uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           languages: javascript-typescript
           build-mode: none
 
       - name: Analyze
-        if: ${{ env.CODEQL_ENABLED == 'true' }}
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           category: "/language:javascript-typescript"
