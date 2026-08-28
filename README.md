@@ -35,6 +35,17 @@ curl -s -X POST http://localhost:8799/v1/eval \
 {"flags":{"souls":{"value":true,"variationId":"var_souls_on","reason":{"kind":"default"}}}}
 ```
 
+## SDK installation
+
+```sh
+npm install @openclaw/krillswitch-core
+npm install @openclaw/krillswitch-react
+```
+
+Both packages publish in lockstep. Use the core package for framework-neutral
+evaluation and shared contracts, or the React package for typed hooks, SSR, and
+hydration support.
+
 Toggle the flag in local D1 and the next response flips:
 
 ```sh
@@ -97,6 +108,7 @@ version declared in the root `package.json`. The core and React SDKs use
 lockstep `sdk-vX.Y.Z` tags and publish through npm trusted publishing. Their
 `prepack` scripts compile ESM and TypeScript declarations;
 `pnpm verify:sdk-packages` checks the exact tarballs before publication.
+The current SDK release is `0.0.1`.
 
 ## Security
 
