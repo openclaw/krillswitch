@@ -1341,6 +1341,74 @@ describe("Cloudflare Access service token", () => {
   });
 });
 
+describe("API fetch timeout", () => {
+  it("aborts a hung request so the CLI returns an error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async (_input: string | URL | Request, init?: RequestInit) => {
+        const signal = init?.signal;
+        if (!signal) {
+          return await new Promise<Response>(() => {});
+        }
+        return await new Promise<Response>((_resolve, reject) => {
+          const abort = () => {
+            reject(
+              new DOMException("The operation was aborted.", "AbortError"),
+            );
+          };
+          if (signal.aborted) {
+            abort();
+            return;
+          }
+          signal.addEventListener("abort", abort, { once: true });
+        });
+      },
+    );
+
+    await expect(
+      new KrillswitchClient(
+        {
+          baseUrl: "https://silent.example",
+          token: "ksat_test",
+        },
+        20,
+      ).request("/admin/projects"),
+    ).rejects.toThrow("could not reach krillswitch at https://silent.example");
+  }, 3_000);
+
+  it("honors KRILLSWITCH_TIMEOUT_MS for hung requests", async () => {
+    vi.stubEnv("KRILLSWITCH_TIMEOUT_MS", "20");
+    vi.stubGlobal(
+      "fetch",
+      async (_input: string | URL | Request, init?: RequestInit) => {
+        const signal = init?.signal;
+        if (!signal) {
+          return await new Promise<Response>(() => {});
+        }
+        return await new Promise<Response>((_resolve, reject) => {
+          const abort = () => {
+            reject(
+              new DOMException("The operation was aborted.", "AbortError"),
+            );
+          };
+          if (signal.aborted) {
+            abort();
+            return;
+          }
+          signal.addEventListener("abort", abort, { once: true });
+        });
+      },
+    );
+
+    await expect(
+      new KrillswitchClient({
+        baseUrl: "https://silent.example",
+        token: "ksat_test",
+      }).request("/admin/projects"),
+    ).rejects.toThrow("could not reach krillswitch at https://silent.example");
+  }, 3_000);
+});
+
 describe("config commands", () => {
   it("stores base URL changes in the config file", async () => {
     const dir = join(tmpdir(), `krillswitch-test-${crypto.randomUUID()}`);
