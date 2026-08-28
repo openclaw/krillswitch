@@ -69,12 +69,16 @@ function linkReactDependency(packageName, destination) {
 const temporaryDirectory = mkdtempSync(
   path.join(tmpdir(), "krillswitch-sdk-pack-"),
 );
+const artifactDirectory = process.env.SDK_PACK_OUTPUT_DIR
+  ? path.resolve(process.env.SDK_PACK_OUTPUT_DIR)
+  : temporaryDirectory;
 
 try {
+  mkdirSync(artifactDirectory, { recursive: true });
   const packed = new Map();
 
   for (const definition of packageDefinitions) {
-    const tarball = path.join(temporaryDirectory, definition.tarball);
+    const tarball = path.join(artifactDirectory, definition.tarball);
     runPnpm(["--dir", definition.directory, "pack", "--out", tarball]);
 
     const entries = execFileSync("tar", ["-tf", tarball], {

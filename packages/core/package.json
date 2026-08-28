@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Pure TypeScript feature-flag evaluator and wire contracts for Krill Switch.",
   "license": "MIT",
+  "author": "OpenClaw Team <dev@openclaw.ai>",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -21,6 +22,7 @@
   },
   "publishConfig": {
     "access": "public",
+    "provenance": true,
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "exports": {
