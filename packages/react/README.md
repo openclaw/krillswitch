@@ -3,8 +3,9 @@
 Typed React feature flags for [Krill Switch](https://krillswitch.com), including
 server evaluation and hydration bootstrap without a variant flash.
 
-Registry publication is pending. Until the package is minted, test it from the
-workspace or a verified packed tarball.
+```sh
+npm install @openclaw/krillswitch-react
+```
 
 ```tsx
 // flags.tsx

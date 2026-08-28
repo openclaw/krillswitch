@@ -6,8 +6,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Added
 
-- Publish the core and React SDKs in lockstep from protected `sdk-vX.Y.Z` tags
-  through retained, integrity-checked tarballs and npm trusted publishing.
+- Published `@openclaw/krillswitch-core` and
+  `@openclaw/krillswitch-react` v0.0.1 in lockstep from the protected
+  `sdk-v0.0.1` tag through retained, integrity-checked tarballs and npm trusted
+  publishing.
 
 ## [v0.5.0] - 2026-07-30
 

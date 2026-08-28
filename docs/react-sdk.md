@@ -5,9 +5,11 @@ description: Evaluate typed flags for SSR, hydrate without a variant flash, then
 
 # React SDK
 
-This page documents the prepared package contract. The package has not been
-published to npm yet; use the workspace or a verified packed tarball for
-pre-release testing.
+## Install
+
+```sh
+npm install @openclaw/krillswitch-react
+```
 
 ## Declare a manifest
 
