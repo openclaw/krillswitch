@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "preinstall": "node scripts/preinstall-package-manager-warning.mjs",
+    "build:sdk": "pnpm --filter @openclaw/krillswitch-core run build && pnpm --filter @openclaw/krillswitch-react run build",
     "dev": "pnpm --dir apps/admin run build && pnpm --dir apps/api run dev",
     "seed:demo": "pnpm --dir apps/api run seed:demo",
     "test": "node --test scripts/provision-cloudflare-access.test.mjs && pnpm --filter @openclaw/krillswitch-core run test && pnpm --filter @openclaw/krillswitch-react run test && pnpm --filter @openclaw/krillswitch-cli run test && pnpm --filter @openclaw/krillswitch-api run test",
     "typecheck": "pnpm --filter @openclaw/krillswitch-core run typecheck && pnpm --filter @openclaw/krillswitch-react run typecheck && pnpm --filter @openclaw/krillswitch-cli run typecheck && pnpm --filter @openclaw/krillswitch-api run typecheck && pnpm --filter @openclaw/krillswitch-demo run typecheck && pnpm --filter @openclaw/krillswitch-admin run typecheck",
+    "verify:sdk-packages": "node scripts/verify-sdk-packages.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "docs:build": "node scripts/build-docs-site.mjs",

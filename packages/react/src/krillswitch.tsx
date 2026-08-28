@@ -1,3 +1,5 @@
+"use client";
+
 import type { AttributeValue } from "@openclaw/krillswitch-core";
 import {
   createContext,
@@ -15,7 +17,7 @@ import {
   mergeIntoManifest,
   requestEvaluation,
   type WidenManifest,
-} from "./evaluation";
+} from "./evaluation.js";
 
 export interface FeatureFlagProviderProps<
   M extends FlagManifest = FlagManifest,

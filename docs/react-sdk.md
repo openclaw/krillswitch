@@ -5,6 +5,10 @@ description: Evaluate typed flags for SSR, hydrate without a variant flash, then
 
 # React SDK
 
+This page documents the prepared package contract. The package has not been
+published to npm yet; use the workspace or a verified packed tarball for
+pre-release testing.
+
 ## Declare a manifest
 
 ```ts
@@ -18,32 +22,40 @@ export const flagManifest = {
 ```
 
 ```tsx
+// flags.tsx — client bindings safe to import into Server Components
+"use client";
+
 import { createKrillswitch } from "@openclaw/krillswitch-react";
 import { flagManifest } from "./flag-manifest";
 
-export const flags = createKrillswitch(flagManifest);
+export const { FeatureFlagProvider, useFeatureFlag, useFeatureFlags } =
+  createKrillswitch(flagManifest);
 ```
 
 The manifest is both a type contract and the code-owned fallback. Literal primitives widen correctly: `false` becomes `boolean`, not the unusable literal type `false`.
 
+Keep the factory call in this consumer-owned client module. React Server
+Components can import and render the exported provider, but cannot call a
+client-module function such as `createKrillswitch` themselves.
+
 ## Add the provider
 
 ```tsx
-<flags.FeatureFlagProvider
+<FeatureFlagProvider
   evalKey="ks_project_production_..."
   baseUrl="https://flags.openclaw.ai"
   contextKey={user.id}
   attributes={{ role: user.role, plan: user.plan }}
 >
   <App />
-</flags.FeatureFlagProvider>
+</FeatureFlagProvider>
 ```
 
 Read one flag or the full typed set:
 
 ```tsx
-const newNav = flags.useFeatureFlag("newNav");
-const allFlags = flags.useFeatureFlags();
+const newNav = useFeatureFlag("newNav");
+const allFlags = useFeatureFlags();
 ```
 
 ## Server rendering and hydration
@@ -54,6 +66,7 @@ the server render and the browser hydration render:
 ```tsx
 import { createKrillswitchEvaluator } from "@openclaw/krillswitch-react/server";
 import { flagManifest } from "./flag-manifest";
+import { FeatureFlagProvider } from "./flags";
 
 const evaluateFlags = createKrillswitchEvaluator(flagManifest);
 const contextKey = getOrSetAnonymousCookie(request, response);
@@ -76,7 +89,7 @@ const initialValues = await evaluateFlags({
     return null;
   });
 
-<flags.FeatureFlagProvider
+<FeatureFlagProvider
   evalKey={evalKey}
   baseUrl="https://flags.openclaw.ai"
   contextKey={contextKey}
@@ -84,7 +97,7 @@ const initialValues = await evaluateFlags({
   initialValues={initialValues}
 >
   <App />
-</flags.FeatureFlagProvider>;
+</FeatureFlagProvider>;
 ```
 
 Use your framework's normal server-data serialization so the browser receives
