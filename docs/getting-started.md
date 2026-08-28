@@ -8,7 +8,7 @@ description: Run KrillSwitch locally, sign in with a development persona, and ev
 ## Requirements
 
 - Node.js 22.22 or newer
-- Corepack and pnpm 11.2.2
+- Corepack and pnpm 11.24.0
 - No Cloudflare account for local development
 
 ## Start the local stack

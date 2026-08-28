@@ -11,6 +11,10 @@ All notable changes to Krillswitch are documented in this file.
   `sdk-v0.0.1` tag through retained, integrity-checked tarballs and npm trusted
   publishing.
 
+### Changed
+
+- Refresh workspace dependencies and GitHub Actions pins, including pnpm 11.24, Carapace 0.6.2, and Cloudflare's renamed Vitest plugin while retaining the two-day dependency release cooldown.
+
 ## [v0.5.0] - 2026-07-30
 
 ### Added
