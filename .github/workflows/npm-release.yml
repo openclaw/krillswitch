@@ -1,0 +1,125 @@
+name: SDK npm release
+
+on:
+  push:
+    tags:
+      - "sdk-v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-npm-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  prepare:
+    name: Prepare SDK artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Pack and verify exact SDK artifacts
+        env:
+          SDK_PACK_OUTPUT_DIR: ${{ github.workspace }}/release-artifacts
+        run: pnpm verify:sdk-packages
+
+      - name: Record release metadata
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: pnpm sdk:release:prepare
+
+      - name: Retain preflight artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: krillswitch-sdk-${{ github.ref_name }}
+          path: |
+            release-artifacts/core.tgz
+            release-artifacts/react.tgz
+            release-artifacts/release-metadata.json
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish core and React SDKs
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+
+      - name: Fetch main
+        run: git fetch --no-tags origin main
+
+      - name: Download preflight artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: krillswitch-sdk-${{ github.ref_name }}
+          path: release-artifacts
+
+      - name: Publish and verify retained artifacts
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/sdk-release.mjs publish release-artifacts
+
+  release:
+    name: Publish SDK GitHub release
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#sdk-v}"
+          gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 ||
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --verify-tag \
+              --title "Krillswitch SDK v${version}" \
+              --generate-notes
