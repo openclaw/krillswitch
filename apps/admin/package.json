@@ -14,18 +14,18 @@
     "@openclaw/carapace": "github:openclaw/carapace#v0.6.2",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-select": "^2.3.7",
-    "@tanstack/react-query": "^5.102.4",
+    "@tanstack/react-query": "^5.102.8",
     "clsx": "^2.1.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "^8.3.0",
+    "react-router": "^8.3.1",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~7.0.2",
     "vite": "^8.2.2"
