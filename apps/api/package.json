@@ -26,11 +26,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.1.0",
-    "@cloudflare/workers-types": "^5.20260826.1",
+    "@cloudflare/vitest-plugin": "^1.1.2",
+    "@cloudflare/workers-types": "^5.20260830.1",
     "drizzle-kit": "^0.31.10",
     "typescript": "~7.0.2",
     "vitest": "^4.1.11",
-    "wrangler": "^4.126.0"
+    "wrangler": "^4.127.1"
   }
 }

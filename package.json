@@ -24,7 +24,7 @@
     "deploy:production": "pnpm run deploy:admin"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.11",
     "autocannon": "8.0.0"
   },
   "engines": {
