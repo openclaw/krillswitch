@@ -49,7 +49,7 @@ Token: command flag → `KRILLSWITCH_TOKEN` → secure-storage reference → leg
 
 Base URL: command flag → `KRILLSWITCH_URL` → config file → `http://localhost:8799`.
 
-API requests abort after 30 seconds, or after `KRILLSWITCH_TIMEOUT_MS` milliseconds when that variable is set.
+API requests, including response-body reads, abort after 30 seconds. Set `KRILLSWITCH_TIMEOUT_MS` to an integer from `1` to `2147483647` to use a different deadline in milliseconds, or `0` to disable it and retain the previous unlimited wait. Existing slow API or Cloudflare Access paths may need a higher value after upgrading. Invalid values are reported as configuration errors. A timeout does not mean a mutation was rolled back; check its result before retrying.
 
 Changing the stored base URL without a new token clears the old token reference. This prevents a credential minted for one origin from being sent to another.
 

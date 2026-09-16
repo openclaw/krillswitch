@@ -1373,7 +1373,7 @@ describe("API fetch timeout", () => {
         },
         20,
       ).request("/admin/projects"),
-    ).rejects.toThrow("could not reach krillswitch at https://silent.example");
+    ).rejects.toThrow("request to https://silent.example timed out after 20ms");
   }, 3_000);
 
   it("honors KRILLSWITCH_TIMEOUT_MS for hung requests", async () => {
@@ -1405,7 +1405,7 @@ describe("API fetch timeout", () => {
         baseUrl: "https://silent.example",
         token: "ksat_test",
       }).request("/admin/projects"),
-    ).rejects.toThrow("could not reach krillswitch at https://silent.example");
+    ).rejects.toThrow("request to https://silent.example timed out after 20ms");
   }, 3_000);
 });
 

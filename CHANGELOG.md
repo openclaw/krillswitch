@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Bound CLI API requests and response-body reads to 30 seconds, report timeout errors clearly, and support validated `KRILLSWITCH_TIMEOUT_MS` overrides (`0` retains unlimited waits). Thanks @SebTardif.
+
 ### Added
 
 - Published `@openclaw/krillswitch-core` and
