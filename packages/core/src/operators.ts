@@ -7,7 +7,10 @@ export function attributeRuleMatches(
   rule: AttributeRule,
   attributes: Record<string, AttributeValue> | undefined,
 ): boolean {
-  const actual = attributes?.[rule.attribute];
+  const actual =
+    attributes && Object.hasOwn(attributes, rule.attribute)
+      ? attributes[rule.attribute]
+      : undefined;
   if (actual === undefined) {
     return false;
   }

@@ -37,6 +37,24 @@ describe("attributeRuleMatches", () => {
     expect(matches({ operator: "not_in", values: ["a"] }, "a")).toBe(false);
   });
 
+  it.each(["constructor", "toString", "__proto__"])(
+    "requires an own attribute for %s, including negated rules",
+    (attribute) => {
+      const rule: AttributeRule = {
+        attribute,
+        operator: "not_in",
+        values: ["excluded"],
+      };
+      expect(attributeRuleMatches(rule, {})).toBe(false);
+      expect(attributeRuleMatches(rule, { [attribute]: "included" })).toBe(
+        true,
+      );
+      expect(attributeRuleMatches(rule, { [attribute]: "excluded" })).toBe(
+        false,
+      );
+    },
+  );
+
   describe("string operators", () => {
     it("contains matches any value as a substring", () => {
       expect(
