@@ -247,4 +247,26 @@ describe("segment rules", () => {
     const result = evaluateFlag(flag, { key: "beta-user" }, {});
     expect(result.reason).toEqual({ kind: "default" });
   });
+
+  it.each(["constructor", "toString", "__proto__"])(
+    "treats the segment key %s as an own dictionary entry",
+    (key) => {
+      const configured: FlagConfig = {
+        ...flag,
+        rules: [{ segment: key, variationId: "var_theme_dark" }],
+      };
+      expect(evaluateFlag(configured, { key: "beta-user" }, {}).reason).toEqual(
+        { kind: "default" },
+      );
+      expect(
+        evaluateFlag(
+          configured,
+          { key: "beta-user" },
+          {
+            [key]: { key, contextKeys: ["beta-user"], rules: [] },
+          },
+        ).reason,
+      ).toEqual({ kind: "segment", segment: key });
+    },
+  );
 });
