@@ -3209,6 +3209,17 @@ h1 {
   font-size: 12px;
 }
 
+.webhook-recover {
+  font-size: 12px;
+}
+
+.webhook-replace-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .webhook-form {
   display: flex;
   gap: 8px;
