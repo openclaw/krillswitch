@@ -21,7 +21,7 @@ and security boundaries.
 - Security policy: [`SECURITY.md`](SECURITY.md)
 
 Read the nearest scoped `AGENTS.md` before changing files below this directory.
-`CLAUDE.md` is a compatibility symlink to this file; edit `AGENTS.md` only.
+Edit `AGENTS.md` directly; do not add `CLAUDE.md` aliases.
 
 ## Architecture Boundaries
 
