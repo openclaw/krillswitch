@@ -10,6 +10,9 @@ export type OAuthAccount = {
   accessToken?: string | null;
 };
 
+/** Bound so a stalled api.github.com cannot pin the OAuth sign-in hook. */
+export const ORG_MEMBERSHIP_FETCH_TIMEOUT_MS = 5_000;
+
 /**
  * Members of the configured GitHub org get read-only viewer access when they
  * hold no explicit grant (grant always wins). Membership is checked once per
@@ -21,6 +24,7 @@ export async function syncOrgViewerMembership(
   env: OrgMembershipEnv,
   account: OAuthAccount,
   fetchImpl: typeof fetch = fetch,
+  timeoutMs = ORG_MEMBERSHIP_FETCH_TIMEOUT_MS,
 ): Promise<void> {
   const org = env.GITHUB_VIEWER_ORG?.trim();
   if (account.providerId !== "github") {
@@ -45,6 +49,7 @@ export async function syncOrgViewerMembership(
           accept: "application/vnd.github+json",
           "user-agent": "krillswitch-admin",
         },
+        signal: AbortSignal.timeout(timeoutMs),
       },
     );
     if (response.ok) {
