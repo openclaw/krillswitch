@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Honor CLI token overrides without accessing OS secure storage, so `--token` and `KRILLSWITCH_TOKEN` still work when the keychain is unavailable.
+
 ### Added
 
 - Published `@openclaw/krillswitch-core` and
