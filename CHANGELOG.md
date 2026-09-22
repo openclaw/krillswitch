@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Refresh React SDK flag values when an event stream connects or reconnects, including changes missed while disconnected.
+
 ### Added
 
 - Published `@openclaw/krillswitch-core` and
