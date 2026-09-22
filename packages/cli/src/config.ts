@@ -89,14 +89,18 @@ export async function resolveConfig(
   credentialStore: CredentialStore = systemCredentialStore,
 ): Promise<CliConfig> {
   const file = readConfigFile(env);
-  const keyringToken = file.tokenRef
-    ? await credentialStore.getToken(file.tokenRef)
-    : undefined;
+  const token =
+    options.token ??
+    env.KRILLSWITCH_TOKEN ??
+    (file.tokenRef
+      ? await credentialStore.getToken(file.tokenRef)
+      : undefined) ??
+    file.token;
   const baseUrl =
     options.baseUrl ?? env.KRILLSWITCH_URL ?? file.baseUrl ?? DEFAULT_BASE_URL;
   return {
     baseUrl: normalizeBaseUrl(baseUrl),
-    token: options.token ?? env.KRILLSWITCH_TOKEN ?? keyringToken ?? file.token,
+    token,
     ...(env.KRILLSWITCH_CF_ACCESS_CLIENT_ID?.trim() ||
     env.KRILLSWITCH_CF_ACCESS_CLIENT_SECRET?.trim()
       ? {
