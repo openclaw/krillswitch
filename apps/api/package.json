@@ -14,23 +14,23 @@
     "test": "vitest run",
     "cf-typegen": "wrangler types",
     "typecheck": "wrangler types && tsc --noEmit",
-    "db:generate-auth": "pnpm dlx auth@1.6.30 generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes && pnpm --workspace-root exec biome check --write apps/api/src/db/authSchema.ts",
+    "db:generate-auth": "pnpm dlx auth@1.6.33 generate --config auth-schema.config.ts --output src/db/authSchema.ts --yes && pnpm --workspace-root exec biome check --write apps/api/src/db/authSchema.ts",
     "ensure-dev-vars": "node -e \"const fs=require('node:fs');if(!fs.existsSync('.dev.vars'))fs.copyFileSync('.dev.vars.example','.dev.vars')\""
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",
-    "better-auth": "1.6.30",
+    "better-auth": "1.6.33",
     "drizzle-orm": "^0.45.2",
-    "hono": "4.13.5",
-    "jose": "^6.2.10",
-    "zod": "^4.4.3"
+    "hono": "4.13.8",
+    "jose": "^6.2.12",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/vitest-plugin": "^1.1.0",
-    "@cloudflare/workers-types": "^5.20260826.1",
+    "@cloudflare/vitest-plugin": "^1.1.13",
+    "@cloudflare/workers-types": "^5.20260920.1",
     "drizzle-kit": "^0.31.10",
     "typescript": "~7.0.2",
     "vitest": "^4.1.11",
-    "wrangler": "^4.126.0"
+    "wrangler": "^4.135.0"
   }
 }

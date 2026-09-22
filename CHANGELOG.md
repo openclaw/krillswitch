@@ -15,6 +15,10 @@ All notable changes to Krillswitch are documented in this file.
 
 - Refresh workspace dependencies and GitHub Actions pins, including pnpm 11.24, Carapace 0.6.2, and Cloudflare's renamed Vitest plugin while retaining the two-day dependency release cooldown.
 
+### Security
+
+- Update Sharp to 0.35.4 and require the patched version in dependency overrides to address libheif advisory GHSA-rgj7-g3m4-5g8c.
+
 ## [v0.5.0] - 2026-07-30
 
 ### Added
