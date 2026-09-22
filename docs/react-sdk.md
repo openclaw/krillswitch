@@ -131,6 +131,11 @@ client-only behavior of using matching browser cache when available.
 
 Set `pollIntervalMs` when your application needs a different cadence. KrillSwitch configuration itself propagates within one second, but clients decide how often to ask.
 
+Set `stream` on the provider to refresh on server-sent change events. The SDK
+also refreshes whenever the stream connects or reconnects, so changes missed
+while disconnected do not have to wait for the next poll. Polling remains
+enabled, and ETags avoid replacing unchanged values.
+
 ## Anonymous contexts
 
 If `contextKey` is omitted in the browser, the SDK persists an anonymous UUID.
