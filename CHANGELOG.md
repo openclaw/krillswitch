@@ -11,6 +11,7 @@ All notable changes to Krillswitch are documented in this file.
 - Bound GitHub organization membership checks to five seconds during sign-in, including response-body reads, while preserving cached membership on network failure. Thanks @SebTardif.
 - Abort webhook deliveries after two seconds, record timeout status, and keep unattempted entries queued without delaying other subscribers. Thanks @SebTardif.
 - Abort CLI API requests and response-body reads after a new 30-second default deadline, report timeout errors clearly, and support `KRILLSWITCH_TIMEOUT_MS` overrides (`0` restores unlimited waits). Thanks @SebTardif.
+- Honor CLI token overrides without accessing OS secure storage, so `--token` and `KRILLSWITCH_TOKEN` still work when the keychain is unavailable.
 
 ### Added
 

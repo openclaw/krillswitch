@@ -47,6 +47,9 @@ Use `krillswitch completion install zsh`, `bash`, or `fish` for persistent shell
 
 Token: command flag → `KRILLSWITCH_TOKEN` → secure-storage reference → legacy plaintext config.
 
+An explicit `--token` or `KRILLSWITCH_TOKEN` skips secure storage entirely,
+so either override works even when the saved keychain is unavailable.
+
 Base URL: command flag → `KRILLSWITCH_URL` → config file → `http://localhost:8799`.
 
 API requests, including response-body reads, abort after 30 seconds. Set `KRILLSWITCH_TIMEOUT_MS` to a decimal integer from `1` to `2147483647` to use a different deadline in milliseconds, or `0` to disable it and retain the previous unlimited wait. Existing slow API or Cloudflare Access paths may need a higher value after upgrading. Invalid values are reported as configuration errors. A timeout does not mean a mutation was rolled back; check its result before retrying.
