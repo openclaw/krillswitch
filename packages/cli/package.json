@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
-    "@napi-rs/keyring": "1.3.0",
+    "@napi-rs/keyring": "2.1.0",
     "@openclaw/krillswitch-core": "workspace:*",
     "clipanion": "3.2.1"
   },
