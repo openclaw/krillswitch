@@ -27,7 +27,7 @@
     "clipanion": "3.2.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "esbuild": "0.28.2",
     "tsx": "4.23.15",
     "typescript": "~7.0.2",
