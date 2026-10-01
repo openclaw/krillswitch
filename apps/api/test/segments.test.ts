@@ -150,4 +150,103 @@ describe("segments", () => {
     );
     expect(response.status).toBe(403);
   });
+
+  it("operator eval applies the same segment rule as public eval", async () => {
+    const cookie = await devLogin("editor");
+
+    const created = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/segments`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          key: "operator-eval",
+          name: "Operator eval",
+          contextKeys: ["operator-eval-user"],
+          rules: [{ attribute: "plan", values: ["beta"] }],
+        }),
+      },
+    );
+    expect(created.status).toBe(201);
+
+    const detailRes = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
+      { headers: { cookie } },
+    );
+    const detail = await detailRes.json<{
+      variations: { id: string; value: unknown; name: string | null }[];
+      config: {
+        enabled: boolean;
+        offVariationId: string;
+        defaultVariationId: string;
+      };
+    }>();
+    const ids = detail.variations.map((variation) => variation.id);
+    const darkIndex = detail.variations.findIndex(
+      (variation) => variation.value === "dark",
+    );
+    const update = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json", cookie },
+        body: JSON.stringify({
+          enabled: true,
+          variations: detail.variations,
+          offVariationIndex: ids.indexOf(detail.config.offVariationId),
+          defaultVariationIndex: ids.indexOf(detail.config.defaultVariationId),
+          targets: [],
+          rules: [{ variationIndex: darkIndex, segment: "operator-eval" }],
+          rollout: null,
+        }),
+      },
+    );
+    expect(update.status).toBe(200);
+    clearConfigCache();
+
+    const body = JSON.stringify({
+      context: { key: "operator-eval-user" },
+    });
+    const publicEval = await SELF.fetch(`${BASE}/v1/eval`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${DEV_EVAL_KEY}`,
+        "content-type": "application/json",
+      },
+      body,
+    });
+    const adminEval = await SELF.fetch(
+      `${BASE}/admin/projects/clawhub/environments/development/eval`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie },
+        body,
+      },
+    );
+
+    expect(adminEval.status).toBe(200);
+    const adminBody = await adminEval.json<{
+      flags: {
+        theme: {
+          value: string;
+          reason: { kind: string; segment?: string };
+        };
+      };
+    }>();
+    const publicBody = await publicEval.json<{
+      flags: {
+        theme: {
+          value: string;
+          reason: { kind: string; segment?: string };
+        };
+      };
+    }>();
+    expect(adminBody.flags.theme.value).toBe("dark");
+    expect(adminBody.flags.theme.reason).toEqual({
+      kind: "segment",
+      segment: "operator-eval",
+    });
+    expect(publicBody.flags.theme.value).toBe(adminBody.flags.theme.value);
+    expect(publicBody.flags.theme.reason).toEqual(adminBody.flags.theme.reason);
+  });
 });

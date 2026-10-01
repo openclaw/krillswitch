@@ -17,7 +17,7 @@ import {
 } from "../auth/personas";
 import { canEditFlags, resolveRole } from "../auth/roles";
 import { clearConfigCache } from "../configCache";
-import { loadFlagConfigs } from "../db/flagStore";
+import { loadFlagConfigs, loadSegmentMap } from "../db/flagStore";
 import {
   type AdminRole,
   changeLog,
@@ -807,9 +807,14 @@ adminRoutes.post(
       return c.json({ error: "not_found" }, 404);
     }
     const configs = await loadFlagConfigs(db, environment.environmentId);
+    const segments = await loadSegmentMap(db, environment.projectId);
     const flags: Record<string, FlagEvaluation> = {};
     for (const flagConfig of configs) {
-      flags[flagConfig.key] = evaluateFlag(flagConfig, parsed.data.context);
+      flags[flagConfig.key] = evaluateFlag(
+        flagConfig,
+        parsed.data.context,
+        segments,
+      );
     }
     return c.json({ flags });
   },
