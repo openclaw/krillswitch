@@ -6,7 +6,6 @@ import {
   type ReactNode,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -278,6 +277,7 @@ function createClient<M extends FlagManifest>(
         eventSource = new EventSource(
           `${baseUrl}/v1/stream?key=${encodeURIComponent(evalKey)}`,
         );
+        eventSource.addEventListener("hello", () => void refresh());
         eventSource.addEventListener("change", () => void refresh());
       }
 
@@ -300,9 +300,8 @@ function createClient<M extends FlagManifest>(
       scopedInitialValuesJson,
     ]);
 
-    const value = useMemo(() => values, [values]);
     return (
-      <FlagContext.Provider value={value}>{children}</FlagContext.Provider>
+      <FlagContext.Provider value={values}>{children}</FlagContext.Provider>
     );
   }
 

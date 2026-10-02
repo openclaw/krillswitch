@@ -712,6 +712,44 @@ describe("stream", () => {
     );
   });
 
+  it("refreshes missed changes on initial and reconnect hello events", async () => {
+    const initial = evalResponse({ souls: false });
+    initial.headers.set("etag", '"before"');
+    fetchMock.mockResolvedValueOnce(initial);
+    render(
+      <FeatureFlagProvider
+        evalKey={EVAL_KEY}
+        baseUrl={BASE_URL}
+        contextKey={CACHED_CONTEXT_KEY}
+        stream
+      >
+        <SoulsProbe />
+      </FeatureFlagProvider>,
+    );
+    await waitFor(() =>
+      expect(window.localStorage.getItem(VALUES_STORAGE_KEY)).toContain(
+        '"souls":false',
+      ),
+    );
+    const source = FakeEventSource.instances[0];
+    expect(source).toBeDefined();
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 304 }));
+    await act(async () => source?.emit("hello"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId("souls").textContent).toBe("false");
+
+    fetchMock.mockResolvedValueOnce(evalResponse({ souls: true }));
+    await act(async () => source?.emit("hello"));
+    await waitFor(() =>
+      expect(screen.getByTestId("souls").textContent).toBe("true"),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[2]?.[1]?.headers).toMatchObject({
+      "if-none-match": '"before"',
+    });
+  });
+
   it("closes the stream on unmount and never opens one without the option", async () => {
     fetchMock.mockResolvedValue(evalResponse({ souls: false }));
     const withStream = render(
