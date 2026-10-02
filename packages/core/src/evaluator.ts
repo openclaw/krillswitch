@@ -56,7 +56,9 @@ const ruleMatch: EvaluationStep = (flag, context, segments) => {
   for (const rule of flag.rules) {
     if ("segment" in rule) {
       // Unknown segment keys (e.g. a deleted segment) never match.
-      const segment = segments[rule.segment];
+      const segment = Object.hasOwn(segments, rule.segment)
+        ? segments[rule.segment]
+        : undefined;
       if (segment && segmentMatches(segment, context)) {
         return serve(flag, rule.variationId, {
           kind: "segment",

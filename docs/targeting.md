@@ -19,6 +19,8 @@ Good uses include a QA account, a known workspace, or an early-access customer.
 
 A rule matches one context attribute against a list of exact values. Rules are evaluated in order; the first match wins.
 
+Only attributes present on the context itself count. Missing attributes never match, including with `not_in`; inherited JavaScript properties are not targeting data. Likewise, an unknown or deleted segment never matches, even when its key is `constructor`.
+
 ```json
 {
   "variationIndex": 0,

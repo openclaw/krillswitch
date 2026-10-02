@@ -45,6 +45,7 @@ async function evalTheme(context: {
     },
     body: JSON.stringify({ context }),
   });
+  expect(response.status).toBe(200);
   const body = await response.json<{
     flags: { theme: { value: string; reason: { kind: string } } };
   }>();
@@ -52,86 +53,92 @@ async function evalTheme(context: {
 }
 
 describe("segments", () => {
-  it("full lifecycle: create, list, use in a flag rule, evaluate, delete", async () => {
-    const cookie = await devLogin("editor");
+  it.each(["beta-testers", "constructor"])(
+    "full lifecycle for %s: create, list, use in a flag rule, evaluate, delete",
+    async (segmentKey) => {
+      const cookie = await devLogin("editor");
 
-    const created = await SELF.fetch(
-      `${BASE}/admin/projects/clawhub/segments`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", cookie },
-        body: JSON.stringify({
-          key: "beta-testers",
-          name: "Beta testers",
-          contextKeys: ["beta-user"],
-          rules: [{ attribute: "plan", values: ["beta"] }],
-        }),
-      },
-    );
-    expect(created.status).toBe(201);
+      const created = await SELF.fetch(
+        `${BASE}/admin/projects/clawhub/segments`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", cookie },
+          body: JSON.stringify({
+            key: segmentKey,
+            name: "Beta testers",
+            contextKeys: ["beta-user"],
+            rules: [{ attribute: "plan", values: ["beta"] }],
+          }),
+        },
+      );
+      expect(created.status).toBe(201);
 
-    const list = await SELF.fetch(`${BASE}/admin/projects/clawhub/segments`, {
-      headers: { cookie },
-    });
-    const listBody = await list.json<{ segments: { key: string }[] }>();
-    expect(listBody.segments.map((segment) => segment.key)).toContain(
-      "beta-testers",
-    );
+      const list = await SELF.fetch(`${BASE}/admin/projects/clawhub/segments`, {
+        headers: { cookie },
+      });
+      const listBody = await list.json<{ segments: { key: string }[] }>();
+      expect(listBody.segments.map((segment) => segment.key)).toContain(
+        segmentKey,
+      );
 
-    // Point the theme flag's targeting at the segment: fetch the current
-    // detail, convert to an update draft with one segment rule.
-    const detailRes = await SELF.fetch(
-      `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
-      { headers: { cookie } },
-    );
-    const detail = await detailRes.json<{
-      variations: { id: string; value: unknown; name: string | null }[];
-      config: {
-        enabled: boolean;
-        offVariationId: string;
-        defaultVariationId: string;
-      };
-    }>();
-    const ids = detail.variations.map((variation) => variation.id);
-    const darkIndex = detail.variations.findIndex(
-      (variation) => variation.value === "dark",
-    );
-    const update = await SELF.fetch(
-      `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
-      {
-        method: "PUT",
-        headers: { "content-type": "application/json", cookie },
-        body: JSON.stringify({
-          enabled: true,
-          variations: detail.variations,
-          offVariationIndex: ids.indexOf(detail.config.offVariationId),
-          defaultVariationIndex: ids.indexOf(detail.config.defaultVariationId),
-          targets: [],
-          rules: [{ variationIndex: darkIndex, segment: "beta-testers" }],
-          rollout: null,
-        }),
-      },
-    );
-    expect(update.status).toBe(200);
-    clearConfigCache();
+      // Point the theme flag's targeting at the segment: fetch the current
+      // detail, convert to an update draft with one segment rule.
+      const detailRes = await SELF.fetch(
+        `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
+        { headers: { cookie } },
+      );
+      const detail = await detailRes.json<{
+        variations: { id: string; value: unknown; name: string | null }[];
+        config: {
+          enabled: boolean;
+          offVariationId: string;
+          defaultVariationId: string;
+        };
+      }>();
+      const ids = detail.variations.map((variation) => variation.id);
+      const darkIndex = detail.variations.findIndex(
+        (variation) => variation.value === "dark",
+      );
+      const update = await SELF.fetch(
+        `${BASE}/admin/projects/clawhub/environments/development/flags/theme`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json", cookie },
+          body: JSON.stringify({
+            enabled: true,
+            variations: detail.variations,
+            offVariationIndex: ids.indexOf(detail.config.offVariationId),
+            defaultVariationIndex: ids.indexOf(
+              detail.config.defaultVariationId,
+            ),
+            targets: [],
+            rules: [{ variationIndex: darkIndex, segment: segmentKey }],
+            rollout: null,
+          }),
+        },
+      );
+      expect(update.status).toBe(200);
+      clearConfigCache();
 
-    // Segment member by pinned key, by attribute rule, and a non-member.
-    expect((await evalTheme({ key: "beta-user" })).value).toBe("dark");
-    expect(
-      (await evalTheme({ key: "anyone", attributes: { plan: "beta" } })).value,
-    ).toBe("dark");
-    const miss = await evalTheme({ key: "anyone" });
-    expect(miss.value).not.toBe("dark");
+      // Segment member by pinned key, by attribute rule, and a non-member.
+      expect((await evalTheme({ key: "beta-user" })).value).toBe("dark");
+      expect(
+        (await evalTheme({ key: "anyone", attributes: { plan: "beta" } }))
+          .value,
+      ).toBe("dark");
+      const miss = await evalTheme({ key: "anyone" });
+      expect(miss.value).not.toBe("dark");
 
-    // Deleting the segment leaves the rule unmatched — falls to default.
-    const deleted = await SELF.fetch(
-      `${BASE}/admin/projects/clawhub/segments/beta-testers`,
-      { method: "DELETE", headers: { cookie } },
-    );
-    expect(deleted.status).toBe(200);
-    clearConfigCache();
-    expect((await evalTheme({ key: "beta-user" })).value).not.toBe("dark");
-  });
+      // Deleting the segment leaves the rule unmatched — falls to default.
+      const deleted = await SELF.fetch(
+        `${BASE}/admin/projects/clawhub/segments/${segmentKey}`,
+        { method: "DELETE", headers: { cookie } },
+      );
+      expect(deleted.status).toBe(200);
+      clearConfigCache();
+      expect((await evalTheme({ key: "beta-user" })).value).not.toBe("dark");
+    },
+  );
 
   it("viewers cannot create segments", async () => {
     const cookie = await devLogin("viewer");

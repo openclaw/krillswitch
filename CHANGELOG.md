@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep inherited JavaScript properties out of segment lookup, attribute targeting, and SDK defaults so keys such as `constructor` do not crash evaluation or select unintended values.
+
 ### Added
 
 - Published `@openclaw/krillswitch-core` and
