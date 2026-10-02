@@ -44,10 +44,11 @@ generated output by hand, or commit `.dev.vars` files.
 - Report the exact validation performed.
 - Resolve addressed review conversations before requesting another review.
 
-For non-trivial changes, run the repository autoreview helper:
+Follow [the shared skill setup](.agents/skills/autoreview/SKILL.md) once.
+For non-trivial changes, run the shared autoreview helper:
 
 ```bash
-.agents/skills/autoreview/scripts/autoreview
+python3 "$HOME/.agents/skills/autoreview/scripts/autoreview"
 ```
 
 ## Reporting Bugs

@@ -69,7 +69,7 @@ Wrangler's local mode unless live deployment proof is explicitly required.
 
 ## Review And Release
 
-- Run `.agents/skills/autoreview/scripts/autoreview` for non-trivial changes.
+- Run `python3 "$HOME/.agents/skills/autoreview/scripts/autoreview"` for non-trivial changes.
 - Verify accepted findings against source, tests, and operator-visible behavior.
 - Application releases use `vX.Y.Z` tags.
 - SDK releases use `sdk-vX.Y.Z` tags from `main` and publish only
