@@ -47,6 +47,9 @@ Use `krillswitch completion install zsh`, `bash`, or `fish` for persistent shell
 
 Token: command flag → `KRILLSWITCH_TOKEN` → secure-storage reference → legacy plaintext config.
 
+An explicit `--token` or `KRILLSWITCH_TOKEN` skips secure storage entirely,
+so either override works even when the saved keychain is unavailable.
+
 Base URL: command flag → `KRILLSWITCH_URL` → config file → `http://localhost:8799`.
 
 Changing the stored base URL without a new token clears the old token reference. This prevents a credential minted for one origin from being sent to another.
