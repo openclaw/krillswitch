@@ -445,6 +445,12 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled }),
     }),
+  setWebhookUrl: (id: string, url: string) =>
+    request<{ url?: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
   deleteWebhook: (id: string) =>
     request<{ deleted: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
       method: "DELETE",

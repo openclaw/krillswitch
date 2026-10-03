@@ -199,9 +199,9 @@ export const flagEnvironments = sqliteTable(
 );
 
 // Outbound notifications: every change-log entry is POSTed to each enabled
-// webhook. `cursor` is the change_log rowid already delivered; delivery is
-// notify-only (no retry queue), so the cursor advances even on failure and
-// last_status records the most recent result.
+// webhook. `cursor` is the change_log rowid already delivered. Unsafe
+// destinations leave the cursor put; a successful delivery attempt is
+// notify-only (cursor advances, last_status records the result).
 export const webhooks = sqliteTable("webhooks", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
