@@ -4,9 +4,9 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
-### Changed
+### Fixed
 
-- Use one shared autoreview installation from `openclaw/agent-skills`; repository entrypoints now receive upstream fixes without copied helpers or test suites.
+- Abort CLI API requests and response-body reads after a new 30-second default deadline, report timeout errors clearly, and support `KRILLSWITCH_TIMEOUT_MS` overrides (`0` restores unlimited waits). Thanks @SebTardif.
 
 ### Added
 
@@ -17,7 +17,14 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Use one shared autoreview installation from `openclaw/agent-skills`; repository entrypoints receive upstream fixes without copied helpers or tests.
+
 - Refresh workspace dependencies and GitHub Actions pins, including pnpm 11.24, Carapace 0.6.2, and Cloudflare's renamed Vitest plugin while retaining the two-day dependency release cooldown.
+
+### Security
+
+- Update Sharp to 0.35.4 and require the patched version in dependency overrides to address libheif advisory GHSA-rgj7-g3m4-5g8c.
+- Require patched Undici 7.29.1 and 8.10.2 in tooling dependencies so exact transitive pins cannot block security updates; retain the two-day release cooldown.
 
 ## [v0.5.0] - 2026-07-30
 

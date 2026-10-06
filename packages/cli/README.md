@@ -60,6 +60,13 @@ You can still override settings for one command, in precedence order:
 The base URL resolves `--base-url` > `KRILLSWITCH_URL` > config file > the local
 default `http://localhost:8799`.
 
+API requests, including response-body reads, time out after 30 seconds by
+default. Set `KRILLSWITCH_TIMEOUT_MS` to a decimal integer from `0` through
+`2147483647` to change the deadline in milliseconds; `0` restores unlimited
+waits. Slow API or Cloudflare Access paths may need a higher value after
+upgrading. Invalid values fail as configuration errors. A timed-out mutation
+may already have completed; check its result before retrying.
+
 When the admin hostname is behind Cloudflare Access, non-browser automation
 also needs an Access service token. Keep those credentials in the environment;
 they are deliberately not written to `~/.krillswitch.json`.

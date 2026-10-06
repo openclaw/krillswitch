@@ -69,10 +69,16 @@ Wrangler's local mode unless live deployment proof is explicitly required.
 
 ## Review And Release
 
-- Run `python3 "$HOME/.agents/skills/autoreview/scripts/autoreview"` for non-trivial changes.
+- Run `python3 "$HOME/.agents/skills/autoreview/scripts/autoreview" --max-priority P3` for non-trivial changes.
 - Verify accepted findings against source, tests, and operator-visible behavior.
 - Application releases use `vX.Y.Z` tags.
 - SDK releases use `sdk-vX.Y.Z` tags from `main` and publish only
   `@openclaw/krillswitch-core` and `@openclaw/krillswitch-react` through
   `.github/workflows/npm-release.yml`.
 - Never publish locally or add long-lived npm tokens to repository settings.
+
+## Autoreview priority
+
+Use `--max-priority P3` with the shared autoreview helper to preserve this
+repository's existing P0–P3 review gate. Follow the
+[shared skill setup](.agents/skills/autoreview/SKILL.md) before running it.
