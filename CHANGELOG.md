@@ -6,6 +6,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Fixed
 
+- Abort webhook deliveries after two seconds, record timeout status, and keep unattempted entries queued without delaying other subscribers. Thanks @SebTardif.
 - Abort CLI API requests and response-body reads after a new 30-second default deadline, report timeout errors clearly, and support `KRILLSWITCH_TIMEOUT_MS` overrides (`0` restores unlimited waits). Thanks @SebTardif.
 
 ### Added

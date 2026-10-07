@@ -1,9 +1,11 @@
 import { SELF } from "cloudflare:test";
 import { env } from "cloudflare:workers";
+import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { beforeAll, describe, expect, it } from "vitest";
 import seedSql from "../seed/seed.sql?raw";
 import { drainWebhooks } from "../src/admin/webhooks";
+import { changeLog, webhooks } from "../src/db/schema";
 
 const BASE = "http://localhost";
 
@@ -125,4 +127,92 @@ describe("drainWebhooks", () => {
       headers: { cookie },
     });
   });
+
+  it("times out one delivery without dropping queued entries or blocking other hooks", async () => {
+    const db = drizzle(env.DB);
+    const tail = await db
+      .select({ rowid: sql<number>`coalesce(max(rowid), 0)` })
+      .from(changeLog)
+      .get();
+    const hookIds = [crypto.randomUUID(), crypto.randomUUID()];
+    const entryIds = [crypto.randomUUID(), crypto.randomUUID()];
+    await db.insert(webhooks).values(
+      hookIds.map((id, index) => ({
+        id,
+        name: `Timeout test ${index}`,
+        url:
+          index === 0
+            ? "https://hang.example/hook"
+            : "https://healthy.example/hook",
+        cursor: tail?.rowid ?? 0,
+        createdAt: new Date(),
+      })),
+    );
+    await db.insert(changeLog).values(
+      entryIds.map((id) => ({
+        id,
+        actorUserId: "timeout-test",
+        actorName: "Timeout test",
+        action: "flag.update" as const,
+        target: "timeout-test",
+        createdAt: new Date(),
+      })),
+    );
+    try {
+      const attempted: { url: string; id: string }[] = [];
+      const hangingFetch = (async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ) => {
+        const url = String(input);
+        attempted.push({ url, id: JSON.parse(String(init?.body)).entry.id });
+        if (url !== "https://hang.example/hook") return new Response("ok");
+        return new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+          const abort = () => reject(signal?.reason);
+          if (signal?.aborted) abort();
+          else signal?.addEventListener("abort", abort, { once: true });
+        });
+      }) as typeof fetch;
+      await drainWebhooks(db, hangingFetch, 20);
+      expect(
+        attempted
+          .filter(({ url }) => url === "https://hang.example/hook")
+          .map(({ id }) => id),
+      ).toEqual([entryIds[0]]);
+      expect(
+        attempted
+          .filter(({ url }) => url === "https://healthy.example/hook")
+          .map(({ id }) => id),
+      ).toEqual(entryIds);
+      const timedOut = await db
+        .select()
+        .from(webhooks)
+        .where(eq(webhooks.id, hookIds[0] as string))
+        .get();
+      expect(timedOut?.lastStatus).toBe("timeout");
+
+      attempted.length = 0;
+      const recoveredFetch = (async (
+        input: RequestInfo | URL,
+        init?: RequestInit,
+      ) => {
+        attempted.push({
+          url: String(input),
+          id: JSON.parse(String(init?.body)).entry.id,
+        });
+        return new Response("ok");
+      }) as typeof fetch;
+      await drainWebhooks(db, recoveredFetch, 20);
+      expect(attempted).toEqual([
+        { url: "https://hang.example/hook", id: entryIds[1] },
+      ]);
+      attempted.length = 0;
+      await drainWebhooks(db, recoveredFetch, 20);
+      expect(attempted).toEqual([]);
+    } finally {
+      await db.delete(webhooks).where(inArray(webhooks.id, hookIds));
+      await db.delete(changeLog).where(inArray(changeLog.id, entryIds));
+    }
+  }, 3_000);
 });

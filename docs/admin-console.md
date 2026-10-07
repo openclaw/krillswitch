@@ -32,6 +32,14 @@ The Access area lists users and role grants, and lets admins mint or revoke CLI 
 
 The change log supports project, flag, action, and actor inspection. Each detail page shows before/after values and stable actor attribution. Token mint/revoke entries contain token id, name, and role—never the plaintext credential.
 
+## Webhooks
+
+Settings lists each webhook's most recent delivery result. A delivery has a
+two-second deadline; a slow subscriber records `timeout` and its current drain
+stops so other subscribers can proceed. Delivery is notify-only: the attempted
+entry is not retried, including after a timeout. Unattempted entries remain
+queued for the next drain, which is triggered by an admin mutation.
+
 ## Development personas
 
 Local mode offers admin, editor, viewer, and ungranted personas. Production never enables this route; it is guarded by both configuration and loopback-host checks.
