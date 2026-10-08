@@ -6,6 +6,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Fixed
 
+- Bound GitHub organization membership checks to five seconds during sign-in, including response-body reads, while preserving cached membership on network failure. Thanks @SebTardif.
+- Abort webhook deliveries after two seconds, record timeout status, and keep unattempted entries queued without delaying other subscribers. Thanks @SebTardif.
 - Abort CLI API requests and response-body reads after a new 30-second default deadline, report timeout errors clearly, and support `KRILLSWITCH_TIMEOUT_MS` overrides (`0` restores unlimited waits). Thanks @SebTardif.
 
 ### Added
@@ -18,7 +20,7 @@ All notable changes to Krillswitch are documented in this file.
 ### Changed
 
 - Use one shared autoreview installation from `openclaw/agent-skills`; repository entrypoints receive upstream fixes without copied helpers or tests.
-
+- Refresh compatible application and development dependencies and CodeQL pins, keeping the Better Auth schema generator aligned with its runtime and preserving the Node.js floor and two-day dependency cooldown.
 - Refresh workspace dependencies and GitHub Actions pins, including pnpm 11.24, Carapace 0.6.2, and Cloudflare's renamed Vitest plugin while retaining the two-day dependency release cooldown.
 
 ### Security

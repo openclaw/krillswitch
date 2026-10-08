@@ -40,7 +40,10 @@ secret. After bootstrap, admins manage grants from the dashboard.
 explicit grant to resolve as a viewer. When the admin hostname is protected by
 Cloudflare Access, the Access policy proves membership before the request
 reaches KrillSwitch. When Better Auth GitHub OAuth is used instead, membership
-is checked during sign-in using the user's GitHub token.
+is checked during sign-in using the user's GitHub token. The check has a
+five-second deadline, including reading the response body. If GitHub is
+unreachable or times out, sign-in continues with the last cached membership;
+a completed non-member response clears that cached membership.
 
 ## Session and token actors
 

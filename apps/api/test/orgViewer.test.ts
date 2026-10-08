@@ -83,6 +83,72 @@ describe("syncOrgViewerMembership", () => {
     expect(await storedOrgViewer()).toBe(true);
   });
 
+  it("aborts a hung GitHub membership fetch so sign-in can finish", async () => {
+    await db
+      .update(user)
+      .set({ orgViewer: true })
+      .where(eq(user.id, TEST_USER_ID));
+
+    const hangingFetch = (async (
+      _input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      const signal = init?.signal;
+      if (!signal) {
+        return await new Promise<Response>(() => {});
+      }
+      return await new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          reject(new DOMException("The operation was aborted.", "AbortError"));
+        };
+        if (signal.aborted) {
+          abort();
+          return;
+        }
+        signal.addEventListener("abort", abort, { once: true });
+      });
+    }) as typeof fetch;
+
+    await syncOrgViewerMembership(
+      db,
+      ORG_ENV,
+      githubAccount(),
+      hangingFetch,
+      20,
+    );
+    expect(await storedOrgViewer()).toBe(true);
+  }, 3_000);
+
+  it("aborts a stalled membership response body and keeps the cached value", async () => {
+    await db
+      .update(user)
+      .set({ orgViewer: true })
+      .where(eq(user.id, TEST_USER_ID));
+    const hangingBody = (async (
+      _input: RequestInfo | URL,
+      init?: RequestInit,
+    ) =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"state":'));
+            const abort = () => controller.error(init?.signal?.reason);
+            if (init?.signal?.aborted) abort();
+            else init?.signal?.addEventListener("abort", abort, { once: true });
+          },
+        }),
+      )) as typeof fetch;
+
+    await syncOrgViewerMembership(
+      db,
+      ORG_ENV,
+      githubAccount(),
+      hangingBody,
+      20,
+    );
+    expect(await storedOrgViewer()).toBe(true);
+  }, 3_000);
+
   it("clears cached membership when the configured org is disabled", async () => {
     const fetchMock = membershipResponse(200, "active");
     await db

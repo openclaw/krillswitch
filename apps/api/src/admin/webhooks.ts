@@ -4,6 +4,8 @@ import { changeLog, webhooks } from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
 
 const DRAIN_BATCH = 10;
+/** Bound each subscriber POST so a stalled URL cannot pin waitUntil. */
+export const WEBHOOK_DRAIN_FETCH_TIMEOUT_MS = 2_000;
 
 export type WebhookRow = {
   id: string;
@@ -116,11 +118,13 @@ export async function deleteWebhook(
 
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
- *  Delivery is notify-only: the cursor advances even when the POST fails,
- *  and last_status shows the most recent outcome. */
+ *  Delivery is notify-only: HTTP, network, and timeout failures all
+ *  advance the cursor so a dead or slow subscriber cannot stall the
+ *  queue or duplicate a post that already completed after cutoff. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
+  timeoutMs = WEBHOOK_DRAIN_FETCH_TIMEOUT_MS,
 ): Promise<void> {
   const hooks = await db
     .select()
@@ -129,7 +133,7 @@ export async function drainWebhooks(
     .all();
   for (const hook of hooks) {
     try {
-      await drainOneWebhook(db, fetcher, hook);
+      await drainOneWebhook(db, fetcher, hook, timeoutMs);
     } catch {
       // Notification must never surface as a worker error; the cursor simply
       // stays put and the next mutation retries the drain.
@@ -141,6 +145,7 @@ async function drainOneWebhook(
   db: DrizzleD1Database,
   fetcher: typeof fetch,
   hook: typeof webhooks.$inferSelect,
+  timeoutMs: number,
 ): Promise<void> {
   {
     const entries = await db
@@ -166,24 +171,41 @@ async function drainOneWebhook(
       return;
     }
     let status = "ok";
-    for (const { rowid: _rowid, ...entry } of entries) {
+    let cursor = hook.cursor;
+    for (const { rowid, ...entry } of entries) {
       try {
         const response = await fetcher(hook.url, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ type: "change", entry }),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (!response.ok) {
           status = `http ${response.status}`;
         }
-      } catch {
+        cursor = rowid;
+      } catch (error) {
+        if (isFetchTimeout(error)) {
+          status = "timeout";
+          cursor = rowid;
+          break;
+        }
         status = "unreachable";
+        cursor = rowid;
       }
     }
-    const lastRowid = entries[entries.length - 1]?.rowid ?? hook.cursor;
     await db
       .update(webhooks)
-      .set({ cursor: lastRowid, lastStatus: status, lastSentAt: new Date() })
+      .set({ cursor, lastStatus: status, lastSentAt: new Date() })
       .where(eq(webhooks.id, hook.id));
   }
+}
+
+function isFetchTimeout(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error.name === "TimeoutError" || error.name === "AbortError")
+  );
 }
