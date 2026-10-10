@@ -29,6 +29,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Security
 
+- Require Sharp 0.35.5 and source-map-js 1.2.2 to address GHSA-wq5f-xc86-pv6w and GHSA-68fv-2mgg-jv7q while preserving the dependency cooldown.
 - Update Sharp to 0.35.4 and require the patched version in dependency overrides to address libheif advisory GHSA-rgj7-g3m4-5g8c.
 - Require patched Undici 7.29.1 and 8.10.2 in tooling dependencies so exact transitive pins cannot block security updates; retain the two-day release cooldown.
 
