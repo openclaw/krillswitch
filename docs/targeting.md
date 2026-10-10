@@ -29,6 +29,10 @@ A rule matches one context attribute against a list of exact values. Rules are e
 
 KrillSwitch does not coerce types. The number `1`, string `"1"`, and boolean `true` are distinct values.
 
+## Segment rules
+
+Segments group context keys and attribute rules within a project. A flag rule can reference a segment by key. Public evaluation and operator evaluation (including `krillswitch eval`) use the same project segments, so the same context matches the same segment rules.
+
 ## Percentage splits
 
 A split distributes contexts across variations with integer weights totaling 100. Bucketing hashes the flag key with the context key, so the same identity remains in the same cohort across requests and Worker isolates.
@@ -56,4 +60,4 @@ Read the current flag first when you intend to preserve an existing dimension.
 
 ## Evaluation reasons
 
-The API returns one of `off`, `target`, `rule`, `rollout`, or `default`. Rule reasons include the matching attribute name. These reasons are useful in diagnostics and live verification.
+The API returns one of `off`, `target`, `rule`, `segment`, `rollout`, or `default`. Rule reasons include the matching attribute name; segment reasons include the matching segment key. These reasons are useful in diagnostics and live verification.
