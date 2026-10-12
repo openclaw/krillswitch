@@ -60,11 +60,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir release-assets
-          git archive --format=tar.gz --prefix=krillswitch-${VERSION}/ HEAD > "release-assets/krillswitch-${VERSION}.tar.gz"
+          git archive --format=tar.gz --prefix="krillswitch-${VERSION}/" HEAD > "release-assets/krillswitch-${VERSION}.tar.gz"
           tar -tzf "release-assets/krillswitch-${VERSION}.tar.gz" > "$RUNNER_TEMP/archive-files"
           test -s "$RUNNER_TEMP/archive-files"
           cd release-assets
-          sha256sum *.tar.gz > SHA256SUMS
+          sha256sum ./*.tar.gz > SHA256SUMS
           sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
