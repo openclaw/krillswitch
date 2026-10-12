@@ -2,7 +2,8 @@
 
 Application source releases use signed annotated `vX.Y.Z` tags and
 `.github/workflows/release.yml`. The workflow validates dated `CHANGELOG.md`
-notes and green push CI on the exact protected-main commit, runs checks, and
+notes, a matching root `package.json` version, and green push CI on the exact
+protected-main commit, runs checks, and
 publishes the source archive with SHA256SUMS. It never deploys the service.
 
 SDK releases keep the public `sdk-vX.Y.Z` namespace and use

@@ -36,6 +36,8 @@ def main():
         version = re.search(r"^## \[?v?(\d+\.\d+\.\d+)\]? - \d{4}-\d{2}-\d{2}", text, re.M)[1]
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?", version):
         raise ValueError("release version must be SemVer")
+    if json.loads(Path("package.json").read_text())["version"] != version:
+        raise ValueError("package.json version must match the application release")
     tag = "v" + version
     head = git("rev-parse", "HEAD")
     repo = os.environ["GITHUB_REPOSITORY"]
