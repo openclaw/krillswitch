@@ -86,7 +86,7 @@ function validateReleaseContext() {
     releaseSha,
     "checked-out commit does not match RELEASE_SHA",
   );
-  assert.equal(
+  if (process.env.RELEASE_DRY_RUN !== "true") assert.equal(
     git(["rev-parse", `${tag}^{commit}`]),
     releaseSha,
     "release tag does not resolve to RELEASE_SHA",
@@ -257,6 +257,7 @@ async function waitForRegistry(pkg, timeoutMs = 300_000) {
 }
 
 async function publish(directory) {
+  assert.notEqual(process.env.RELEASE_DRY_RUN, "true", "dry runs cannot publish");
   const context = validateReleaseContext();
   validateWorkspacePackages(context.version);
   const metadata = readJson(path.join(directory, "release-metadata.json"));
@@ -270,15 +271,11 @@ async function publish(directory) {
   assert.deepEqual(metadata.packages, exactPackages);
 
   for (const pkg of exactPackages) {
-    const published = await fetchPublishedDist(pkg.name, pkg.version);
-    if (published) {
-      assertPublishedDistMatches(pkg, published, pkg.name, pkg.version);
-      console.log(
-        `${pkg.name}@${pkg.version} already matches the retained tarball.`,
-      );
-    } else {
-      publishTarball(path.join(directory, pkg.tarball));
-    }
+    assert.equal(await fetchPublishedDist(pkg.name, pkg.version), null,
+      `${pkg.name}@${pkg.version} already exists; refusing publication`);
+  }
+  for (const pkg of exactPackages) {
+    publishTarball(path.join(directory, pkg.tarball));
     await waitForRegistry(pkg);
     console.log(`${pkg.name}@${pkg.version} verified in the registry.`);
   }

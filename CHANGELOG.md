@@ -21,6 +21,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Add signed-tag application releases and no-publish SDK rehearsals with retained tarballs, changelog notes, and checksums.
+
 - Refresh Hono, Radix, Vite, Cloudflare tooling, and GitHub Actions within compatible versions while preserving the Node.js floor and two-day dependency cooldown.
 
 - Use one shared autoreview installation from `openclaw/agent-skills`; repository entrypoints receive upstream fixes without copied helpers or tests.
