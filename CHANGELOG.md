@@ -21,6 +21,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Refresh Vite, Cloudflare test tooling, Wrangler, and Node.js types while preserving the existing runtime floor and dependency cooldown.
+
 - Validate the application package version before creating release archives.
 
 - Add signed-tag application releases and no-publish SDK rehearsals with retained tarballs, changelog notes, and checksums.
