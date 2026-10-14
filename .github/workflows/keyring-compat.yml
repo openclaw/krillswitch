@@ -26,8 +26,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-latest, windows-latest]
-    env:
-      KEYRING_V1_ROOT: ${{ runner.temp }}/keyring-v1
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -38,6 +36,8 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          export KEYRING_V1_ROOT="$RUNNER_TEMP/keyring-v1"
+          printf "KEYRING_V1_ROOT=%s\n" "$KEYRING_V1_ROOT" >> "$GITHUB_ENV"
           corepack enable
           pnpm install --frozen-lockfile
           npm install --prefix "$KEYRING_V1_ROOT" --ignore-scripts --no-package-lock --no-audit --no-fund @napi-rs/keyring@1.3.0
