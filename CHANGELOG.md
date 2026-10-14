@@ -22,6 +22,7 @@ All notable changes to Krillswitch are documented in this file.
 ### Changed
 
 - Refresh Vite, Cloudflare test tooling, Wrangler, and Node.js types while preserving the existing runtime floor and dependency cooldown.
+- Reject oversized segment context-key and flag variation arrays before parsing their entries, retaining the existing 500-key and 20-variation limits.
 
 - Validate the application package version before creating release archives.
 
