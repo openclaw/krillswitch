@@ -1,0 +1,58 @@
+name: Native keyring compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - packages/cli/**
+      - pnpm-lock.yaml
+      - .github/workflows/keyring-compat.yml
+  push:
+    branches: [main]
+    paths:
+      - packages/cli/**
+      - pnpm-lock.yaml
+      - .github/workflows/keyring-compat.yml
+
+permissions:
+  contents: read
+
+jobs:
+  native-keyring:
+    name: Keyring (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    env:
+      KEYRING_V1_ROOT: ${{ runner.temp }}/keyring-v1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        shell: bash
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          npm install --prefix "$KEYRING_V1_ROOT" --ignore-scripts --no-package-lock --no-audit --no-fund @napi-rs/keyring@1.3.0
+      - name: Install Linux credential store
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y gnome-keyring dbus-x11
+      - name: Verify Linux native credentials
+        if: runner.os == 'Linux'
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/keyring-data
+        run: |
+          mkdir -p "$XDG_DATA_HOME"
+          dbus-run-session -- bash -euc 'printf %s native-test | gnome-keyring-daemon --unlock; pnpm --dir packages/cli exec tsx test/native-keyring.ts'
+      - name: Verify native credentials
+        if: runner.os != 'Linux'
+        run: pnpm --dir packages/cli exec tsx test/native-keyring.ts
