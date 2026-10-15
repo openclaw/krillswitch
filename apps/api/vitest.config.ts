@@ -32,6 +32,8 @@ export default defineConfig(async () => {
       }),
     ],
     test: {
+      // workerd cannot read Vitest's host filesystem module-cache paths.
+      fsModuleCache: false,
       setupFiles: ["./test/apply-migrations.ts"],
       // Test files share D1 storage and mutate the same seeded rows;
       // parallel files race each other's flag toggles.
