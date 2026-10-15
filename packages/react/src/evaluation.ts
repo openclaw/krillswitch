@@ -54,6 +54,7 @@ export function mergeIntoManifest<M extends FlagManifest>(
 ): M {
   const merged: FlagManifest = { ...manifest };
   for (const [key, defaultValue] of Object.entries(manifest)) {
+    if (!Object.hasOwn(candidate, key)) continue;
     const value = candidate[key];
     if (value !== undefined && matchesManifestType(defaultValue, value)) {
       merged[key] = value as FlagValue;
@@ -68,14 +69,14 @@ function parseRemoteValues(payload: unknown): Record<string, unknown> {
     throw new Error("Krillswitch evaluation returned an invalid response");
   }
 
-  const values: Record<string, unknown> = {};
-  for (const [key, flag] of Object.entries(payload.flags)) {
-    if (!isRecord(flag) || !("value" in flag)) {
-      throw new Error("Krillswitch evaluation returned an invalid flag");
-    }
-    values[key] = flag.value;
-  }
-  return values;
+  return Object.fromEntries(
+    Object.entries(payload.flags).map(([key, flag]) => {
+      if (!isRecord(flag) || !("value" in flag)) {
+        throw new Error("Krillswitch evaluation returned an invalid flag");
+      }
+      return [key, flag.value];
+    }),
+  );
 }
 
 function evaluationUrl(baseUrl: string): string {

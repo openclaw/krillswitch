@@ -90,6 +90,22 @@ afterEach(() => {
 });
 
 describe("server evaluation", () => {
+  it.each(["constructor", "toString", "__proto__"])(
+    "preserves missing defaults and explicit remote values for %s",
+    async (key) => {
+      const evaluate = createKrillswitchEvaluator({ [key]: null });
+      const options = {
+        evalKey: EVAL_KEY,
+        baseUrl: BASE_URL,
+        context: { key: "test-user" },
+      };
+      fetchMock.mockResolvedValueOnce(evalResponse({}));
+      expect((await evaluate(options))[key]).toBe(null);
+      fetchMock.mockResolvedValueOnce(evalResponse({ [key]: false }));
+      expect((await evaluate(options))[key]).toBe(false);
+    },
+  );
+
   it("posts an explicit context and returns manifest-safe values", async () => {
     fetchMock.mockResolvedValue(
       evalResponse({

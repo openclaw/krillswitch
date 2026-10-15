@@ -143,3 +143,5 @@ targeting results.
 ## Value safety
 
 Remote keys not declared in the manifest are ignored. Primitive remote values must match the manifest type. JSON-kind defaults accept any valid JSON value.
+
+Missing keys always keep their manifest defaults, including names such as `constructor` and `__proto__`; inherited JavaScript properties never supply flag values.
