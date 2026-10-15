@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Refresh React SDK flags on event-stream connections and reconnections while retaining polling and conditional requests.
 - Preserve manifest defaults and ignore inherited JavaScript properties when evaluating flags, segments, and context attributes.
 
 ## 0.0.1 - 2026-08-28

@@ -6,6 +6,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Fixed
 
+- Refresh React SDK flag values when an event stream connects or reconnects, including changes missed while disconnected.
 - Keep inherited JavaScript properties out of segment lookup, attribute targeting, and SDK defaults so keys such as `constructor` do not crash evaluation or select unintended values.
 - Apply project segment rules on operator flag evaluation, so the same context matches the public eval result. Thanks @SebTardif.
 - Strip a trailing slash from the React event-stream URL so a base URL ending in `/` connects to `/v1/stream`. Thanks @SebTardif.
