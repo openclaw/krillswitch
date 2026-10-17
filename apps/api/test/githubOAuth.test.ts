@@ -1,10 +1,22 @@
-import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import {
+  createExecutionContext,
+  waitOnExecutionContext,
+} from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import app from "../src/index";
 
 const BASE = "http://localhost";
-const FLAG_PATH = "/admin/projects/oauth-proof/environments/test/flags/protected";
+const FLAG_PATH =
+  "/admin/projects/oauth-proof/environments/test/flags/protected";
 let serial = 0;
 let identity: {
   id: number;
@@ -192,64 +204,75 @@ beforeEach(() => {
   bootstrapAdmin = false;
   // Only provider HTTP is replaced. The Worker, OAuth state/cookies, D1,
   // account hooks, session lookup and management authorization all run normally.
-  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(input instanceof Request ? input.url : String(input));
-    if (url.href === "https://github.com/login/oauth/access_token") {
-      expect(init?.method).toBe("POST");
-      return Response.json(
-        identity.invalidCode
-          ? { error: "bad_verification_code" }
-          : {
-              access_token: "oauth-test-access-token",
-              token_type: "bearer",
-              scope: "read:user,user:email,read:org",
-            },
+  vi.stubGlobal(
+    "fetch",
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      if (url.href === "https://github.com/login/oauth/access_token") {
+        expect(init?.method).toBe("POST");
+        return Response.json(
+          identity.invalidCode
+            ? { error: "bad_verification_code" }
+            : {
+                access_token: "oauth-test-access-token",
+                token_type: "bearer",
+                scope: "read:user,user:email,read:org",
+              },
+        );
+      }
+      const apiPaths = [
+        "/user",
+        "/user/emails",
+        "/user/memberships/orgs/oauth-test-org",
+      ];
+      if (
+        url.origin !== "https://api.github.com" ||
+        !apiPaths.includes(url.pathname)
+      ) {
+        unexpectedRequests.push(url.origin + url.pathname);
+        throw new Error("Unexpected outbound request in OAuth test");
+      }
+      const headers = new Headers(
+        init?.headers ?? (input instanceof Request ? input.headers : undefined),
       );
-    }
-    const apiPaths = [
-      "/user",
-      "/user/emails",
-      "/user/memberships/orgs/oauth-test-org",
-    ];
-    if (url.origin !== "https://api.github.com" || !apiPaths.includes(url.pathname)) {
+      expect(headers.get("authorization")).toBe(
+        "Bearer oauth-test-access-token",
+      );
+      if (url.href === "https://api.github.com/user") {
+        return Response.json({
+          id: identity.id,
+          login: `oauth-${identity.id}`,
+          name: "OAuth Test",
+          email: identity.email,
+          avatar_url: null,
+        });
+      }
+      if (url.href === "https://api.github.com/user/emails") {
+        return Response.json([
+          {
+            email: identity.email,
+            primary: true,
+            verified: true,
+            visibility: "private",
+          },
+        ]);
+      }
+      if (
+        url.href ===
+        "https://api.github.com/user/memberships/orgs/oauth-test-org"
+      ) {
+        membershipRequests++;
+        if (identity.membership === "unavailable") {
+          throw new Error("test-only provider outage");
+        }
+        return identity.membership === "active"
+          ? Response.json({ state: "active" })
+          : new Response(null, { status: 404 });
+      }
       unexpectedRequests.push(url.origin + url.pathname);
       throw new Error("Unexpected outbound request in OAuth test");
-    }
-    const headers = new Headers(
-      init?.headers ?? (input instanceof Request ? input.headers : undefined),
-    );
-    expect(headers.get("authorization")).toBe("Bearer oauth-test-access-token");
-    if (url.href === "https://api.github.com/user") {
-      return Response.json({
-        id: identity.id,
-        login: `oauth-${identity.id}`,
-        name: "OAuth Test",
-        email: identity.email,
-        avatar_url: null,
-      });
-    }
-    if (url.href === "https://api.github.com/user/emails") {
-      return Response.json([
-        {
-          email: identity.email,
-          primary: true,
-          verified: true,
-          visibility: "private",
-        },
-      ]);
-    }
-    if (url.href === "https://api.github.com/user/memberships/orgs/oauth-test-org") {
-      membershipRequests++;
-      if (identity.membership === "unavailable") {
-        throw new Error("test-only provider outage");
-      }
-      return identity.membership === "active"
-        ? Response.json({ state: "active" })
-        : new Response(null, { status: 404 });
-    }
-    unexpectedRequests.push(url.origin + url.pathname);
-    throw new Error("Unexpected outbound request in OAuth test");
-  });
+    },
+  );
 });
 
 afterEach(() => {
