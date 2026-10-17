@@ -45,7 +45,9 @@ async function request(path: string, init?: RequestInit) {
 function acceptCookies(jar: Map<string, string>, response: Response) {
   for (const cookie of response.headers.getSetCookie()) {
     const pair = cookie.split(";")[0];
+    if (!pair) throw new Error("Missing response cookie");
     const separator = pair.indexOf("=");
+    expect(separator).toBeGreaterThan(0);
     const name = pair.slice(0, separator);
     if (/max-age=0(?:;|$)/i.test(cookie)) jar.delete(name);
     else jar.set(name, pair.slice(separator + 1));
