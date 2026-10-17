@@ -24,6 +24,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Refresh React and Better Auth patch versions, keeping the auth schema generator aligned with the runtime and checking OAuth membership, failed writes, and session revocation against local D1.
 - Refresh the Cloudflare Vitest plugin, Workers types, and Wrangler together while preserving the Node.js floor and two-day dependency cooldown.
 - Upgrade the CLI secure-storage binding to keyring 2: unavailable or unreadable credentials now report an error instead of appearing absent. Explicit `--token` and `KRILLSWITCH_TOKEN` overrides bypass secure storage.
 - Refresh Vite, Cloudflare test tooling, Wrangler, and Node.js types while preserving the existing runtime floor and dependency cooldown.
