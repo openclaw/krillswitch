@@ -24,6 +24,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Authenticate ClawSweeper dispatch with short-lived GitHub OIDC tokens instead of stored App credentials, preserving independent webhook delivery and retryable intake failures.
 - Run native macOS keyring compatibility on the Apple Silicon macOS 27 runner.
 - Refresh React and Better Auth patch versions, keeping the auth schema generator aligned with the runtime and checking OAuth membership, failed writes, and session revocation against local D1 (thanks @vincentkoc).
 - Refresh the Cloudflare Vitest plugin, Workers types, and Wrangler together while preserving the Node.js floor and two-day dependency cooldown.
