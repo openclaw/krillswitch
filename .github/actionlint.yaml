@@ -1,3 +1,4 @@
-# Keep actionlint strict. GitHub-hosted runners need no custom labels.
+# xcode-27 postdates actionlint's bundled GitHub-hosted runner catalog.
 self-hosted-runner:
-  labels: []
+  labels:
+    - xcode-27

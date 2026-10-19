@@ -29,6 +29,10 @@ pnpm verify:sdk-packages
 No Cloudflare account is required for local development. `pnpm dev` runs the
 Worker and dashboard through Wrangler's local mode.
 
+Native keyring compatibility runs on disposable GitHub Actions runners, including
+Apple Silicon `xcode-27` for macOS. Keep that credential-store roundtrip in CI;
+the regular unit suite uses isolated credential-store doubles.
+
 Do not replace pnpm, regenerate the lockfile with another package manager, edit
 generated output by hand, or commit `.dev.vars` files.
 
