@@ -6,6 +6,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Fixed
 
+- Use fixed Node.js patches for build, CI, and release tooling to reject the disclosed eMudhra incident keys.
+
 - Refresh React SDK flag values when an event stream connects or reconnects, including changes missed while disconnected.
 - Keep inherited JavaScript properties out of segment lookup, attribute targeting, and SDK defaults so keys such as `constructor` do not crash evaluation or select unintended values.
 - Apply project segment rules on operator flag evaluation, so the same context matches the public eval result. Thanks @SebTardif.
