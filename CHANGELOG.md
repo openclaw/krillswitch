@@ -6,7 +6,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Fixed
 
-- Use fixed Node.js patches for build, CI, and release tooling to reject the disclosed eMudhra incident keys.
+- Use fixed Node.js patches for build, CI, and release tooling to reject the disclosed eMudhra incident keys. Thanks @joshavant.
 
 - Refresh React SDK flag values when an event stream connects or reconnects, including changes missed while disconnected.
 - Keep inherited JavaScript properties out of segment lookup, attribute targeting, and SDK defaults so keys such as `constructor` do not crash evaluation or select unintended values.
@@ -26,6 +26,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Refresh compatible application, Cloudflare tooling, and jsdom dependencies while keeping Better Auth's schema generator aligned with the runtime and retaining the two-day dependency cooldown. Thanks @dependabot.
 - Refresh Better Auth, TanStack Query, Vitest, and CodeQL while keeping the auth schema generator aligned with its runtime and preserving the runtime floor and two-day dependency cooldown. Thanks @dependabot.
 - Authenticate ClawSweeper dispatch with short-lived GitHub OIDC tokens instead of stored App credentials, preserving independent webhook delivery and retryable intake failures.
 - Run native macOS keyring compatibility on the Apple Silicon macOS 27 runner.
