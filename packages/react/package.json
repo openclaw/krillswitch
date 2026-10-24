@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/krillswitch-react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Typed React feature-flag hooks with SSR bootstrap support for Krill Switch.",
   "license": "MIT",
   "author": "OpenClaw Team <dev@openclaw.ai>",

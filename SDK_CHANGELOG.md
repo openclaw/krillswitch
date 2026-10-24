@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.0.2 - 2026-10-23
+
+**Highlights:** React flags refresh after reconnecting, and inherited properties no longer interfere with evaluation or manifest defaults.
+
 - Refresh React SDK flags on event-stream connections and reconnections while retaining polling and conditional requests.
 - Preserve manifest defaults and ignore inherited JavaScript properties when evaluating flags, segments, and context attributes.
 

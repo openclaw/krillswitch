@@ -1,6 +1,6 @@
 {
   "name": "@openclaw/krillswitch-core",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Pure TypeScript feature-flag evaluator and wire contracts for Krill Switch.",
   "license": "MIT",
   "author": "OpenClaw Team <dev@openclaw.ai>",

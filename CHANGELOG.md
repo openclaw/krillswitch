@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.0] - 2026-10-23
+
+**Highlights:** More reliable flag evaluation and React refreshes, bounded CLI and webhook requests, and patched Node.js and tooling security vulnerabilities.
+
 ### Fixed
 
 - Use fixed Node.js patches for build, CI, and release tooling to reject the disclosed eMudhra incident keys. Thanks @joshavant.
@@ -165,7 +169,8 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.0...HEAD
+[v0.6.0]: https://github.com/openclaw/krillswitch/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/openclaw/krillswitch/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/openclaw/krillswitch/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/openclaw/krillswitch/compare/v0.2.0...v0.3.0
