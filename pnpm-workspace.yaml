@@ -9,6 +9,7 @@ nodeLinker: hoisted
 blockExoticSubdeps: true
 
 overrides:
+  workerd: 1.20261021.1
   esbuild@<=0.24.2: 0.28.2
   uuid@<11.1.1: 11.1.1
   sharp@<0.35.5: 0.35.5

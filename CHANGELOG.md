@@ -4,6 +4,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+- Pin local Worker tooling to workerd 1.20261021.1 to reject compromised eMudhra keys.
+
 ## [v0.6.0] - 2026-10-23
 
 **Highlights:** More reliable flag evaluation and React refreshes, bounded CLI and webhook requests, and patched Node.js and tooling security vulnerabilities.
