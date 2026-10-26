@@ -151,6 +151,7 @@ function createClient<M extends FlagManifest>(
   const FlagContext = createContext<M>(manifest);
   const evaluateFlags = createFlagEvaluator(manifest);
 
+  // biome-ignore lint/correctness/noComponentHookFactories: The public SDK factory creates these once at module scope.
   function FeatureFlagProvider(props: FeatureFlagProviderProps<M>): ReactNode {
     const {
       evalKey,
@@ -305,10 +306,12 @@ function createClient<M extends FlagManifest>(
     );
   }
 
+  // biome-ignore lint/correctness/noComponentHookFactories: The public SDK factory creates these once at module scope.
   function useFeatureFlags(): M {
     return useContext(FlagContext);
   }
 
+  // biome-ignore lint/correctness/noComponentHookFactories: The public SDK factory creates these once at module scope.
   function useFeatureFlag<K extends Extract<keyof M, string>>(key: K): M[K] {
     return useFeatureFlags()[key];
   }

@@ -4,7 +4,9 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
-- Pin local Worker tooling to workerd 1.20261021.1 to reject compromised eMudhra keys.
+- Raise the Undici and Zod security overrides to patched versions, unblocking Dependabot security updates for Worker tooling.
+- Refresh Carapace, Biome, Vite, Cloudflare types, and CodeQL while preserving the two-day dependency cooldown and Node.js runtime floor. Thanks @dependabot.
+- Pin local Worker tooling to workerd 1.20261021.1 to reject compromised eMudhra keys. Thanks @joshavant.
 
 ## [v0.6.0] - 2026-10-23
 

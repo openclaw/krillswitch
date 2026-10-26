@@ -595,6 +595,7 @@ describe("freshness", () => {
     let move: (() => void) | undefined;
     let bump: (() => void) | undefined;
 
+    // biome-ignore lint/correctness/noComponentHookFactories: This fixture is created once per test, outside React rendering.
     function SuspendedProbe({ contextKey }: { contextKey: string }) {
       const souls = useFeatureFlag("souls");
       if (contextKey === "user-b") {
@@ -603,6 +604,7 @@ describe("freshness", () => {
       return <output data-testid="concurrent-souls">{String(souls)}</output>;
     }
 
+    // biome-ignore lint/correctness/noComponentHookFactories: This fixture is created once per test, outside React rendering.
     function ConcurrentDemo() {
       const [contextKey, setContextKey] = useState("user-a");
       const [, setTick] = useState(0);
