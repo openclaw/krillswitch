@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Refresh Better Auth, Hono, Biome, and Cloudflare types while keeping the auth schema generator aligned, preserving the two-day dependency cooldown and patched Undici overrides. Thanks @dependabot.
+
 ## [v0.6.1] - 2026-10-26
 
 **Highlights:** Patch the Undici integrity bypass and workerd's compromised-key verifier, with refreshed compatible tooling.
