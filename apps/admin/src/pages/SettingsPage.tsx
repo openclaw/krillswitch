@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { api, type Me } from "../api";
+import { api, type Me, type Webhook } from "../api";
 import { RoleChip } from "../components/RoleChip";
 import { Switch } from "../components/Switch";
 import { THEME_ICONS, THEME_LABELS } from "../components/ThemeToggle";
@@ -165,6 +165,9 @@ function formatDelivery(webhook: {
   lastStatus: string | null;
   lastSentAt: string | null;
 }): string {
+  if (webhook.lastStatus === "blocked") {
+    return "Blocked. Replace the URL to deliver queued changes.";
+  }
   if (!webhook.lastSentAt) return "No deliveries yet";
   const when = new Date(webhook.lastSentAt).toLocaleString(undefined, {
     month: "short",
@@ -172,7 +175,86 @@ function formatDelivery(webhook: {
     hour: "numeric",
     minute: "2-digit",
   });
-  return `${webhook.lastStatus === "ok" ? "Delivered" : `Failed (${webhook.lastStatus})`} · ${when}`;
+  if (webhook.lastStatus === "ok") return `Delivered · ${when}`;
+  return `Failed (${webhook.lastStatus}) · ${when}`;
+}
+
+function WebhookRow({
+  webhook,
+  togglePending,
+  removePending,
+  onToggle,
+  onRemove,
+  onReplaced,
+}: {
+  webhook: Webhook;
+  togglePending: boolean;
+  removePending: boolean;
+  onToggle: (enabled: boolean) => void;
+  onRemove: () => void;
+  onReplaced: () => void;
+}) {
+  const [nextUrl, setNextUrl] = useState("");
+  const replace = useMutation({
+    mutationFn: () => api.setWebhookUrl(webhook.id, nextUrl.trim()),
+    onSuccess: () => {
+      setNextUrl("");
+      onReplaced();
+    },
+  });
+  const canReplace = /^https:\/\/\S+$/.test(nextUrl.trim());
+
+  return (
+    <li className="webhook-row">
+      <div className="webhook-copy">
+        <strong>{webhook.name}</strong>
+        <code className="webhook-url">{webhook.url}</code>
+        <span className="muted webhook-status">{formatDelivery(webhook)}</span>
+      </div>
+      <Switch
+        checked={webhook.enabled}
+        disabled={togglePending}
+        ariaLabel={`${webhook.name} enabled`}
+        onChange={onToggle}
+      />
+      <button
+        type="button"
+        className="oc-action oc-action-ghost danger-ghost"
+        disabled={removePending}
+        onClick={onRemove}
+      >
+        Remove
+      </button>
+      <form
+        className="webhook-replace"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (canReplace) replace.mutate();
+        }}
+      >
+        <input
+          className="oc-input webhook-url-input"
+          placeholder="https://example.com/hooks/krillswitch"
+          aria-label={`Replace URL for ${webhook.name}`}
+          value={nextUrl}
+          onChange={(event) => setNextUrl(event.target.value)}
+        />
+        <button
+          type="submit"
+          className="oc-action oc-action-secondary"
+          disabled={!canReplace || replace.isPending}
+        >
+          Replace URL
+        </button>
+      </form>
+      {replace.isError && (
+        <p role="alert" className="save-error">
+          Replacing the URL failed. Use HTTPS. Private and metadata addresses
+          are rejected.
+        </p>
+      )}
+    </li>
+  );
 }
 
 /** Admin-only: every change-log entry is POSTed as JSON to each enabled
@@ -204,45 +286,32 @@ function WebhooksSection() {
     onSuccess: invalidate,
   });
 
-  const canCreate = name.trim() !== "" && /^https?:\/\/.+/.test(url.trim());
+  const canCreate = name.trim() !== "" && /^https:\/\/\S+$/.test(url.trim());
 
   return (
     <section className="detail-section">
       <h2>Webhooks</h2>
       <p className="muted section-hint">
-        Every change-log entry is POSTed as JSON to each enabled URL, right
-        after the change lands. Delivery is notify-only — failures are recorded
-        but not retried.
+        Every change-log entry is POSTed as JSON to each enabled HTTPS URL after
+        the change lands. Delivery is notify-only. Failures are recorded and not
+        retried. Non-HTTPS URLs and literal private, metadata, and non-global
+        addresses are rejected. A hostname is checked as a name only, and
+        delivery does not pin the address it resolves to. An already saved
+        unsafe URL stays queued until you replace it.
       </p>
       {webhooks.isError && <p role="alert">Failed to load webhooks.</p>}
       {webhooks.isSuccess && webhooks.data.webhooks.length > 0 && (
         <ul className="webhook-list">
           {webhooks.data.webhooks.map((webhook) => (
-            <li key={webhook.id} className="webhook-row">
-              <div className="webhook-copy">
-                <strong>{webhook.name}</strong>
-                <code className="webhook-url">{webhook.url}</code>
-                <span className="muted webhook-status">
-                  {formatDelivery(webhook)}
-                </span>
-              </div>
-              <Switch
-                checked={webhook.enabled}
-                disabled={toggle.isPending}
-                ariaLabel={`${webhook.name} enabled`}
-                onChange={(enabled) =>
-                  toggle.mutate({ id: webhook.id, enabled })
-                }
-              />
-              <button
-                type="button"
-                className="oc-action oc-action-ghost danger-ghost"
-                disabled={remove.isPending}
-                onClick={() => remove.mutate(webhook.id)}
-              >
-                Remove
-              </button>
-            </li>
+            <WebhookRow
+              key={webhook.id}
+              webhook={webhook}
+              togglePending={toggle.isPending}
+              removePending={remove.isPending}
+              onToggle={(enabled) => toggle.mutate({ id: webhook.id, enabled })}
+              onRemove={() => remove.mutate(webhook.id)}
+              onReplaced={invalidate}
+            />
           ))}
         </ul>
       )}
@@ -277,7 +346,8 @@ function WebhooksSection() {
       </form>
       {create.isError && (
         <p role="alert" className="save-error">
-          Adding the webhook failed. Check the URL and try again.
+          Adding the webhook failed. Use HTTPS. Private and metadata addresses
+          are rejected.
         </p>
       )}
     </section>

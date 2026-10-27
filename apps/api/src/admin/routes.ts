@@ -81,6 +81,8 @@ import {
   drainWebhooks,
   listWebhooks,
   setWebhookEnabled,
+  setWebhookUrl,
+  WebhookUrlError,
 } from "./webhooks";
 
 // One identity shape for both session users and access tokens. Handlers read
@@ -330,34 +332,75 @@ adminRoutes.post("/webhooks", async (c) => {
     return c.json({ error: "invalid_request" }, 400);
   }
   const actor = c.get("actor");
-  const id = await createWebhook(drizzle(c.env.DB), {
-    name: parsed.data.name,
-    url: parsed.data.url,
-    actor: { id: actor.id, name: actor.name },
-  });
-  return c.json({ created: id }, 201);
+  try {
+    const id = await createWebhook(drizzle(c.env.DB), {
+      name: parsed.data.name,
+      url: parsed.data.url,
+      actor: { id: actor.id, name: actor.name },
+    });
+    return c.json({ created: id }, 201);
+  } catch (error) {
+    if (error instanceof WebhookUrlError) {
+      return c.json({ error: "invalid_webhook_url" }, 400);
+    }
+    throw error;
+  }
 });
+
+const webhookPatchSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    url: z.string().trim().min(1).max(500).optional(),
+  })
+  .refine((data) => data.enabled !== undefined || data.url !== undefined);
 
 adminRoutes.patch("/webhooks/:id", async (c) => {
   if (c.get("role") !== "admin") {
     return c.json({ error: "forbidden" }, 403);
   }
-  const parsed = z
-    .object({ enabled: z.boolean() })
-    .safeParse(await c.req.json().catch(() => null));
+  const parsed = webhookPatchSchema.safeParse(
+    await c.req.json().catch(() => null),
+  );
   if (!parsed.success) {
     return c.json({ error: "invalid_request" }, 400);
   }
   const actor = c.get("actor");
-  const updated = await setWebhookEnabled(drizzle(c.env.DB), {
-    id: c.req.param("id"),
-    enabled: parsed.data.enabled,
-    actor: { id: actor.id, name: actor.name },
-  });
-  if (!updated) {
-    return c.json({ error: "not_found" }, 404);
+  const db = drizzle(c.env.DB);
+  const id = c.req.param("id");
+  const actorRef = { id: actor.id, name: actor.name };
+  try {
+    if (parsed.data.url !== undefined) {
+      const updated = await setWebhookUrl(db, {
+        id,
+        url: parsed.data.url,
+        actor: actorRef,
+      });
+      if (!updated) {
+        return c.json({ error: "not_found" }, 404);
+      }
+    }
+    if (parsed.data.enabled !== undefined) {
+      const updated = await setWebhookEnabled(db, {
+        id,
+        enabled: parsed.data.enabled,
+        actor: actorRef,
+      });
+      if (!updated) {
+        return c.json({ error: "not_found" }, 404);
+      }
+    }
+  } catch (error) {
+    if (error instanceof WebhookUrlError) {
+      return c.json({ error: "invalid_webhook_url" }, 400);
+    }
+    throw error;
   }
-  return c.json({ enabled: parsed.data.enabled });
+  return c.json({
+    ...(parsed.data.enabled !== undefined
+      ? { enabled: parsed.data.enabled }
+      : {}),
+    ...(parsed.data.url !== undefined ? { url: parsed.data.url.trim() } : {}),
+  });
 });
 
 adminRoutes.delete("/webhooks/:id", async (c) => {
