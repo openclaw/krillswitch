@@ -4,9 +4,18 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.1] - 2026-10-26
+
+**Highlights:** Patch the Undici integrity bypass and workerd's compromised-key verifier, with refreshed compatible tooling.
+
+### Security
+
 - Raise the Undici and Zod security overrides to patched versions, unblocking Dependabot security updates for Worker tooling.
-- Refresh Carapace, Biome, Vite, Cloudflare types, and CodeQL while preserving the two-day dependency cooldown and Node.js runtime floor. Thanks @dependabot.
 - Pin local Worker tooling to workerd 1.20261021.1 to reject compromised eMudhra keys. Thanks @joshavant.
+
+### Changed
+
+- Refresh Carapace, Biome, Vite, Cloudflare types, and CodeQL while preserving the two-day dependency cooldown and Node.js runtime floor. Thanks @dependabot.
 
 ## [v0.6.0] - 2026-10-23
 
@@ -173,7 +182,8 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.1...HEAD
+[v0.6.1]: https://github.com/openclaw/krillswitch/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/openclaw/krillswitch/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/openclaw/krillswitch/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/openclaw/krillswitch/compare/v0.3.0...v0.4.0
