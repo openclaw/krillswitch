@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Return provider-readable OFREP single-flag context errors and distinguish invalid context shapes or targeting-key types from missing targeting keys.
+
 ### Changed
 
 - Refresh Better Auth, Hono, Biome, and Cloudflare types while keeping the auth schema generator aligned, preserving the two-day dependency cooldown and patched Undici overrides. Thanks @dependabot.
