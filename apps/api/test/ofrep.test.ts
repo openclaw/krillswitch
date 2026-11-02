@@ -199,7 +199,8 @@ describe("OFREP degraded-configuration isolation", () => {
   const failure = {
     key: "souls",
     errorCode: "GENERAL",
-    errorDetails: "Flag evaluation failed.",
+    errorDetails:
+      "Flag evaluation failed. Ask the flag owner to check its configuration and retry after repair.",
   };
 
   async function restoreSouls(): Promise<void> {

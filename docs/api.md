@@ -89,7 +89,7 @@ if (!evalKey) throw new Error("KRILLSWITCH_EVAL_KEY is required");
 
 await OpenFeature.setProviderAndWait(new OFREPProvider({
   baseUrl: "https://flags.openclaw.ai",
-  headers: { Authorization: `Bearer ${evalKey}` },
+  headers: [["Authorization", `Bearer ${evalKey}`]],
 }));
 const client = OpenFeature.getClient();
 const context = { targetingKey: "user-123", plan: "pro" };
@@ -112,7 +112,7 @@ import { OFREPWebProvider } from "@openfeature/ofrep-web-provider";
 
 await OpenFeature.setProviderAndWait(new OFREPWebProvider({
   baseUrl: "https://flags.openclaw.ai",
-  headers: { Authorization: "Bearer ks_env_..." }, // Your environment eval key.
+  headers: [["Authorization", "Bearer ks_env_..."]], // Your environment eval key.
   pollInterval: 30_000, // Milliseconds; enable refreshes explicitly.
 }), { targetingKey: "user-123", plan: "pro" });
 const client = OpenFeature.getClient();
@@ -133,7 +133,7 @@ For degraded stored configuration, such as a reference to a missing variation, a
 ```json
 {
   "flags": [
-    { "key": "souls", "errorCode": "GENERAL", "errorDetails": "Flag evaluation failed." },
+    { "key": "souls", "errorCode": "GENERAL", "errorDetails": "Flag evaluation failed. Ask the flag owner to check its configuration and retry after repair." },
     { "key": "theme", "value": "dark", "reason": "TARGETING_MATCH", "variant": "var_theme_dark" }
   ]
 }

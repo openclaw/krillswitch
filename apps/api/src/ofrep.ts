@@ -72,7 +72,8 @@ function evaluateOfrepFlag(
     return {
       key: flag.key,
       errorCode: "GENERAL",
-      errorDetails: "Flag evaluation failed.",
+      errorDetails:
+        "Flag evaluation failed. Ask the flag owner to check its configuration and retry after repair.",
     };
   }
 }
