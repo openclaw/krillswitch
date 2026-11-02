@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Isolate OFREP evaluation failures caused by degraded flag configuration: return sanitized per-flag errors without losing healthy bulk results, preserving ETag revalidation and recovery after configuration refresh. Document official OpenFeature provider setup and typed fallbacks.
+
 ### Changed
 
 - Refresh Better Auth, Hono, Biome, and Cloudflare types while keeping the auth schema generator aligned, preserving the two-day dependency cooldown and patched Undici overrides. Thanks @dependabot.

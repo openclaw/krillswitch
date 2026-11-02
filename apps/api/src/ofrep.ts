@@ -2,7 +2,9 @@ import {
   type AttributeValue,
   type EvalContext,
   evaluateFlag,
+  type FlagConfig,
   type FlagEvaluation,
+  type SegmentMap,
 } from "@openclaw/krillswitch-core";
 import { Hono } from "hono";
 import { getEnvironmentConfig } from "./configCache";
@@ -49,6 +51,30 @@ function toOfrep(key: string, evaluation: FlagEvaluation): OfrepSuccess {
     reason: OFREP_REASONS[evaluation.reason.kind],
     variant: evaluation.variationId,
   };
+}
+
+interface OfrepFailure {
+  key: string;
+  errorCode: "GENERAL";
+  errorDetails: string;
+}
+
+function evaluateOfrepFlag(
+  flag: FlagConfig,
+  context: EvalContext,
+  segments: SegmentMap,
+): OfrepSuccess | OfrepFailure {
+  try {
+    return toOfrep(flag.key, evaluateFlag(flag, context, segments));
+  } catch {
+    // Degraded stored configuration must not discard healthy bulk results or
+    // expose evaluator exceptions (including internal variation identifiers).
+    return {
+      key: flag.key,
+      errorCode: "GENERAL",
+      errorDetails: "Flag evaluation failed.",
+    };
+  }
 }
 
 function isAttributeValue(value: unknown): value is AttributeValue {
@@ -132,14 +158,12 @@ ofrepRoutes.post("/v1/evaluate/flags/:key?", async (c) => {
         404,
       );
     }
-    return c.json(
-      toOfrep(flagKey, evaluateFlag(flagConfig, context, config.segments)),
-      200,
-    );
+    const result = evaluateOfrepFlag(flagConfig, context, config.segments);
+    return c.json(result, "errorCode" in result ? 400 : 200);
   }
 
   const flags = config.flags.map((flagConfig) =>
-    toOfrep(flagConfig.key, evaluateFlag(flagConfig, context, config.segments)),
+    evaluateOfrepFlag(flagConfig, context, config.segments),
   );
   const serialized = JSON.stringify({ flags });
   const etag = evalBodyEtag(serialized);
