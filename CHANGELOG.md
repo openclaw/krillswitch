@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Isolate OFREP evaluation failures caused by degraded flag configuration: return sanitized per-flag errors without losing healthy bulk results, preserving ETag revalidation and recovery after configuration refresh. Document official OpenFeature provider setup and typed fallbacks.
+
 ### Changed
 
 - Trust the current vincentkoc SSH signing key for release tags while retaining existing trusted keys.

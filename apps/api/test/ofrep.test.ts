@@ -191,3 +191,165 @@ describe("OFREP hostname trust boundary", () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe("OFREP degraded-configuration isolation", () => {
+  // Admin validation normally prevents these references. Write directly to
+  // local D1 to exercise the real Worker boundary with degraded stored data.
+  const missingVariation = "missing-variation-internal-detail";
+  const failure = {
+    key: "souls",
+    errorCode: "GENERAL",
+    errorDetails:
+      "Flag evaluation failed. Ask the flag owner to check its configuration and retry after repair.",
+  };
+
+  async function restoreSouls(): Promise<void> {
+    await env.DB.prepare(
+      "UPDATE flag_environments SET enabled = 1, default_variation_id = 'var_souls_on', off_variation_id = 'var_souls_off', targets = '[]' WHERE id = 'fe_souls_dev'",
+    ).run();
+    clearConfigCache();
+  }
+
+  it.each(["default", "off", "target"] as const)(
+    "returns a sanitized keyed failure for an unresolved %s variation",
+    async (step) => {
+      try {
+        if (step === "default") {
+          await env.DB.prepare(
+            "UPDATE flag_environments SET default_variation_id = ? WHERE id = 'fe_souls_dev'",
+          )
+            .bind(missingVariation)
+            .run();
+        } else if (step === "off") {
+          await env.DB.prepare(
+            "UPDATE flag_environments SET enabled = 0, off_variation_id = ? WHERE id = 'fe_souls_dev'",
+          )
+            .bind(missingVariation)
+            .run();
+        } else {
+          await env.DB.prepare(
+            "UPDATE flag_environments SET targets = ? WHERE id = 'fe_souls_dev'",
+          )
+            .bind(
+              JSON.stringify([
+                { variationId: missingVariation, contextKeys: ["user-1"] },
+              ]),
+            )
+            .run();
+        }
+        clearConfigCache();
+
+        const bulk = await postOfrep({ evalKey: DEV_EVAL_KEY });
+        expect(bulk.status).toBe(200);
+        const body = (await bulk.json()) as { flags: unknown[] };
+        expect(body.flags).toHaveLength(4);
+        expect(body.flags).toContainEqual(failure);
+        expect(body.flags).toContainEqual({
+          key: "theme",
+          value: "light",
+          reason: "DEFAULT",
+          variant: "var_theme_light",
+        });
+        expect(body.flags).toContainEqual(
+          expect.objectContaining({ key: "rollout-demo", reason: "SPLIT" }),
+        );
+        expect(JSON.stringify(body)).not.toContain(missingVariation);
+
+        const single = await postOfrep({
+          evalKey: DEV_EVAL_KEY,
+          path: `${BULK_PATH}/souls`,
+        });
+        expect(single.status).toBe(400);
+        expect(single.headers.get("cache-control")).toBe("private, no-store");
+        expect(await single.json()).toEqual(failure);
+      } finally {
+        await restoreSouls();
+      }
+    },
+  );
+
+  it("revalidates mixed results and recovers after the configuration cache refreshes", async () => {
+    try {
+      const healthy = await postOfrep({ evalKey: DEV_EVAL_KEY });
+      const healthyBody = await healthy.json();
+      const healthyEtag = healthy.headers.get("etag");
+      await env.DB.prepare(
+        "UPDATE flag_environments SET default_variation_id = ? WHERE id = 'fe_souls_dev'",
+      )
+        .bind(missingVariation)
+        .run();
+      clearConfigCache();
+
+      const degraded = await postOfrep({
+        evalKey: DEV_EVAL_KEY,
+        headers: { "if-none-match": healthyEtag ?? "" },
+      });
+      expect(degraded.status).toBe(200);
+      expect(degraded.headers.get("cache-control")).toBe("private, no-store");
+      const degradedEtag = degraded.headers.get("etag");
+      expect(degradedEtag).toBeTruthy();
+      expect(degradedEtag).not.toBe(healthyEtag);
+      expect(await degraded.json()).toMatchObject({
+        flags: expect.arrayContaining([failure]),
+      });
+
+      const unchanged = await postOfrep({
+        evalKey: DEV_EVAL_KEY,
+        headers: { "if-none-match": degradedEtag ?? "" },
+      });
+      expect(unchanged.status).toBe(304);
+      expect(await unchanged.text()).toBe("");
+      expect(unchanged.headers.get("etag")).toBe(degradedEtag);
+
+      // A failed evaluation must not mutate or poison the cached config.
+      await env.DB.prepare(
+        "UPDATE flag_environments SET default_variation_id = 'var_souls_on' WHERE id = 'fe_souls_dev'",
+      ).run();
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      const recovered = await postOfrep({
+        evalKey: DEV_EVAL_KEY,
+        headers: { "if-none-match": degradedEtag ?? "" },
+      });
+      expect(recovered.status).toBe(200);
+      expect(recovered.headers.get("etag")).toBe(healthyEtag);
+      expect(await recovered.json()).toEqual(healthyBody);
+      const single = await postOfrep({
+        evalKey: DEV_EVAL_KEY,
+        path: `${BULK_PATH}/souls`,
+      });
+      expect(single.status).toBe(200);
+      expect(await single.json()).toMatchObject({ key: "souls", value: true });
+    } finally {
+      await restoreSouls();
+    }
+  });
+
+  it("keeps the disabled off variation ahead of broken default and target references", async () => {
+    try {
+      await env.DB.prepare(
+        "UPDATE flag_environments SET enabled = 0, default_variation_id = ?, targets = ? WHERE id = 'fe_souls_dev'",
+      )
+        .bind(
+          missingVariation,
+          JSON.stringify([
+            { variationId: missingVariation, contextKeys: ["user-1"] },
+          ]),
+        )
+        .run();
+      clearConfigCache();
+      const response = await postOfrep({
+        evalKey: DEV_EVAL_KEY,
+        path: `${BULK_PATH}/souls`,
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        key: "souls",
+        value: false,
+        reason: "DISABLED",
+        variant: "var_souls_off",
+      });
+    } finally {
+      await restoreSouls();
+    }
+  });
+});
