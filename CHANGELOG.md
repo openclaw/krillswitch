@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Return provider-readable OFREP single-flag context errors and distinguish invalid context shapes or targeting-key types from missing targeting keys.
+
 ### Changed
 
 - Trust the current vincentkoc SSH signing key for release tags while retaining existing trusted keys.

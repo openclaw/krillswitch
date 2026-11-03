@@ -65,21 +65,31 @@ function isAttributeValue(value: unknown): value is AttributeValue {
 function parseOfrepContext(
   body: unknown,
 ): { context: EvalContext } | { errorCode: string; errorDetails: string } {
-  if (typeof body !== "object" || body === null) {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return {
       errorCode: "INVALID_CONTEXT",
       errorDetails: "Request body must be a JSON object with a context.",
     };
   }
   const context = (body as { context?: unknown }).context;
-  if (typeof context !== "object" || context === null) {
+  if (
+    typeof context !== "object" ||
+    context === null ||
+    Array.isArray(context)
+  ) {
     return {
       errorCode: "INVALID_CONTEXT",
       errorDetails: "context must be an object.",
     };
   }
   const { targetingKey, ...rest } = context as Record<string, unknown>;
-  if (typeof targetingKey !== "string" || targetingKey.length === 0) {
+  if (targetingKey !== undefined && typeof targetingKey !== "string") {
+    return {
+      errorCode: "INVALID_CONTEXT",
+      errorDetails: "context.targetingKey must be a string.",
+    };
+  }
+  if (targetingKey === undefined || targetingKey.length === 0) {
     return {
       errorCode: "TARGETING_KEY_MISSING",
       errorDetails: "context.targetingKey is required.",
@@ -110,16 +120,19 @@ ofrepRoutes.post("/v1/evaluate/flags/:key?", async (c) => {
     );
   }
 
+  const flagKey = c.req.param("key");
   const parsed = parseOfrepContext(await c.req.json().catch(() => null));
   if ("errorCode" in parsed) {
-    return c.json(parsed, 400);
+    return c.json(
+      { ...(flagKey === undefined ? {} : { key: flagKey }), ...parsed },
+      400,
+    );
   }
   const { context } = parsed;
 
   c.executionCtx.waitUntil(recordEvalStats(c.env.DB, config.environmentId));
   c.header("Cache-Control", "private, no-store");
 
-  const flagKey = c.req.param("key");
   if (flagKey !== undefined) {
     const flagConfig = config.flags.find((flag) => flag.key === flagKey);
     if (!flagConfig) {

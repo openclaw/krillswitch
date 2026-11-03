@@ -167,6 +167,57 @@ describe("POST /ofrep/v1/evaluate/flags/:key (single)", () => {
   });
 });
 
+describe.each([BULK_PATH, `${BULK_PATH}/souls`])(
+  "OFREP request validation at %s",
+  (path) => {
+    it.each([
+      ["array body", [], "INVALID_CONTEXT"],
+      ["null context", { context: null }, "INVALID_CONTEXT"],
+      ["array context", { context: [] }, "INVALID_CONTEXT"],
+      ["string context", { context: "user-1" }, "INVALID_CONTEXT"],
+      [
+        "numeric targeting key",
+        { context: { targetingKey: 42 } },
+        "INVALID_CONTEXT",
+      ],
+      ["missing targeting key", { context: {} }, "TARGETING_KEY_MISSING"],
+      [
+        "empty targeting key",
+        { context: { targetingKey: "" } },
+        "TARGETING_KEY_MISSING",
+      ],
+    ])(
+      "rejects %s with a provider-readable envelope",
+      async (_name, body, errorCode) => {
+        const response = await postOfrep({ evalKey: DEV_EVAL_KEY, path, body });
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({
+          ...(path === BULK_PATH ? {} : { key: "souls" }),
+          errorCode,
+          errorDetails: expect.any(String),
+        });
+      },
+    );
+
+    it("rejects malformed JSON with a provider-readable envelope", async () => {
+      const response = await SELF.fetch(`https://krillswitch.test${path}`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${DEV_EVAL_KEY}`,
+          "content-type": "application/json",
+        },
+        body: "{",
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        ...(path === BULK_PATH ? {} : { key: "souls" }),
+        errorCode: "INVALID_CONTEXT",
+        errorDetails: expect.any(String),
+      });
+    });
+  },
+);
+
 describe("OFREP hostname trust boundary", () => {
   it("serves OFREP on the public eval hostname", async () => {
     const response = await postOfrep({
