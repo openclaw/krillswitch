@@ -1,5 +1,5 @@
 # Default product ownership.
-* @openclaw/maintainer
+* @openclaw/maintainers-openclaw-org
 
 # Security, deployment, and agent-control surfaces.
 /.github/CODEOWNERS @openclaw/openclaw-secops

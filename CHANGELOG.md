@@ -6,6 +6,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Restore default code-owner review routing after the maintainer team rename.
+
 - Trust the current vincentkoc SSH signing key for release tags while retaining existing trusted keys.
 
 - Refresh Better Auth, Hono, Biome, and Cloudflare types while keeping the auth schema generator aligned, preserving the two-day dependency cooldown and patched Undici overrides. Thanks @dependabot.
