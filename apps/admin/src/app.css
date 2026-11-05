@@ -3185,9 +3185,16 @@ h1 {
 .webhook-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.webhook-replace {
+  flex: 1 1 100%;
+  display: flex;
+  gap: 8px;
 }
 
 .webhook-copy {

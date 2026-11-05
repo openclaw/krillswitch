@@ -199,14 +199,17 @@ export const flagEnvironments = sqliteTable(
 );
 
 // Outbound notifications: every change-log entry is POSTed to each enabled
-// webhook. `cursor` is the change_log rowid already delivered; delivery is
-// notify-only (no retry queue), so the cursor advances even on failure and
-// last_status records the most recent result.
+// webhook. `cursor` is the change_log rowid already delivered. HTTP, timeout,
+// and network results advance it. An unsafe stored URL does not, so the queue
+// remains until an admin replaces the URL. `last_status` is the latest result.
 export const webhooks = sqliteTable("webhooks", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   url: text("url").notNull(),
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  strictDelivery: integer("strict_delivery", { mode: "boolean" })
+    .notNull()
+    .default(false),
   cursor: integer("cursor").notNull().default(0),
   lastStatus: text("last_status"),
   lastSentAt: integer("last_sent_at", { mode: "timestamp_ms" }),
