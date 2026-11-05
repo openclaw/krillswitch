@@ -104,6 +104,7 @@ export type Webhook = {
   lastStatus: string | null;
   lastSentAt: string | null;
   createdAt: string;
+  warnings: string[];
 };
 
 export type ChangeLogEntry = {
@@ -444,6 +445,12 @@ export const api = {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled }),
+    }),
+  setWebhookUrl: (id: string, url: string) =>
+    request<{ url: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url }),
     }),
   deleteWebhook: (id: string) =>
     request<{ deleted: string }>(`/admin/webhooks/${encodeURIComponent(id)}`, {

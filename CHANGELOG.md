@@ -4,6 +4,10 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- Validate literal and resolved webhook destinations at registration and before delivery; preserve legacy HTTP and redirect subscribers with migration warnings, protect queued entries, and document the Workers DNS-rebinding limitation. Thanks @SebTardif (#175, #75).
+
 ### Changed
 
 - Refresh application and Worker test dependencies, align the Better Auth schema generator, and retain patched Undici with a current workerd pin under the two-day cooldown. Thanks @dependabot.

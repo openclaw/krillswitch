@@ -1,4 +1,4 @@
-import { eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { changeLog, webhooks } from "../db/schema";
 import { type Actor, changeLogInsert } from "./changeLog";
@@ -6,6 +6,318 @@ import { type Actor, changeLogInsert } from "./changeLog";
 const DRAIN_BATCH = 10;
 /** Bound each subscriber POST so a stalled URL cannot pin waitUntil. */
 export const WEBHOOK_DRAIN_FETCH_TIMEOUT_MS = 2_000;
+
+export class WebhookUrlError extends Error {
+  constructor() {
+    super("invalid webhook url");
+    this.name = "WebhookUrlError";
+  }
+}
+
+export class WebhookDnsError extends Error {}
+
+const blockedHostnames = new Set(["localhost", "metadata.google.internal"]);
+
+/**
+ * HTTPS only. Literal private, metadata, and non-global addresses are rejected.
+ * Workers fetch resolves a hostname again, and there is no off-zone API that
+ * pins that connection to a checked address while keeping the subscriber's
+ * TLS name. A hostname is not a resolved-address guarantee.
+ */
+export function assertPublicHttpsWebhookUrl(
+  raw: string,
+  allowHttp = false,
+): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new WebhookUrlError();
+  }
+  if (
+    parsed.protocol !== "https:" &&
+    !(allowHttp && parsed.protocol === "http:")
+  ) {
+    throw new WebhookUrlError();
+  }
+  if (parsed.username || parsed.password) {
+    throw new WebhookUrlError();
+  }
+  const host = normalizeHostname(parsed.hostname);
+  if (blockedHostnames.has(host) || host.endsWith(".localhost")) {
+    throw new WebhookUrlError();
+  }
+  if (isPrivateOrLinkLocalHost(host)) {
+    throw new WebhookUrlError();
+  }
+  return parsed;
+}
+
+/** A preflight check, not a connection-IP check: Workers fetch resolves again. */
+async function resolveWebhookUrl(
+  raw: string,
+  resolver: typeof fetch = fetch,
+  allowHttp = false,
+): Promise<URL> {
+  const url = assertPublicHttpsWebhookUrl(raw, allowHttp);
+  const host = normalizeHostname(url.hostname);
+  if (parseIpv4Octets(host) || host.includes(":")) return url;
+  let addresses = 0;
+  for (const type of ["A", "AAAA"]) {
+    const query = new URL("https://cloudflare-dns.com/dns-query");
+    query.searchParams.set("name", host);
+    query.searchParams.set("type", type);
+    const response = await resolver(query, {
+      headers: { accept: "application/dns-json" },
+      redirect: "manual",
+      signal: AbortSignal.timeout(WEBHOOK_DRAIN_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error("webhook DNS lookup failed");
+    const answer = await response.json<{
+      Status: number;
+      Answer?: { type: number; data: string }[];
+    }>();
+    if (answer.Status !== 0) throw new Error("webhook DNS lookup failed");
+    for (const record of answer.Answer ?? []) {
+      if (record.type !== 1 && record.type !== 28) continue;
+      const address = record.data.toLowerCase();
+      const valid =
+        record.type === 1 ? parseIpv4Octets(address) : parseIpv6Groups(address);
+      if (!valid || isPrivateOrLinkLocalHost(address))
+        throw new WebhookUrlError();
+      addresses++;
+    }
+  }
+  if (!addresses) throw new Error("webhook DNS lookup returned no addresses");
+  return url;
+}
+
+export async function assertResolvedWebhookUrl(
+  raw: string,
+  resolver: typeof fetch = fetch,
+  allowHttp = false,
+): Promise<URL> {
+  try {
+    return await resolveWebhookUrl(raw, resolver, allowHttp);
+  } catch (error) {
+    if (error instanceof WebhookUrlError) throw error;
+    throw new WebhookDnsError("webhook DNS lookup failed", { cause: error });
+  }
+}
+
+/** WHATWG URL.hostname keeps brackets around IPv6 literals. */
+function unwrapHostname(host: string): string {
+  const lower = host.toLowerCase();
+  if (lower.startsWith("[") && lower.endsWith("]")) {
+    return lower.slice(1, -1);
+  }
+  return lower;
+}
+
+/** Strip one trailing DNS root label so localhost. matches the denylist. */
+function normalizeHostname(host: string): string {
+  const unwrapped = unwrapHostname(host);
+  return unwrapped.endsWith(".") ? unwrapped.slice(0, -1) : unwrapped;
+}
+
+function isPrivateOrLinkLocalHost(host: string): boolean {
+  if (host === "::1" || host === "0.0.0.0") {
+    return true;
+  }
+  if (host.includes(":")) {
+    const groups = parseIpv6Groups(host);
+    return groups !== null && isNonPublicIpv6(groups);
+  }
+  const parts = parseIpv4Octets(host);
+  return parts !== null && isPrivateIpv4(parts);
+}
+
+function parseIpv4Octets(
+  host: string,
+): [number, number, number, number] | null {
+  const parts = host.split(".").map((part) => Number(part));
+  const a = parts[0];
+  const b = parts[1];
+  const c = parts[2];
+  const d = parts[3];
+  if (
+    parts.length !== 4 ||
+    a === undefined ||
+    b === undefined ||
+    c === undefined ||
+    d === undefined ||
+    [a, b, c, d].some(
+      (part) => !Number.isInteger(part) || part < 0 || part > 255,
+    )
+  ) {
+    return null;
+  }
+  return [a, b, c, d];
+}
+
+function isPrivateIpv4([a, b, c]: [number, number, number, number]): boolean {
+  if (a === 0 || a === 10 || a === 127) {
+    return true;
+  }
+  if (a === 169 && b === 254) {
+    return true;
+  }
+  if (a === 172 && b >= 16 && b <= 31) {
+    return true;
+  }
+  if (a === 192 && b === 168) {
+    return true;
+  }
+  if (a === 100 && b >= 64 && b <= 127) {
+    return true;
+  }
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) {
+    return true;
+  }
+  if (a === 192 && b === 88 && c === 99) {
+    return true;
+  }
+  if (a === 198 && (b === 18 || b === 19)) {
+    return true;
+  }
+  if (a === 198 && b === 51 && c === 100) {
+    return true;
+  }
+  if (a === 203 && b === 0 && c === 113) {
+    return true;
+  }
+  return a >= 224;
+}
+
+function parseHexGroup(group: string): number | null {
+  if (!group || group.length > 4 || !/^[0-9a-f]+$/i.test(group)) {
+    return null;
+  }
+  return Number.parseInt(group, 16);
+}
+
+function parseIpv6Groups(addr: string): number[] | null {
+  const bare = addr.split("%")[0] ?? "";
+  let ipv4Tail: [number, number] | null = null;
+  let hexPart = bare;
+  const lastColon = bare.lastIndexOf(":");
+  const after = lastColon >= 0 ? bare.slice(lastColon + 1) : "";
+  if (after.includes(".")) {
+    const v4 = parseIpv4Octets(after);
+    if (!v4) {
+      return null;
+    }
+    ipv4Tail = [(v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3]];
+    hexPart = bare.slice(0, lastColon);
+  }
+  const sides = hexPart.split("::");
+  if (sides.length > 2) {
+    return null;
+  }
+  const leftRaw = sides[0] ?? "";
+  const rightRaw = sides[1] ?? "";
+  const left = leftRaw === "" ? [] : leftRaw.split(":");
+  const right =
+    sides.length === 2 ? (rightRaw === "" ? [] : rightRaw.split(":")) : [];
+  const expected = 8 - (ipv4Tail ? 2 : 0);
+  const have = left.length + right.length;
+  const groups: number[] = [];
+  const pushGroups = (raw: string[]): boolean => {
+    for (const group of raw) {
+      const value = parseHexGroup(group);
+      if (value === null) {
+        return false;
+      }
+      groups.push(value);
+    }
+    return true;
+  };
+  if (sides.length === 2) {
+    if (have > expected) {
+      return null;
+    }
+    if (!pushGroups(left)) {
+      return null;
+    }
+    for (let i = 0; i < expected - have; i += 1) {
+      groups.push(0);
+    }
+    if (!pushGroups(right)) {
+      return null;
+    }
+  } else {
+    if (have !== expected) {
+      return null;
+    }
+    if (!pushGroups(left)) {
+      return null;
+    }
+  }
+  if (ipv4Tail) {
+    groups.push(ipv4Tail[0], ipv4Tail[1]);
+  }
+  return groups.length === 8 ? groups : null;
+}
+
+function isNonPublicIpv6(groups: number[]): boolean {
+  const g0 = groups[0] ?? 0;
+  const g1 = groups[1] ?? 0;
+  const g2 = groups[2] ?? 0;
+  const g3 = groups[3] ?? 0;
+  const g5 = groups[5] ?? 0;
+  const g6 = groups[6] ?? 0;
+  const g7 = groups[7] ?? 0;
+  const zero = groups.every((group) => group === 0);
+  if (zero || (zeroExceptLast(groups) && g7 === 1)) {
+    return true;
+  }
+  if ((g0 & 0xffc0) === 0xfe80) {
+    return true;
+  }
+  if ((g0 & 0xfe00) === 0xfc00) {
+    return true;
+  }
+  if ((g0 & 0xffc0) === 0xfec0) {
+    return true;
+  }
+  if ((g0 & 0xff00) === 0xff00) {
+    return true;
+  }
+  if (g0 === 0x0100 && g1 === 0 && g2 === 0 && (g3 === 0 || g3 === 1)) {
+    return true;
+  }
+  if (g0 === 0x2001 && g1 === 0x0db8) {
+    return true;
+  }
+  if (g0 === 0x2001 && g1 === 0x0002) {
+    return true;
+  }
+  if (g0 === 0x3fff && (g1 & 0xf000) === 0) {
+    return true;
+  }
+  if (g0 === 0x0064 && g1 === 0xff9b && (g2 === 0 || g2 === 1)) {
+    return true;
+  }
+  if (g0 === 0x5f00) {
+    return true;
+  }
+  if (g0 === 0x2002) {
+    return true;
+  }
+  // IPv4-mapped (::ffff:a.b.c.d) and deprecated IPv4-compatible (::a.b.c.d).
+  // WHATWG URL rewrites [::127.0.0.1] to [::7f00:1]; group 6 is not 0xffff.
+  const prefixZero = groups.slice(0, 5).every((group) => group === 0);
+  const mapped = prefixZero && g5 === 0xffff;
+  const ipv4Compatible = prefixZero && g5 === 0;
+  if (mapped || ipv4Compatible) {
+    return isPrivateIpv4([g6 >> 8, g6 & 0xff, g7 >> 8, g7 & 0xff]);
+  }
+  return false;
+}
+
+function zeroExceptLast(groups: number[]): boolean {
+  return groups.slice(0, 7).every((group) => group === 0);
+}
 
 export type WebhookRow = {
   id: string;
@@ -15,6 +327,7 @@ export type WebhookRow = {
   lastStatus: string | null;
   lastSentAt: Date | null;
   createdAt: Date;
+  warnings: string[];
 };
 
 export async function listWebhooks(
@@ -29,16 +342,27 @@ export async function listWebhooks(
       lastStatus: webhooks.lastStatus,
       lastSentAt: webhooks.lastSentAt,
       createdAt: webhooks.createdAt,
+      strictDelivery: webhooks.strictDelivery,
     })
     .from(webhooks)
     .all();
-  return rows.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return rows
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .map(({ strictDelivery, ...row }) => ({
+      ...row,
+      warnings: strictDelivery
+        ? []
+        : [
+            "Legacy delivery: HTTP and checked redirects remain enabled. Replace the URL with HTTPS to migrate to strict delivery.",
+          ],
+    }));
 }
 
 export async function createWebhook(
   db: DrizzleD1Database,
   options: { name: string; url: string; actor: Actor },
 ): Promise<string> {
+  await assertResolvedWebhookUrl(options.url);
   const id = crypto.randomUUID();
   // New webhooks start at the current change-log tail so they only receive
   // changes made after they were added.
@@ -51,6 +375,7 @@ export async function createWebhook(
       id,
       name: options.name,
       url: options.url,
+      strictDelivery: true,
       cursor: tail?.tail ?? 0,
       createdAt: new Date(),
     }),
@@ -92,6 +417,37 @@ export async function setWebhookEnabled(
   return true;
 }
 
+/** Keep the cursor so queued rows can deliver to the replacement URL. */
+export async function setWebhookUrl(
+  db: DrizzleD1Database,
+  options: { id: string; url: string; actor: Actor },
+): Promise<boolean> {
+  const url = options.url.trim();
+  await assertResolvedWebhookUrl(url);
+  const row = await db
+    .select()
+    .from(webhooks)
+    .where(eq(webhooks.id, options.id))
+    .get();
+  if (!row) {
+    return false;
+  }
+  await db.batch([
+    db
+      .update(webhooks)
+      .set({ url, strictDelivery: true, lastStatus: null, lastSentAt: null })
+      .where(eq(webhooks.id, options.id)),
+    changeLogInsert(db, {
+      actor: options.actor,
+      action: "webhook.update",
+      target: url,
+      before: { url: row.url },
+      after: { url },
+    }),
+  ]);
+  return true;
+}
+
 export async function deleteWebhook(
   db: DrizzleD1Database,
   options: { id: string; actor: Actor },
@@ -118,13 +474,16 @@ export async function deleteWebhook(
 
 /** POST change-log entries newer than each enabled webhook's cursor.
  *  Runs off the request path (waitUntil) after every admin mutation.
- *  Delivery is notify-only: HTTP, network, and timeout failures all
- *  advance the cursor so a dead or slow subscriber cannot stall the
- *  queue or duplicate a post that already completed after cutoff. */
+ *  HTTP, network, and timeout results advance the cursor so a dead subscriber
+ *  cannot stall the queue. An unsafe stored URL does not: the queue stays
+ *  until an admin replaces it. A drain that loaded an older URL does not
+ *  POST or commit the cursor after that URL changes. Disabling the same
+ *  URL stops later POSTs and still commits entries that were already sent. */
 export async function drainWebhooks(
   db: DrizzleD1Database,
   fetcher: typeof fetch = fetch,
   timeoutMs = WEBHOOK_DRAIN_FETCH_TIMEOUT_MS,
+  resolver: typeof fetch = fetch,
 ): Promise<void> {
   const hooks = await db
     .select()
@@ -133,7 +492,7 @@ export async function drainWebhooks(
     .all();
   for (const hook of hooks) {
     try {
-      await drainOneWebhook(db, fetcher, hook, timeoutMs);
+      await drainOneWebhook(db, fetcher, hook, timeoutMs, resolver);
     } catch {
       // Notification must never surface as a worker error; the cursor simply
       // stays put and the next mutation retries the drain.
@@ -141,64 +500,171 @@ export async function drainWebhooks(
   }
 }
 
+async function readWebhook(db: DrizzleD1Database, id: string) {
+  return db.select().from(webhooks).where(eq(webhooks.id, id)).get();
+}
+
+function urlUnchanged(
+  row: { url: string; strictDelivery: boolean; enabled: boolean } | undefined,
+  snapshot: { url: string; strictDelivery: boolean },
+): row is { url: string; strictDelivery: boolean; enabled: boolean } {
+  return (
+    row !== undefined &&
+    row.url === snapshot.url &&
+    row.strictDelivery === snapshot.strictDelivery
+  );
+}
+
 async function drainOneWebhook(
   db: DrizzleD1Database,
   fetcher: typeof fetch,
   hook: typeof webhooks.$inferSelect,
   timeoutMs: number,
+  resolver: typeof fetch,
 ): Promise<void> {
-  {
-    const entries = await db
-      .select({
-        rowid: sql<number>`rowid`,
-        id: changeLog.id,
-        actorName: changeLog.actorName,
-        action: changeLog.action,
-        projectKey: changeLog.projectKey,
-        flagKey: changeLog.flagKey,
-        target: changeLog.target,
-        before: changeLog.before,
-        after: changeLog.after,
-        comment: changeLog.comment,
-        createdAt: changeLog.createdAt,
-      })
-      .from(changeLog)
-      .where(gt(sql`rowid`, hook.cursor))
-      .orderBy(sql`rowid`)
-      .limit(DRAIN_BATCH)
-      .all();
-    if (entries.length === 0) {
+  const current = await readWebhook(db, hook.id);
+  if (!current || current.url !== hook.url || !current.enabled) {
+    return;
+  }
+  const entries = await db
+    .select({
+      rowid: sql<number>`rowid`,
+      id: changeLog.id,
+      actorName: changeLog.actorName,
+      action: changeLog.action,
+      projectKey: changeLog.projectKey,
+      flagKey: changeLog.flagKey,
+      target: changeLog.target,
+      before: changeLog.before,
+      after: changeLog.after,
+      comment: changeLog.comment,
+      createdAt: changeLog.createdAt,
+    })
+    .from(changeLog)
+    .where(gt(sql`rowid`, current.cursor))
+    .orderBy(sql`rowid`)
+    .limit(DRAIN_BATCH)
+    .all();
+  if (entries.length === 0) {
+    return;
+  }
+  let status = "ok";
+  let cursor = current.cursor;
+  let attempted = false;
+  for (const { rowid, ...entry } of entries) {
+    const before = await readWebhook(db, hook.id);
+    if (!urlUnchanged(before, hook)) {
       return;
     }
-    let status = "ok";
-    let cursor = hook.cursor;
-    for (const { rowid, ...entry } of entries) {
-      try {
-        const response = await fetcher(hook.url, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ type: "change", entry }),
+    if (!before.enabled) {
+      break;
+    }
+    try {
+      let target = before.url;
+      let method = "POST";
+      let body: string | undefined = JSON.stringify({ type: "change", entry });
+      let response: Response;
+      for (let hop = 0; ; hop++) {
+        await assertResolvedWebhookUrl(target, resolver, !hook.strictDelivery);
+        const latest = await readWebhook(db, hook.id);
+        if (!urlUnchanged(latest, hook) || !latest.enabled) return;
+        response = await fetcher(target, {
+          method,
+          headers: body
+            ? {
+                "content-type": "application/json",
+                "user-agent": "krillswitch",
+              }
+            : { "user-agent": "krillswitch" },
+          body,
+          redirect: "manual",
           signal: AbortSignal.timeout(timeoutMs),
         });
-        if (!response.ok) {
-          status = `http ${response.status}`;
-        }
-        cursor = rowid;
-      } catch (error) {
-        if (isFetchTimeout(error)) {
-          status = "timeout";
-          cursor = rowid;
+        await response.body?.cancel().catch(() => {});
+        if (
+          hook.strictDelivery ||
+          ![301, 302, 303, 307, 308].includes(response.status)
+        )
           break;
+        const location = response.headers.get("location");
+        if (!location || hop >= 20) break;
+        // Match fetch's legacy POST redirect semantics, but check each hop first.
+        if ([301, 302, 303].includes(response.status)) {
+          method = "GET";
+          body = undefined;
         }
-        status = "unreachable";
-        cursor = rowid;
+        try {
+          target = new URL(location, target).href;
+        } catch {
+          throw new WebhookUrlError();
+        }
       }
+      const after = await readWebhook(db, hook.id);
+      if (!urlUnchanged(after, hook)) {
+        return;
+      }
+      if (response.status >= 300 && response.status < 400) {
+        status = "redirect";
+      } else if (!response.ok) {
+        status = `http ${response.status}`;
+      } else {
+        status = "ok";
+      }
+      cursor = rowid;
+      attempted = true;
+      if (!after.enabled) {
+        break;
+      }
+    } catch (error) {
+      const after = await readWebhook(db, hook.id);
+      if (!urlUnchanged(after, hook)) {
+        return;
+      }
+      if (
+        error instanceof WebhookUrlError ||
+        error instanceof WebhookDnsError
+      ) {
+        await db
+          .update(webhooks)
+          .set({
+            cursor,
+            lastStatus:
+              error instanceof WebhookUrlError ? "blocked" : "dns-error",
+            lastSentAt: new Date(),
+          })
+          .where(
+            and(
+              eq(webhooks.id, hook.id),
+              eq(webhooks.url, hook.url),
+              eq(webhooks.strictDelivery, hook.strictDelivery),
+            ),
+          );
+        return;
+      }
+      if (isFetchTimeout(error)) {
+        status = "timeout";
+        cursor = rowid;
+        attempted = true;
+        break;
+      }
+      status = "unreachable";
+      cursor = rowid;
+      attempted = true;
     }
-    await db
-      .update(webhooks)
-      .set({ cursor, lastStatus: status, lastSentAt: new Date() })
-      .where(eq(webhooks.id, hook.id));
   }
+  if (!attempted) {
+    return;
+  }
+  await db
+    .update(webhooks)
+    .set({ cursor, lastStatus: status, lastSentAt: new Date() })
+    .where(
+      and(
+        eq(webhooks.id, hook.id),
+        eq(webhooks.url, hook.url),
+        eq(webhooks.strictDelivery, hook.strictDelivery),
+      ),
+    );
 }
 
 function isFetchTimeout(error: unknown): boolean {
