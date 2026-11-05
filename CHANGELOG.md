@@ -4,9 +4,15 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.2] - 2026-11-05
+
+**Highlights:** Harden webhook destinations against SSRF with literal-address and DNS preflight checks, preserve legacy subscribers with migration warnings, and refresh dependencies.
+
 ### Security
 
 - Validate literal and resolved webhook destinations at registration and before delivery; preserve legacy HTTP and redirect subscribers with migration warnings, protect queued entries, and document the Workers DNS-rebinding limitation. Thanks @SebTardif (#175, #75).
+
+Cloudflare Workers resolve the destination again when connecting. DNS preflight does not stop DNS rebinding between validation and connection; deployments requiring that guarantee need an egress proxy that validates the connected IP address.
 
 ### Changed
 
@@ -196,7 +202,8 @@ All notable changes to Krillswitch are documented in this file.
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.2...HEAD
+[v0.6.2]: https://github.com/openclaw/krillswitch/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://github.com/openclaw/krillswitch/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/openclaw/krillswitch/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/openclaw/krillswitch/compare/v0.4.0...v0.5.0
