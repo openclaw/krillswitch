@@ -6,6 +6,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Refresh application and Worker test dependencies, align the Better Auth schema generator, and retain patched Undici with a current workerd pin under the two-day cooldown. Thanks @dependabot.
+
 - Restore default code-owner review routing after the maintainer team rename.
 
 - Trust the current vincentkoc SSH signing key for release tags while retaining existing trusted keys.
