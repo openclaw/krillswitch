@@ -4,6 +4,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+- Refresh pnpm/action-setup to 6.1.1 for application and SDK releases and paired CodeQL actions to 4.39.2, preserving the existing package-manager pin and release gates. Thanks @dependabot.
+
 ## [v0.6.2] - 2026-11-05
 
 **Highlights:** Harden webhook destinations against SSRF with literal-address and DNS preflight checks, preserve legacy subscribers with migration warnings, and refresh dependencies.
