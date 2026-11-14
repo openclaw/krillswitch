@@ -4,6 +4,8 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+- Refresh Better Auth, Hono, React Query, CLI prompts, Worker tooling, Vite, and CodeQL; align the auth schema generator and preserve patched overrides and the two-day cooldown. Thanks @dependabot.
+
 - Refresh pnpm/action-setup to 6.1.1 for application and SDK releases and paired CodeQL actions to 4.39.2, preserving the existing package-manager pin and release gates. Thanks @dependabot.
 
 ## [v0.6.2] - 2026-11-05
