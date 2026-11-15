@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clack/prompts": "^1.8.1",
+    "@clack/prompts": "^1.9.0",
     "@napi-rs/keyring": "2.1.2",
     "@openclaw/krillswitch-core": "workspace:*",
     "clipanion": "3.2.1"
