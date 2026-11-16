@@ -4,6 +4,12 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.3] - 2026-11-15
+
+**Highlights:** Refresh authentication, HTTP handling, and dashboard query dependencies while preserving patched overrides and the two-day dependency cooldown.
+
+### Changed
+
 - Refresh Better Auth, Hono, React Query, CLI prompts, Worker tooling, Vite, and CodeQL; align the auth schema generator and preserve patched overrides and the two-day cooldown. Thanks @dependabot.
 
 - Refresh pnpm/action-setup to 6.1.1 for application and SDK releases and paired CodeQL actions to 4.39.2, preserving the existing package-manager pin and release gates. Thanks @dependabot.
@@ -206,7 +212,8 @@ Cloudflare Workers resolve the destination again when connecting. DNS preflight 
 
 - Standardize local development, CI, and deployment commands on pnpm.
 
-[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/openclaw/krillswitch/compare/v0.6.3...HEAD
+[v0.6.3]: https://github.com/openclaw/krillswitch/compare/v0.6.2...v0.6.3
 [v0.6.2]: https://github.com/openclaw/krillswitch/compare/v0.6.1...v0.6.2
 [v0.6.1]: https://github.com/openclaw/krillswitch/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/openclaw/krillswitch/compare/v0.5.0...v0.6.0
