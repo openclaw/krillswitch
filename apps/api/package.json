@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "@openclaw/krillswitch-core": "workspace:*",
-    "better-auth": "1.7.18",
+    "better-auth": "1.7.25",
     "drizzle-orm": "^0.45.4",
-    "hono": "4.13.17",
+    "hono": "4.13.18",
     "jose": "^6.2.16",
     "zod": "^4.6.7"
   },
