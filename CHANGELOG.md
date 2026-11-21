@@ -6,6 +6,7 @@ All notable changes to Krillswitch are documented in this file.
 
 ### Changed
 
+- Refresh the pinned pnpm 11 toolchain and the Undici 8 version used by React SDK DOM tests without changing the Node.js floor.
 - Refresh compatible authentication, HTTP, dashboard, Worker, and test dependencies under the two-day cooldown; align the auth schema generator and preserve security overrides. Thanks @dependabot (#210, #211).
 - Update Autocannon to 9 and report the installed benchmark tool version in result files. Thanks @dependabot (#207).
 
