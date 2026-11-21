@@ -7,9 +7,13 @@
 //
 // Runs under node (autocannon is node-only); pinned in devDependencies.
 import { mkdirSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import autocannon from "autocannon";
+
+const require = createRequire(import.meta.url);
+const autocannonVersion = require("autocannon/package.json").version;
 
 const TARGET_URL = process.env.TARGET_URL ?? "http://localhost:8787";
 const TARGET_LABEL = process.env.TARGET_LABEL ?? "local";
@@ -162,7 +166,7 @@ const missesInSamples = samples.filter(
 const result = {
   date: new Date().toISOString(),
   target: { url: TARGET_URL, label: TARGET_LABEL },
-  tool: { name: "autocannon", version: "8.0.0" },
+  tool: { name: "autocannon", version: autocannonVersion },
   parameters: {
     durationS: DURATION_S,
     connections: CONNECTIONS,

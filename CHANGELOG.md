@@ -4,7 +4,11 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
 - Keep full weekly CodeQL analysis without duplicate main-push scans and isolate scheduled and manual runs while preserving required PR checks.
+- Refresh compatible authentication, HTTP, dashboard, Worker, and test dependencies under the two-day cooldown; align the auth schema generator and preserve security overrides. Thanks @dependabot (#210, #211).
+- Update Autocannon to 9 and report the installed benchmark tool version in result files. Thanks @dependabot (#207).
 
 ## [v0.6.3] - 2026-11-15
 
