@@ -4,6 +4,11 @@ All notable changes to Krillswitch are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Refresh compatible authentication, HTTP, dashboard, Worker, and test dependencies under the two-day cooldown; align the auth schema generator and preserve security overrides. Thanks @dependabot (#210, #211).
+- Update Autocannon to 9 and report the installed benchmark tool version in result files. Thanks @dependabot (#207).
+
 ## [v0.6.3] - 2026-11-15
 
 **Highlights:** Refresh authentication, HTTP handling, and dashboard query dependencies while preserving patched overrides and the two-day dependency cooldown.
